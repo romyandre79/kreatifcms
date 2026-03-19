@@ -1,0 +1,11 @@
+{
+    "name": "ImageConverter",
+    "alias": "imageconverter",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ImageConverter\\Providers\\ImageConverterServiceProvider"
+    ],
+    "files": []
+}

@@ -1,0 +1,146 @@
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
+import { Head, useForm } from '@inertiajs/react';
+import { Save, ArrowLeft } from 'lucide-react';
+import { Link } from '@inertiajs/react';
+
+export default function Create({ contentType, slug, availableRelationships }) {
+    const initialState = {};
+    contentType.fields.forEach(field => {
+        const name = field.name.toLowerCase().replace(/\s+/g, '_');
+        initialState[name] = field.type === 'boolean' ? false : '';
+    });
+
+    const { data, setData, post, processing, errors } = useForm(initialState);
+
+    const handleSubmit = (e) => {
+        e.preventDefault();
+        post(route('content-entries.store', slug));
+    };
+
+    const renderField = (field) => {
+        const name = field.name.toLowerCase().replace(/\s+/g, '_');
+        
+        switch (field.type) {
+            case 'boolean':
+                return (
+                    <div className="flex items-center space-x-2">
+                        <input
+                            type="checkbox"
+                            id={name}
+                            checked={data[name]}
+                            onChange={e => setData(name, e.target.checked)}
+                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                        />
+                        <label htmlFor={name} className="text-sm text-gray-700">{field.name}</label>
+                    </div>
+                );
+            case 'longtext':
+                return (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">{field.name}</label>
+                        <textarea
+                            value={data[name]}
+                            onChange={e => setData(name, e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                            rows={4}
+                        />
+                    </div>
+                );
+            case 'date':
+                return (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">{field.name}</label>
+                        <input
+                            type="date"
+                            value={data[name]}
+                            onChange={e => setData(name, e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                );
+            case 'relation':
+                return (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">{field.name}</label>
+                        <select
+                            value={data[name]}
+                            onChange={e => setData(name, e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        >
+                            <option value="">Select {field.name}...</option>
+                            {availableRelationships[name]?.map(item => (
+                                <option key={item.id} value={item.id}>{item.label}</option>
+                            ))}
+                        </select>
+                    </div>
+                );
+            case 'integer':
+                return (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">{field.name}</label>
+                        <input
+                            type="number"
+                            value={data[name]}
+                            onChange={e => setData(name, e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                );
+            default:
+                return (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700">{field.name}</label>
+                        <input
+                            type="text"
+                            value={data[name]}
+                            onChange={e => setData(name, e.target.value)}
+                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                        />
+                    </div>
+                );
+        }
+    };
+
+    return (
+        <AuthenticatedLayout
+            header={
+                <div className="flex items-center space-x-4">
+                    <Link href={route('content-entries.index', slug)} className="text-gray-500 hover:text-gray-700">
+                        <ArrowLeft className="w-5 h-5" />
+                    </Link>
+                    <h2 className="text-xl font-semibold leading-tight text-gray-800">
+                        Add New {contentType.name}
+                    </h2>
+                </div>
+            }
+        >
+            <Head title={`Add ${contentType.name}`} />
+
+            <div className="py-12">
+                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
+                    <form onSubmit={handleSubmit} className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 space-y-6 max-w-2xl mx-auto">
+                        {contentType.fields.map(field => (
+                            <div key={field.id}>
+                                {renderField(field)}
+                                {errors[field.name.toLowerCase().replace(/\s+/g, '_')] && (
+                                    <p className="mt-1 text-sm text-red-600">{errors[field.name.toLowerCase().replace(/\s+/g, '_')]}</p>
+                                )}
+                            </div>
+                        ))}
+
+                        <div className="flex justify-end pt-4">
+                            <button
+                                type="submit"
+                                disabled={processing}
+                                className="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                            >
+                                <Save className="w-5 h-5 mr-2" />
+                                Save Entry
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </AuthenticatedLayout>
+    );
+}

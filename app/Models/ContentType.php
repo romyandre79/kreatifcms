@@ -1,0 +1,15 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class ContentType extends Model
+{
+    protected $fillable = ['name', 'slug', 'description', 'icon', 'type'];
+
+    public function fields()
+    {
+        return $this->hasMany(ContentField::class);
+    }
+}
