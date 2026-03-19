@@ -57,6 +57,13 @@ export default function Index({ media }) {
         return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
     };
 
+    const sanitizePath = (path) => {
+        if (!path) return '';
+        // Prevent javascript: protocol and other common XSS vectors
+        if (path.toLowerCase().startsWith('javascript:')) return '';
+        return path;
+    };
+
     return (
         <AuthenticatedLayout header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Media Library</h2>}>
             <Head title="Media Library" />
@@ -116,7 +123,7 @@ export default function Index({ media }) {
                                         }`}
                                     >
                                         <img 
-                                            src={`/storage/${item.path}`} 
+                                            src={sanitizePath(`/storage/${item.path}`)} 
                                             alt={item.name} 
                                             className="w-full h-full object-cover"
                                             loading="lazy"
@@ -141,7 +148,7 @@ export default function Index({ media }) {
                         
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={`/storage/${selectedMedia.path}`} alt={selectedMedia.name} className="w-full h-full object-contain" />
+                                <img src={sanitizePath(`/storage/${selectedMedia.path}`)} alt={selectedMedia.name} className="w-full h-full object-contain" />
                             </div>
                             
                             <div className="space-y-3 text-sm">
@@ -170,11 +177,11 @@ export default function Index({ media }) {
                                         <input 
                                             type="text" 
                                             readOnly 
-                                            value={`${window.location.origin}/storage/${selectedMedia.path}`}
+                                            value={sanitizePath(`${window.location.origin}/storage/${selectedMedia.path}`)}
                                             className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-50 text-gray-500 focus:ring-0"
                                         />
                                         <button 
-                                            onClick={() => copyToClipboard(`${window.location.origin}/storage/${selectedMedia.path}`)}
+                                            onClick={() => copyToClipboard(sanitizePath(`${window.location.origin}/storage/${selectedMedia.path}`))}
                                             className="p-2 border border-gray-200 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-indigo-600 transition-colors"
                                             title="Copy URL"
                                         >
