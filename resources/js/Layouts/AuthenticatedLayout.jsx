@@ -2,16 +2,16 @@ import ApplicationLogo from '@/Components/ApplicationLogo';
 import Dropdown from '@/Components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
-import { 
-    LayoutDashboard, 
-    Database, 
-    Puzzle, 
-    Users, 
-    UserCheck, 
-    Truck, 
-    ChevronLeft, 
-    Menu, 
-    LogOut, 
+import {
+    LayoutDashboard,
+    Database,
+    Puzzle,
+    Users,
+    UserCheck,
+    Truck,
+    ChevronLeft,
+    Menu,
+    LogOut,
     User as UserIcon,
     Settings,
     X,
@@ -43,16 +43,16 @@ export default function AuthenticatedLayout({ header, children }) {
     return (
         <div className="min-h-screen bg-gray-50 flex">
             {/* Desktop Sidebar */}
-            <aside 
+            <aside
                 className={`${sidebarOpen ? 'w-64' : 'w-20'} hidden md:flex bg-white border-r border-gray-200 transition-all duration-300 flex-col fixed inset-y-0 z-50`}
             >
                 {/* Sidebar Header */}
                 <div className="h-16 flex items-center justify-between px-4 border-b border-gray-100">
                     <Link href="/" className="flex items-center gap-2 overflow-hidden whitespace-nowrap">
                         <ApplicationLogo className="h-8 w-auto fill-current text-indigo-600 shrink-0" />
-                        {sidebarOpen && <span className="font-bold text-lg text-gray-800">Doran CMS</span>}
+                        {sidebarOpen && <span className="font-bold text-lg text-gray-800">Kreatif CMS</span>}
                     </Link>
-                    <button 
+                    <button
                         onClick={() => setSidebarOpen(!sidebarOpen)}
                         className="p-1.5 rounded-lg bg-gray-50 hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
                     >
@@ -66,11 +66,10 @@ export default function AuthenticatedLayout({ header, children }) {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group ${
-                                item.active 
-                                    ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' 
+                            className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 group ${item.active
+                                    ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50'
                                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900'
-                            } ${!sidebarOpen ? 'justify-center mx-1' : ''}`}
+                                } ${!sidebarOpen ? 'justify-center mx-1' : ''}`}
                             title={!sidebarOpen ? item.name : ''}
                         >
                             <item.icon className={`w-5 h-5 shrink-0 transition-colors ${item.active ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'} ${item.active ? 'stroke-[2.5px]' : 'stroke-2'}`} />
@@ -124,7 +123,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     <div className="h-16 flex items-center justify-between px-4 border-b">
                         <div className="flex items-center gap-2">
                             <ApplicationLogo className="h-8 w-auto fill-current text-indigo-600" />
-                            <span className="font-bold text-lg text-gray-800">Doran CMS</span>
+                            <span className="font-bold text-lg text-gray-800">Kreatif CMS</span>
                         </div>
                         <button onClick={() => setMobileMenuOpen(false)}>
                             <X className="w-6 h-6 text-gray-400" />
@@ -136,9 +135,8 @@ export default function AuthenticatedLayout({ header, children }) {
                                 key={item.name}
                                 href={item.href}
                                 onClick={() => setMobileMenuOpen(false)}
-                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                                    item.active ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                className={`flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all ${item.active ? 'bg-indigo-50 text-indigo-700 shadow-sm shadow-indigo-100/50' : 'text-gray-600 hover:bg-gray-50'
+                                    }`}
                             >
                                 <item.icon className={`w-5 h-5 ${item.active ? 'text-indigo-600 stroke-[2.5px]' : 'text-gray-400 stroke-2'}`} />
                                 {item.name}
@@ -154,7 +152,7 @@ export default function AuthenticatedLayout({ header, children }) {
                 {/* Top Header */}
                 <header className="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-40">
                     <div className="flex items-center">
-                        <button 
+                        <button
                             onClick={() => setMobileMenuOpen(true)}
                             className="p-2 -ml-2 text-gray-400 hover:text-gray-600 md:hidden"
                         >
@@ -166,7 +164,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             </div>
                         )}
                     </div>
-                    
+
                     <div className="flex items-center gap-4">
                         {/* Right side Profile dropdown for mobile when sidebar is small or closed */}
                         <div className="md:hidden">

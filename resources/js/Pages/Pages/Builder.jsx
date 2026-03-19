@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
-import { 
+import {
     Layout, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronDown, ChevronRight, X
 } from 'lucide-react';
@@ -21,11 +21,11 @@ export default function Builder({ page, reusableBlocks = [] }) {
     const [title, setTitle] = useState(page.title);
     const [slug, setSlug] = useState(page.slug);
     const [isPublished, setIsPublished] = useState(page.is_published);
-    
+
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
     const [saving, setSaving] = useState(false);
-    
+
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     // Which field of which block requested the media picker?
     const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
@@ -34,21 +34,21 @@ export default function Builder({ page, reusableBlocks = [] }) {
 
     const addBlock = (type) => {
         let newBlock = { id: generateId(), type, data: {} };
-        
+
         // Initial defaults
         if (type === 'hero') {
-            newBlock.data = { title: 'Welcome to Doran', subtitle: 'A powerful internal application portal.', bgImage: '', buttonText: 'Get Started', buttonLink: '#' };
+            newBlock.data = { title: 'Welcome to Kreatif', subtitle: 'A powerful internal application portal.', bgImage: '', buttonText: 'Get Started', buttonLink: '#' };
         } else if (type === 'text') {
             newBlock.data = { content: 'Enter your text here...', align: 'left' };
         } else if (type === 'image') {
             newBlock.data = { url: '', caption: '' };
         } else if (type === 'feature_grid') {
-            newBlock.data = { 
-                title: 'Our Features', 
+            newBlock.data = {
+                title: 'Our Features',
                 features: [
                     { title: 'Feature 1', desc: 'Description for feature one', iconUrl: '' },
                     { title: 'Feature 2', desc: 'Description for feature two', iconUrl: '' }
-                ] 
+                ]
             };
         } else if (type === 'reusable_block') {
             newBlock.data = { block_id: '' };
@@ -76,7 +76,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
     const moveBlock = (index, direction) => {
         if (direction === -1 && index === 0) return;
         if (direction === 1 && index === blocks.length - 1) return;
-        
+
         const newBlocks = [...blocks];
         const temp = newBlocks[index];
         newBlocks[index] = newBlocks[index + direction];
@@ -173,7 +173,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
                         </div>
                         {data.url && (
                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200 mt-2">
-                                <img src={data.url} className="w-full h-full object-contain" alt="Preview"/>
+                                <img src={data.url} className="w-full h-full object-contain" alt="Preview" />
                             </div>
                         )}
                         <div>
@@ -193,7 +193,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
                         <div>
                             <div className="flex items-center justify-between mb-2">
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Features</label>
-                                <button 
+                                <button
                                     onClick={() => {
                                         const newFeatures = [...features, { title: 'New Feature', desc: '', iconUrl: '' }];
                                         updateBlockData(block.id, 'features', newFeatures);
@@ -206,28 +206,28 @@ export default function Builder({ page, reusableBlocks = [] }) {
                             <div className="space-y-3">
                                 {features.map((feature, idx) => (
                                     <div key={idx} className="p-3 border border-gray-200 rounded-lg bg-white relative group">
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 const newFeatures = features.filter((_, i) => i !== idx);
                                                 updateBlockData(block.id, 'features', newFeatures);
                                             }}
                                             className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
                                         >
-                                            <X className="w-4 h-4"/>
+                                            <X className="w-4 h-4" />
                                         </button>
-                                        <input 
-                                            type="text" 
-                                            value={feature.title || ''} 
+                                        <input
+                                            type="text"
+                                            value={feature.title || ''}
                                             onChange={(e) => {
                                                 const newFeatures = [...features];
                                                 newFeatures[idx] = { ...newFeatures[idx], title: e.target.value };
                                                 updateBlockData(block.id, 'features', newFeatures);
                                             }}
                                             placeholder="Feature Title"
-                                            className="w-full text-sm border-0 border-b border-gray-200 focus:ring-0 focus:border-indigo-500 px-0 py-1 mb-2 font-semibold" 
+                                            className="w-full text-sm border-0 border-b border-gray-200 focus:ring-0 focus:border-indigo-500 px-0 py-1 mb-2 font-semibold"
                                         />
-                                        <textarea 
-                                            value={feature.desc || ''} 
+                                        <textarea
+                                            value={feature.desc || ''}
                                             onChange={(e) => {
                                                 const newFeatures = [...features];
                                                 newFeatures[idx] = { ...newFeatures[idx], desc: e.target.value };
@@ -235,7 +235,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
                                             }}
                                             rows="2"
                                             placeholder="Feature description..."
-                                            className="w-full text-sm border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 mb-2" 
+                                            className="w-full text-sm border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 mb-2"
                                         />
                                     </div>
                                 ))}
@@ -249,14 +249,14 @@ export default function Builder({ page, reusableBlocks = [] }) {
                     <div className="space-y-4">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Select Saved Block</label>
-                            <select 
-                                value={data.block_id || ''} 
-                                onChange={e => updateBlockData(block.id, 'block_id', e.target.value)} 
+                            <select
+                                value={data.block_id || ''}
+                                onChange={e => updateBlockData(block.id, 'block_id', e.target.value)}
                                 className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50"
                             >
                                 <option value="">-- Choose a block --</option>
                                 {reusableBlocks.map(rb => (
-                                    <option key={rb.id} value={rb.id}>{rb.name} ({BLOCK_TYPES.find(t=>t.id===rb.type)?.name})</option>
+                                    <option key={rb.id} value={rb.id}>{rb.name} ({BLOCK_TYPES.find(t => t.id === rb.type)?.name})</option>
                                 ))}
                             </select>
                         </div>
@@ -276,7 +276,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
     return (
         <AuthenticatedLayout>
             <Head title={`Builder: ${page.title}`} />
-            
+
             <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-100">
                 {/* Structure Sidebar */}
                 <div className="w-72 bg-white border-r border-gray-200 flex flex-col z-10 shadow-sm relative">
@@ -295,25 +295,24 @@ export default function Builder({ page, reusableBlocks = [] }) {
                             <span>Structure</span>
                             <span className="bg-gray-100 text-gray-600 px-1.5 py-0.5 rounded">{blocks.length}</span>
                         </div>
-                        
+
                         <div className="space-y-2 relative min-h-[50px]">
                             {blocks.length === 0 && (
                                 <div className="text-center p-4 border-2 border-dashed border-gray-200 rounded-lg text-gray-400 text-sm">
-                                    No blocks added.<br/>Click + to add content.
+                                    No blocks added.<br />Click + to add content.
                                 </div>
                             )}
-                            
+
                             {blocks.map((block, index) => {
                                 const typeInfo = BLOCK_TYPES.find(t => t.id === block.type);
                                 const Icon = typeInfo?.icon || Layout;
                                 const isActive = activeBlockId === block.id;
-                                
+
                                 return (
-                                    <div 
+                                    <div
                                         key={block.id}
-                                        className={`group relative flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${
-                                            isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'
-                                        }`}
+                                        className={`group relative flex items-center gap-2 p-2 rounded-lg cursor-pointer transition-all border ${isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-transparent hover:border-gray-200 hover:bg-gray-50'
+                                            }`}
                                         onClick={() => setActiveBlockId(block.id)}
                                     >
                                         <div className="flex flex-col gap-[2px] opacity-0 group-hover:opacity-100 transition-opacity">
@@ -324,16 +323,16 @@ export default function Builder({ page, reusableBlocks = [] }) {
                                                 <ChevronDown className="w-3 h-3" />
                                             </button>
                                         </div>
-                                        
+
                                         <div className={`p-1.5 rounded-md ${isActive ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'}`}>
                                             <Icon className="w-3.5 h-3.5" />
                                         </div>
                                         <span className={`text-sm font-medium flex-1 truncate ${isActive ? 'text-indigo-900' : 'text-gray-700'}`}>
                                             {typeInfo?.name || 'Block'}
                                         </span>
-                                        
+
                                         {isActive && (
-                                            <button 
+                                            <button
                                                 onClick={(e) => { e.stopPropagation(); removeBlock(block.id); }}
                                                 className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                             >
@@ -344,22 +343,22 @@ export default function Builder({ page, reusableBlocks = [] }) {
                                 );
                             })}
                         </div>
-                        
+
                         <div className="mt-4 relative">
-                            <button 
+                            <button
                                 onClick={() => setShowBlockMenu(!showBlockMenu)}
                                 className="w-full py-2.5 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-indigo-50/50 flex items-center justify-center gap-2 font-medium text-sm transition-all shadow-sm"
                             >
                                 <Plus className="w-4 h-4" />
                                 Add Block
                             </button>
-                            
+
                             {showBlockMenu && (
                                 <div className="absolute bottom-[calc(100%+12px)] left-0 right-0 bg-white border border-gray-200 rounded-xl shadow-xl z-20 p-2 transform origin-bottom animate-in zoom-in-95 duration-100">
                                     <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-2 mb-2 mt-1">Available Blocks</div>
                                     <div className="space-y-1">
                                         {BLOCK_TYPES.map(type => (
-                                            <button 
+                                            <button
                                                 key={type.id}
                                                 onClick={() => addBlock(type.id)}
                                                 className="w-full flex items-center gap-3 p-2 hover:bg-gray-50 rounded-lg text-left transition-colors group"
@@ -392,7 +391,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
                                 <option value="true">Published (Live)</option>
                             </select>
                         </div>
-                        <button 
+                        <button
                             onClick={handleSave}
                             disabled={saving}
                             className="w-full py-2.5 bg-gray-900 hover:bg-black text-white rounded-lg text-sm font-semibold shadow-md flex items-center justify-center gap-2 transition-all disabled:opacity-75"
@@ -409,7 +408,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
                         const activeBlock = blocks.find(b => b.id === activeBlockId);
                         if (!activeBlock) return null;
                         const typeInfo = BLOCK_TYPES.find(t => t.id === activeBlock.type);
-                        
+
                         return (
                             <>
                                 <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-indigo-50/30">
@@ -425,7 +424,7 @@ export default function Builder({ page, reusableBlocks = [] }) {
                                     {renderBlockConfig(activeBlock)}
                                 </div>
                                 <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-                                    <button 
+                                    <button
                                         onClick={() => removeBlock(activeBlock.id)}
                                         className="w-full py-2 text-red-600 bg-white border border-red-200 hover:bg-red-50 rounded-lg text-sm font-semibold transition-colors flex items-center justify-center gap-2"
                                     >
@@ -440,17 +439,17 @@ export default function Builder({ page, reusableBlocks = [] }) {
 
                 {/* Main Preview Workarea (Empty state visualization) */}
                 <div className="flex-1 overflow-y-auto p-8 lg:p-12 relative flex flex-col items-center">
-                     <div className="w-full max-w-5xl absolute inset-0 max-h-screen opacity-10 pointer-events-none" 
-                          style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
-                     
-                     <div className="relative w-full max-w-4xl min-h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
+                    <div className="w-full max-w-5xl absolute inset-0 max-h-screen opacity-10 pointer-events-none"
+                        style={{ backgroundImage: 'radial-gradient(#CBD5E1 1px, transparent 1px)', backgroundSize: '24px 24px' }} />
+
+                    <div className="relative w-full max-w-4xl min-h-[500px] bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col">
                         <div className="h-8 bg-gray-100 border-b border-gray-200 flex items-center px-4 gap-2">
                             <div className="w-3 h-3 rounded-full bg-red-400"></div>
                             <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
                             <div className="w-3 h-3 rounded-full bg-green-400"></div>
                             <div className="ml-4 flex-1">
                                 <div className="h-4 bg-white/60 mx-auto max-w-sm rounded-[4px] border border-gray-200 border-b-0 shadow-sm flex items-center justify-center">
-                                    <span className="text-[10px] text-gray-400 font-mono">doran.internal/{slug}</span>
+                                    <span className="text-[10px] text-gray-400 font-mono">kreatif.internal/{slug}</span>
                                 </div>
                             </div>
                         </div>
@@ -470,14 +469,14 @@ export default function Builder({ page, reusableBlocks = [] }) {
                                 </div>
                             )}
                         </div>
-                     </div>
+                    </div>
                 </div>
             </div>
 
-            <MediaPickerModal 
-                isOpen={mediaPickerOpen} 
-                onClose={() => setMediaPickerOpen(false)} 
-                onSelect={handleMediaSelect} 
+            <MediaPickerModal
+                isOpen={mediaPickerOpen}
+                onClose={() => setMediaPickerOpen(false)}
+                onSelect={handleMediaSelect}
             />
         </AuthenticatedLayout>
     );

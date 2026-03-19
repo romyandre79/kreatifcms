@@ -17,7 +17,7 @@ export default function Page({ page, reusableBlocks }) {
                             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center transform group-hover:rotate-12 transition-transform duration-300 shadow-lg shadow-indigo-500/30">
                                 <span className="text-white font-bold text-xl tracking-tighter">D</span>
                             </div>
-                            <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Doran Internal</span>
+                            <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Kreatif Internal</span>
                         </div>
 
                         <nav className="flex items-center gap-4 relative z-10">
@@ -52,13 +52,13 @@ export default function Page({ page, reusableBlocks }) {
             <footer className="bg-white border-t border-gray-100 py-12 mt-12">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
                     <div className="flex items-center justify-center gap-3 mb-6">
-                         <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
                             <span className="text-white font-bold text-sm tracking-tighter">D</span>
                         </div>
-                        <span className="font-bold text-lg tracking-tight text-gray-900">Doran Internal</span>
+                        <span className="font-bold text-lg tracking-tight text-gray-900">Kreatif Internal</span>
                     </div>
                     <p className="text-gray-500 text-sm">
-                        &copy; {new Date().getFullYear()} Doran. All rights reserved.
+                        &copy; {new Date().getFullYear()} Kreatif. All rights reserved.
                     </p>
                 </div>
             </footer>
