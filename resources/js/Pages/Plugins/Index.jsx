@@ -7,9 +7,36 @@ import { Box, CheckCircle, XCircle, Settings, Puzzle, Download, Info, Upload, Tr
 export default function Index({ plugins }) {
     const [selectedPlugin, setSelectedPlugin] = useState(null);
     const [importing, setImporting] = useState(false);
+    const [settingsData, setSettingsData] = useState({});
+    const [savingSettings, setSavingSettings] = useState(false);
+
     const togglePlugin = (plugin) => {
         const action = plugin.enabled ? 'disable' : 'enable';
         router.post(route(`plugins.${action}`, plugin.name));
+    };
+
+    const handleOpenSettings = (plugin) => {
+        setSettingsData(plugin.values || {});
+        setSelectedPlugin(plugin);
+    };
+
+    const handleSettingChange = (name, value) => {
+        setSettingsData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSaveSettings = () => {
+        setSavingSettings(true);
+        router.post(route('plugins.settings.update', selectedPlugin.name), {
+            settings: settingsData
+        }, {
+            onFinish: () => {
+                setSavingSettings(false);
+                setSelectedPlugin(null);
+            }
+        });
     };
 
     const deletePlugin = (plugin) => {
@@ -125,7 +152,7 @@ export default function Index({ plugins }) {
                                                 <Download className="w-5 h-5" />
                                             </a>
                                             <button 
-                                                onClick={() => setSelectedPlugin(plugin)}
+                                                onClick={() => handleOpenSettings(plugin)}
                                                 className="text-gray-400 hover:text-gray-600 transition-colors"
                                                 title="Plugin Settings"
                                             >
@@ -165,13 +192,37 @@ export default function Index({ plugins }) {
                         </div>
 
                         <div className="mt-6 space-y-4">
-                            <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 text-blue-800">
-                                <Info className="w-5 h-5 shrink-0 mt-0.5" />
-                                <div className="text-sm">
-                                    <p className="font-semibold mb-1">No Configuration Available</p>
-                                    <p className="opacity-90">This plugin does not currently register any configurable settings or dynamic UI fields.</p>
+                            {selectedPlugin.settings && selectedPlugin.settings.length > 0 ? (
+                                <div className="space-y-6">
+                                    {selectedPlugin.settings.map((setting) => (
+                                        <div key={setting.name} className="flex flex-col gap-2">
+                                            <label className="text-sm font-bold text-gray-700">
+                                                {setting.label}
+                                            </label>
+                                            <div className="relative">
+                                                <input
+                                                    type={setting.type === 'number' ? 'number' : 'text'}
+                                                    value={settingsData[setting.name] || ''}
+                                                    onChange={(e) => handleSettingChange(setting.name, e.target.value)}
+                                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                                    placeholder={setting.default}
+                                                />
+                                            </div>
+                                            {setting.description && (
+                                                <p className="text-xs text-gray-500">{setting.description}</p>
+                                            )}
+                                        </div>
+                                    ))}
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl flex gap-3 text-blue-800">
+                                    <Info className="w-5 h-5 shrink-0 mt-0.5" />
+                                    <div className="text-sm">
+                                        <p className="font-semibold mb-1">No Configuration Available</p>
+                                        <p className="opacity-90">This plugin does not currently register any configurable settings or dynamic UI fields.</p>
+                                    </div>
+                                </div>
+                            )}
 
                             <div className="border border-gray-100 rounded-xl overflow-hidden mt-6">
                                 <div className="bg-gray-50 px-4 py-2 border-b border-gray-100">
@@ -194,13 +245,30 @@ export default function Index({ plugins }) {
                             </div>
                         </div>
 
-                        <div className="mt-8 flex justify-end">
+                        <div className="mt-8 flex justify-end gap-3">
                             <button
                                 onClick={() => setSelectedPlugin(null)}
-                                className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-black transition-colors"
+                                className="px-5 py-2.5 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 transition-colors"
                             >
-                                Done
+                                Cancel
                             </button>
+                            {selectedPlugin.settings && selectedPlugin.settings.length > 0 && (
+                                <button
+                                    onClick={handleSaveSettings}
+                                    disabled={savingSettings}
+                                    className="px-5 py-2.5 bg-indigo-600 text-white text-sm font-semibold rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50"
+                                >
+                                    {savingSettings ? 'Saving...' : 'Save Settings'}
+                                </button>
+                            )}
+                            {( !selectedPlugin.settings || selectedPlugin.settings.length === 0 ) && (
+                                <button
+                                    onClick={() => setSelectedPlugin(null)}
+                                    className="px-5 py-2.5 bg-gray-900 text-white text-sm font-semibold rounded-lg hover:bg-black transition-colors"
+                                >
+                                    Done
+                                </button>
+                            )}
                         </div>
                     </div>
                 )}

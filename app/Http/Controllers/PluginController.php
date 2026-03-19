@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Nwidart\Modules\Facades\Module;
 use Inertia\Inertia;
+use App\Models\Setting;
 
 class PluginController extends Controller
 {
@@ -17,6 +18,13 @@ class PluginController extends Controller
         $pluginData = [];
 
         foreach ($modules as $module) {
+            $settingsDefinition = $module->get('settings') ?: [];
+            $settingsValues = [];
+
+            foreach ($settingsDefinition as $def) {
+                $settingsValues[$def['name']] = Setting::get($module->getLowerName(), $def['name'], $def['default'] ?? null);
+            }
+
             $pluginData[] = [
                 'name' => $module->getName(),
                 'alias' => $module->getLowerName(),
@@ -24,6 +32,8 @@ class PluginController extends Controller
                 'version' => $module->get('version') ?? '1.0.0',
                 'enabled' => $module->isEnabled(),
                 'path' => $module->getPath(),
+                'settings' => $settingsDefinition,
+                'values' => $settingsValues,
             ];
         }
 
@@ -316,6 +326,25 @@ class PluginController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->with('error', "Failed to delete plugin: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Update plugin settings.
+     */
+    public function updateSettings(Request $request, string $name)
+    {
+        $module = Module::find($name);
+        if (!$module) {
+            abort(404, 'Plugin not found');
+        }
+
+        $settings = $request->input('settings', []);
+        
+        foreach ($settings as $key => $value) {
+            Setting::set($module->getLowerName(), $key, $value);
+        }
+
+        return redirect()->back()->with('message', "Settings for '{$name}' updated successfully.");
     }
 
     /**

@@ -1,0 +1,27 @@
+{
+    "name": "Security",
+    "alias": "security",
+    "description": "Security and Rate Limiting features for Doran Portal CMS.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Security\\Providers\\SecurityServiceProvider"
+    ],
+    "settings": [
+        {
+            "name": "api_rate_limit",
+            "label": "API Rate Limit",
+            "type": "number",
+            "default": 60,
+            "description": "Requests allowed per minute for general API access."
+        },
+        {
+            "name": "login_rate_limit",
+            "label": "Login Rate Limit",
+            "type": "number",
+            "default": 5,
+            "description": "Attempts allowed per minute for the login endpoint."
+        }
+    ],
+    "files": []
+}

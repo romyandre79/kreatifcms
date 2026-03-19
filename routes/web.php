@@ -49,6 +49,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/plugins/{name}/export', [App\Http\Controllers\PluginController::class, 'export'])->name('plugins.export');
     Route::post('/plugins/import', [App\Http\Controllers\PluginController::class, 'import'])->name('plugins.import');
     Route::delete('/plugins/{name}', [App\Http\Controllers\PluginController::class, 'destroy'])->name('plugins.destroy');
+    Route::post('/plugins/{name}/settings', [App\Http\Controllers\PluginController::class, 'updateSettings'])->name('plugins.settings.update');
 
     // User & Role Management Routes
     Route::resource('users', App\Http\Controllers\UserController::class);

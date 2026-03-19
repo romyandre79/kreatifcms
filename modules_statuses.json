@@ -1,3 +1,4 @@
 {
-    "ImageConverter": true
+    "ImageConverter": true,
+    "Security": true
 }
