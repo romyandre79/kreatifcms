@@ -2,5 +2,6 @@
     "ImageConverter": true,
     "Security": true,
     "ReusableBlock": true,
-    "Seo": true
+    "Seo": true,
+    "Slideshow": true
 }

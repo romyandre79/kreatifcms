@@ -44,7 +44,7 @@ class ContentTypeController extends Controller
             'description' => 'nullable|string',
             'fields' => 'required|array|min:1',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation',
+            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation,image,file',
             'fields.*.required' => 'boolean',
             'fields.*.options' => 'nullable|array',
         ]);
@@ -93,7 +93,7 @@ class ContentTypeController extends Controller
             'fields.*.id' => 'nullable', // Use this to distinguish existing vs new
             'fields.*.isNew' => 'nullable|boolean',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation',
+            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation,image,file',
             'fields.*.required' => 'boolean',
             'fields.*.options' => 'nullable|array',
         ]);

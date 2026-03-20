@@ -28,6 +28,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 const BLOCK_TYPES = [
+    { id: 'slideshow', name: 'Slideshow', icon: Layers, desc: 'Rotating carousel of images' },
     { id: 'navbar', name: 'Navigation Bar', icon: Menu, desc: 'Horizontal logo, menu items, and dropdowns' },
     { id: 'hero', name: 'Hero Section', icon: Layout, desc: 'Large title with background and CTA' },
     { id: 'text', name: 'Rich Text', icon: Type, desc: 'Standard text, paragraphs, headings' },
@@ -96,6 +97,12 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                     { id: generateId(), title: 'Feature 1', desc: 'Description for feature one', iconUrl: '' },
                     { id: generateId(), title: 'Feature 2', desc: 'Description for feature two', iconUrl: '' }
                 ]
+            };
+        } else if (type === 'slideshow') {
+            newBlock.data = {
+                source: 'manual',
+                items: [{ id: generateId(), image: '', title: '', link: '' }],
+                config: { autoPlay: true, interval: 5000, showArrows: true, showDots: true }
             };
         } else if (type === 'navbar') {
             newBlock.data = { 
@@ -696,6 +703,209 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                         </div>
                     </div>
                 );
+            case 'slideshow': {
+                const source = data.source || 'manual';
+                const items = Array.isArray(data.items) ? data.items : [];
+                const config = data.config || { autoPlay: true, interval: 5000, showArrows: true, showDots: true };
+                const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedType ? selectedType.fields : [];
+
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['manual', 'dynamic'].map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => updateBlockData(block.id, 'source', s)}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${source === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {source === 'manual' ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Slide Items</label>
+                                    <button
+                                        onClick={() => {
+                                            const newItems = [...items, { id: generateId(), image: '', title: '', link: '' }];
+                                            updateBlockData(block.id, 'items', newItems);
+                                        }}
+                                        className="text-[10px] text-indigo-600 font-bold hover:text-indigo-800"
+                                    >
+                                        + Add Slide
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    {items.map((item, idx) => (
+                                        <div key={item.id || idx} className="p-3 border border-gray-100 rounded-xl bg-gray-50 relative group">
+                                            <button
+                                                onClick={() => {
+                                                    const newItems = items.filter((_, i) => i !== idx);
+                                                    updateBlockData(block.id, 'items', newItems);
+                                                }}
+                                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                            
+                                            <div className="flex gap-3 mb-3">
+                                                <div className="w-20 h-20 bg-white rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 relative">
+                                                    {item.image ? (
+                                                        <img src={item.image} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                            <ImageIcon className="w-6 h-6" />
+                                                        </div>
+                                                    )}
+                                                    <button 
+                                                        onClick={() => openMediaPicker(block.id, `items.${idx}.image`)}
+                                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold"
+                                                    >
+                                                        Change
+                                                    </button>
+                                                </div>
+                                                <div className="flex-1 space-y-2">
+                                                    <input 
+                                                        type="text" 
+                                                        value={item.title || ''} 
+                                                        onChange={e => {
+                                                            const newItems = [...items];
+                                                            newItems[idx] = { ...newItems[idx], title: e.target.value };
+                                                            updateBlockData(block.id, 'items', newItems);
+                                                        }}
+                                                        placeholder="Slide Caption"
+                                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
+                                                    />
+                                                    <input 
+                                                        type="text" 
+                                                        value={item.link || ''} 
+                                                        onChange={e => {
+                                                            const newItems = [...items];
+                                                            newItems[idx] = { ...newItems[idx], link: e.target.value };
+                                                            updateBlockData(block.id, 'items', newItems);
+                                                        }}
+                                                        placeholder="Button Link (optional)"
+                                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
+                                    <select 
+                                        value={data.content_type || ''} 
+                                        onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
+                                        className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Content Type...</option>
+                                        {contentTypes.map(ct => (
+                                            <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {data.content_type && (
+                                    <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 space-y-4">
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Mapping</h4>
+                                        <div className="flex items-center gap-4">
+                                            <label className="w-1/3 text-xs font-bold text-gray-600">Image Field</label>
+                                            <select 
+                                                value={data.mapping?.image || ''} 
+                                                onChange={e => {
+                                                    const mapping = { ...(data.mapping || {}), image: e.target.value };
+                                                    updateBlockData(block.id, 'mapping', mapping);
+                                                }}
+                                                className="flex-1 text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                            >
+                                                <option value="">-- Choose Field --</option>
+                                                {fields.map(f => (
+                                                    <option key={'s_img_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <label className="w-1/3 text-xs font-bold text-gray-600">Title Field</label>
+                                            <select 
+                                                value={data.mapping?.title || ''} 
+                                                onChange={e => {
+                                                    const mapping = { ...(data.mapping || {}), title: e.target.value };
+                                                    updateBlockData(block.id, 'mapping', mapping);
+                                                }}
+                                                className="flex-1 text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                            >
+                                                <option value="">-- No Title --</option>
+                                                {fields.filter(f => ['text', 'string'].includes(f.type)).map(f => (
+                                                    <option key={'s_title_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <label className="w-1/3 text-xs font-bold text-gray-600">Link Field</label>
+                                            <select 
+                                                value={data.mapping?.link || ''} 
+                                                onChange={e => {
+                                                    const mapping = { ...(data.mapping || {}), link: e.target.value };
+                                                    updateBlockData(block.id, 'mapping', mapping);
+                                                }}
+                                                className="flex-1 text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                            >
+                                                <option value="">-- No Link --</option>
+                                                {fields.map(f => (
+                                                    <option key={'s_link_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="pt-4 border-t border-gray-100 space-y-4">
+                            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Settings</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={config.autoPlay} 
+                                        onChange={e => updateBlockData(block.id, 'config', { ...config, autoPlay: e.target.checked })}
+                                        className="rounded text-indigo-600 focus:ring-indigo-500" 
+                                    />
+                                    <label className="text-xs text-gray-600 font-medium">Autoplay</label>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <input 
+                                        type="checkbox" 
+                                        checked={config.showArrows} 
+                                        onChange={e => updateBlockData(block.id, 'config', { ...config, showArrows: e.target.checked })}
+                                        className="rounded text-indigo-600 focus:ring-indigo-500" 
+                                    />
+                                    <label className="text-xs text-gray-600 font-medium">Arrows</label>
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Custom CSS</label>
+                                <textarea 
+                                    value={data.customCss || ''} 
+                                    onChange={e => updateBlockData(block.id, 'customCss', e.target.value)}
+                                    placeholder=".slideshow-container { ... }"
+                                    rows="3"
+                                    className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50"
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
             case 'feature_grid': {
                 const features = Array.isArray(data.features) ? data.features : [];
                 return (

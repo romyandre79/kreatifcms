@@ -32,6 +32,7 @@
             "Modules\\Security\\": "Modules/Security/app/",
             "Modules\\ReusableBlock\\": "Modules/ReusableBlock/app/",
             "Modules\\Seo\\": "Modules/Seo/app/",
+            "Modules\\Slideshow\\": "Modules/Slideshow/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

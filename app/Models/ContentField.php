@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class ContentField extends Model
 {
@@ -12,6 +13,13 @@ class ContentField extends Model
         'options' => 'array',
         'required' => 'boolean',
     ];
+
+    protected $appends = ['attribute_name'];
+
+    public function getAttributeNameAttribute()
+    {
+        return Str::snake($this->name);
+    }
 
     public function contentType()
     {

@@ -6,6 +6,13 @@
 
         <title inertia>{{ config('app.name', 'Kreatif') }}</title>
 
+        <!-- PWA Meta Tags -->
+        <meta name="theme-color" content="#4f46e5">
+        <link rel="manifest" href="/manifest.json">
+        <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />

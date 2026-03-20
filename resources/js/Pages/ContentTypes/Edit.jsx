@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { Plus, Trash2, GripVertical, Save, Type as TypeIcon, Hash, Calendar, CheckSquare, Code, FileText, Send } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Save, Type as TypeIcon, Hash, Calendar, CheckSquare, Code, FileText, Send, Image as ImageIcon } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -12,6 +12,8 @@ const FIELD_TYPES = [
     { type: 'boolean', label: 'Boolean', icon: CheckSquare },
     { type: 'date', label: 'Date', icon: Calendar },
     { type: 'json', label: 'JSON', icon: Code },
+    { type: 'image', label: 'Image', icon: ImageIcon },
+    { type: 'file', label: 'File', icon: FileText },
     { type: 'relation', label: 'Relation', icon: Plus },
 ];
 

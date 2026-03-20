@@ -47,6 +47,8 @@ class SchemaService
             'boolean' => $table->boolean($name),
             'date' => $table->date($name),
             'json' => $table->json($name),
+            'image' => $table->string($name),
+            'file' => $table->string($name),
             'relation' => $table->unsignedBigInteger($name),
             default => $table->string($name),
         };
@@ -128,32 +130,39 @@ class SchemaService
         if (!is_array($blocks)) return $blocks ?? [];
         
         foreach ($blocks as &$block) {
-            if (isset($block['type']) && $block['type'] === 'content_list') {
-                $ctSlug = $block['data']['content_type'] ?? null;
-                $limit = $block['data']['limit'] ?? 6;
-                $sortBy = $block['data']['sort_by'] ?? 'created_at';
-                $sortDir = $block['data']['sort_dir'] ?? 'desc';
+            if (isset($block['type']) && ($block['type'] === 'content_list' || $block['type'] === 'slideshow')) {
+                $source = $block['data']['source'] ?? ($block['type'] === 'content_list' ? 'dynamic' : 'manual');
                 
-                if ($ctSlug) {
-                    $tableName = $this->getTableName($ctSlug);
+                if ($source === 'dynamic' || $block['type'] === 'content_list') {
+                    $ctSlug = $block['data']['content_type'] ?? null;
+                    $limit = $block['data']['limit'] ?? 6;
+                    $sortBy = $block['data']['sort_by'] ?? 'created_at';
+                    $sortDir = $block['data']['sort_dir'] ?? 'desc';
                     
-                    try {
-                        if (Schema::connection($this->connection)->hasTable($tableName)) {
-                            $items = \Illuminate\Support\Facades\DB::connection($this->connection)
-                                ->table($tableName)
-                                ->orderBy($sortBy, $sortDir)
-                                ->limit($limit)
-                                ->get();
-                                
-                            $block['data']['items'] = $items;
-                        } else {
+                    if ($ctSlug) {
+                        $tableName = $this->getTableName($ctSlug);
+                        
+                        try {
+                            if (Schema::connection($this->connection)->hasTable($tableName)) {
+                                $items = \Illuminate\Support\Facades\DB::connection($this->connection)
+                                    ->table($tableName)
+                                    ->orderBy($sortBy, $sortDir)
+                                    ->limit($limit)
+                                    ->get();
+                                    
+                                \Illuminate\Support\Facades\Log::info("Hydrated {$block['type']} from {$ctSlug}: " . $items->count() . " items");
+                                $block['data']['items'] = $items;
+                            } else {
+                                \Illuminate\Support\Facades\Log::warning("Table not found for hydration: {$tableName}");
+                                $block['data']['items'] = [];
+                            }
+                        } catch (\Exception $e) {
+                            \Illuminate\Support\Facades\Log::error("Hydration error for {$block['type']}: " . $e->getMessage());
                             $block['data']['items'] = [];
                         }
-                    } catch (\Exception $e) {
+                    } else {
                         $block['data']['items'] = [];
                     }
-                } else {
-                    $block['data']['items'] = [];
                 }
             }
         }

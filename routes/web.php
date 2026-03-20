@@ -32,6 +32,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('media', App\Http\Controllers\MediaController::class)->except(['create', 'edit', 'update']);
     Route::resource('pages', App\Http\Controllers\PageController::class);
     
+    // Module Routes
+    Route::resource('blocks', \Modules\ReusableBlock\Http\Controllers\BlockController::class);
+    Route::get('/seo', [\Modules\Seo\Http\Controllers\SeoController::class, 'index'])->name('seo.index');
+    Route::post('/seo/settings', [\Modules\Seo\Http\Controllers\SeoController::class, 'updateSettings'])->name('seo.settings.update');
+    
     // Layout Editor
     Route::get('/layouts', [App\Http\Controllers\LayoutController::class, 'index'])->name('layouts.index');
     Route::post('/layouts', [App\Http\Controllers\LayoutController::class, 'update'])->name('layouts.update');

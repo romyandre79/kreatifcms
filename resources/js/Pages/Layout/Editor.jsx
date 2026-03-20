@@ -28,6 +28,7 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 
 const BLOCK_TYPES = [
+    { id: 'slideshow', name: 'Slideshow', icon: Layers, desc: 'Rotating carousel of images' },
     { id: 'navbar', name: 'Navigation Bar', icon: Menu, desc: 'Horizontal logo, menu items, and dropdowns' },
     { id: 'hero', name: 'Hero Section', icon: LayoutIcon, desc: 'Large title with background and CTA' },
     { id: 'text', name: 'Rich Text', icon: Type, desc: 'Standard text, paragraphs, headings' },
@@ -112,6 +113,12 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                 sort_dir: 'desc',
                 layout_style: 'grid',
                 mapping: { title: '', description: '', image: '', link_prefix: '/content/' }
+            };
+        } else if (type === 'slideshow') {
+            newBlock.data = {
+                source: 'manual',
+                items: [{ id: generateId(), image: '', title: '', link: '' }],
+                config: { autoPlay: true, interval: 5000, showArrows: true, showDots: true }
             };
         } else if (type === 'reusable_block') {
             newBlock.data = { block_id: '' };
@@ -563,6 +570,121 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                         </div>
                     </div>
                 );
+            case 'slideshow': {
+                const source = data.source || 'manual';
+                const items = Array.isArray(data.items) ? data.items : [];
+                const config = data.config || { autoPlay: true, interval: 5000, showArrows: true, showDots: true };
+                const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedType ? selectedType.fields : [];
+
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Content Source</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['manual', 'dynamic'].map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => updateBlockData(block.id, 'source', s)}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${source === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {source === 'manual' ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Items</label>
+                                    <button
+                                        onClick={() => {
+                                            const newItems = [...items, { id: generateId(), image: '', title: '', link: '' }];
+                                            updateBlockData(block.id, 'items', newItems);
+                                        }}
+                                        className="text-[10px] text-indigo-600 font-bold hover:underline"
+                                    >
+                                        + ADD SLIDE
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    {items.map((item, idx) => (
+                                        <div key={item.id || idx} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
+                                            <button
+                                                onClick={() => {
+                                                    const newItems = items.filter((_, i) => i !== idx);
+                                                    updateBlockData(block.id, 'items', newItems);
+                                                }}
+                                                className="absolute -top-1 -right-1 p-1 bg-white shadow-sm border border-gray-100 rounded-full text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                            >
+                                                <X className="w-3 h-3" />
+                                            </button>
+                                            <div className="flex gap-3">
+                                                <div className="w-12 h-12 bg-white rounded-lg border border-gray-100 overflow-hidden flex-shrink-0 relative">
+                                                    {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center text-gray-200"><ImageIcon className="w-4 h-4" /></div>}
+                                                    <button onClick={() => { setMediaPickerTarget({ blockId: block.id, fieldName: `items.${idx}.image` }); setMediaPickerOpen(true); }} className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[8px] font-bold">SET</button>
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <input type="text" value={item.title || ''} onChange={e => { const newItems = [...items]; newItems[idx] = { ...newItems[idx], title: e.target.value }; updateBlockData(block.id, 'items', newItems); }} placeholder="Title" className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 font-bold p-0" />
+                                                    <input type="text" value={item.link || ''} onChange={e => { const newItems = [...items]; newItems[idx] = { ...newItems[idx], link: e.target.value }; updateBlockData(block.id, 'items', newItems); }} placeholder="Link" className="w-full text-[9px] border-transparent bg-transparent focus:ring-0 text-gray-400 p-0" />
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Content Type</label>
+                                    <select value={data.content_type || ''} onChange={e => updateBlockData(block.id, 'content_type', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50">
+                                        <option value="">Select...</option>
+                                        {contentTypes.map(ct => <option key={ct.id} value={ct.slug}>{ct.name}</option>)}
+                                    </select>
+                                </div>
+                                {data.content_type && (
+                                    <div className="p-3 bg-gray-50/50 rounded-xl border border-gray-100 space-y-3">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mapping</label>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-gray-500 w-12">Image</span>
+                                            <select value={data.mapping?.image || ''} onChange={e => { const mapping = { ...(data.mapping || {}), image: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-[10px] border-gray-100 rounded bg-white">
+                                                <option value="">-- Choose --</option>
+                                                {fields.map(f => <option key={'s_img_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-gray-500 w-12">Title</span>
+                                            <select value={data.mapping?.title || ''} onChange={e => { const mapping = { ...(data.mapping || {}), title: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-[10px] border-gray-100 rounded bg-white">
+                                                <option value="">-- None --</option>
+                                                {fields.filter(f => ['text', 'string'].includes(f.type)).map(f => <option key={'s_title_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <span className="text-[10px] text-gray-500 w-12">Link</span>
+                                            <select value={data.mapping?.link || ''} onChange={e => { const mapping = { ...(data.mapping || {}), link: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-[10px] border-gray-100 rounded bg-white">
+                                                <option value="">-- None --</option>
+                                                {fields.map(f => <option key={'s_link_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
+                                            </select>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        <div className="pt-2 space-y-3">
+                            <div className="flex items-center justify-between">
+                                <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Autoplay</label>
+                                <input type="checkbox" checked={config.autoPlay !== false} onChange={e => updateBlockData(block.id, 'config', { ...config, autoPlay: e.target.checked })} className="rounded text-indigo-600 shadow-sm" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Custom CSS</label>
+                                <textarea value={data.customCss || ''} onChange={e => updateBlockData(block.id, 'customCss', e.target.value)} rows="3" className="w-full text-[10px] font-mono border-gray-100 rounded bg-gray-50 p-2" placeholder=".slideshow { ... }" />
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
             case 'reusable_block':
                 return (
                     <div>

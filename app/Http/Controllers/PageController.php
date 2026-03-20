@@ -75,6 +75,9 @@ class PageController extends Controller
         }
 
         $page->update($validated);
+        
+        $schemaService = app(SchemaService::class);
+        $page->blocks = $schemaService->hydrateDynamicBlocks($page->blocks ?: []);
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Page saved successfully', 'page' => $page]);

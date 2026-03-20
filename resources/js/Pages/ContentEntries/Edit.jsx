@@ -1,12 +1,17 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Image as ImageIcon, Paperclip, X } from 'lucide-react';
 import { Link } from '@inertiajs/react';
+import { useState } from 'react';
+import MediaPickerModal from '@/Components/MediaPickerModal';
 
-export default function Edit({ contentType, entry, slug, availableRelationships }) {
+export function Edit({ contentType, entry, slug, availableRelationships }) {
+    const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
+    const [activePickerField, setActivePickerField] = useState(null);
+
     const initialState = {};
     contentType.fields.forEach(field => {
-        const name = field.name.toLowerCase().replace(/\s+/g, '_');
+        const name = field.attribute_name;
         initialState[name] = entry[name] || (field.type === 'boolean' ? false : '');
     });
 
@@ -17,8 +22,16 @@ export default function Edit({ contentType, entry, slug, availableRelationships 
         put(route('content-entries.update', { slug, id: entry.id }));
     };
 
+    const handleMediaSelect = (url) => {
+        if (activePickerField) {
+            setData(activePickerField, url);
+        }
+        setMediaPickerOpen(false);
+        setActivePickerField(null);
+    };
+
     const renderField = (field) => {
-        const name = field.name.toLowerCase().replace(/\s+/g, '_');
+        const name = field.attribute_name;
         
         switch (field.type) {
             case 'boolean':
@@ -44,6 +57,51 @@ export default function Edit({ contentType, entry, slug, availableRelationships 
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             rows={4}
                         />
+                    </div>
+                );
+            case 'image':
+            case 'file':
+                return (
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{field.name}</label>
+                        <div className="flex items-center gap-3">
+                            <div className="flex-1 relative">
+                                <input
+                                    type="text"
+                                    value={data[name]}
+                                    onChange={e => setData(name, e.target.value)}
+                                    placeholder="Select or enter URL..."
+                                    className="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm pl-10"
+                                />
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                                    {field.type === 'image' ? <ImageIcon className="w-4 h-4" /> : <Paperclip className="w-4 h-4" />}
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setActivePickerField(name);
+                                    setMediaPickerOpen(true);
+                                }}
+                                className="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors border border-gray-200"
+                            >
+                                Browse
+                            </button>
+                            {data[name] && (
+                                <button
+                                    type="button"
+                                    onClick={() => setData(name, '')}
+                                    className="p-2 text-gray-400 hover:text-red-500 bg-gray-50 rounded-lg border border-gray-200"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
+                            )}
+                        </div>
+                        {field.type === 'image' && data[name] && (
+                            <div className="mt-2 w-24 h-24 rounded-lg border border-gray-200 overflow-hidden bg-gray-50">
+                                <img src={data[name]} alt="Preview" className="w-full h-full object-cover" />
+                            </div>
+                        )}
                     </div>
                 );
             case 'date':
@@ -141,6 +199,14 @@ export default function Edit({ contentType, entry, slug, availableRelationships 
                     </form>
                 </div>
             </div>
+
+            <MediaPickerModal
+                isOpen={mediaPickerOpen}
+                onClose={() => setMediaPickerOpen(false)}
+                onSelect={handleMediaSelect}
+            />
         </AuthenticatedLayout>
     );
 }
+
+export default Edit;
