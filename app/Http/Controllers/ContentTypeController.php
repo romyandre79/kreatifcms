@@ -46,6 +46,7 @@ class ContentTypeController extends Controller
             'fields.*.name' => 'required|string|max:255',
             'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation,image,file',
             'fields.*.required' => 'boolean',
+            'fields.*.is_unique' => 'boolean',
             'fields.*.options' => 'nullable|array',
         ]);
 
@@ -61,6 +62,7 @@ class ContentTypeController extends Controller
                 'name' => $field['name'],
                 'type' => $field['type'],
                 'required' => $field['required'] ?? false,
+                'is_unique' => $field['is_unique'] ?? false,
                 'description' => $field['description'] ?? null,
                 'options' => $field['options'] ?? null,
             ]);
@@ -95,6 +97,7 @@ class ContentTypeController extends Controller
             'fields.*.name' => 'required|string|max:255',
             'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation,image,file',
             'fields.*.required' => 'boolean',
+            'fields.*.is_unique' => 'boolean',
             'fields.*.options' => 'nullable|array',
         ]);
 
@@ -110,6 +113,7 @@ class ContentTypeController extends Controller
                     'name' => $fieldData['name'],
                     'type' => $fieldData['type'],
                     'required' => $fieldData['required'] ?? false,
+                    'is_unique' => $fieldData['is_unique'] ?? false,
                     'options' => $fieldData['options'] ?? null,
                 ]);
             } else {
@@ -123,6 +127,7 @@ class ContentTypeController extends Controller
                     $field->update([
                         'type' => $canUpdateType ? $newType : $field->type,
                         'required' => $fieldData['required'] ?? false,
+                        'is_unique' => $fieldData['is_unique'] ?? false,
                         'description' => $fieldData['description'] ?? null,
                         'options' => $fieldData['options'] ?? null,
                     ]);

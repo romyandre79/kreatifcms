@@ -57,6 +57,10 @@ class SchemaService
             $column->nullable();
         }
 
+        if ($field->is_unique) {
+            $column->unique();
+        }
+
         return $column;
     }
 

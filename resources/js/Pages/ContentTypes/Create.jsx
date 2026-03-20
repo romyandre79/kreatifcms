@@ -111,7 +111,15 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
                             className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
                     </div>
-                    
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Uniq</span>
+                        <input
+                            type="checkbox"
+                            checked={field.is_unique || false}
+                            onChange={(e) => onUpdate(field.id, { is_unique: e.target.checked })}
+                            className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                    </div>
                     <button
                         type="button"
                         onClick={() => onRemove(field.id)}
@@ -150,7 +158,7 @@ export default function Create({ allContentTypes }) {
         description: '',
         type: 'collection',
         fields: [
-            { id: '1', name: 'title', type: 'text', required: true, options: {} }
+            { id: '1', name: 'title', type: 'text', required: true, is_unique: false, options: {} }
         ],
     });
 
@@ -176,7 +184,7 @@ export default function Create({ allContentTypes }) {
         const newId = (data.fields.length + 1).toString();
         setData('fields', [
             ...data.fields,
-            { id: newId, name: '', type: 'text', required: false, options: {} }
+            { id: newId, name: '', type: 'text', required: false, is_unique: false, options: {} }
         ]);
     };
 

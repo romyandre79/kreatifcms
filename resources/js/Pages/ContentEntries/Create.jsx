@@ -35,15 +35,18 @@ export default function Create({ contentType, slug, availableRelationships }) {
         switch (field.type) {
             case 'boolean':
                 return (
-                    <div className="flex items-center space-x-2">
-                        <input
-                            type="checkbox"
-                            id={name}
-                            checked={data[name]}
-                            onChange={e => setData(name, e.target.checked)}
-                            className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                        />
-                        <label htmlFor={name} className="text-sm text-gray-700">{field.name}</label>
+                    <div>
+                        <div className="flex items-center space-x-2">
+                            <input
+                                type="checkbox"
+                                id={name}
+                                checked={data[name]}
+                                onChange={e => setData(name, e.target.checked)}
+                                className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                            />
+                            <label htmlFor={name} className="text-sm text-gray-700">{field.name}</label>
+                        </div>
+                        {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );
             case 'longtext':
@@ -56,6 +59,7 @@ export default function Create({ contentType, slug, availableRelationships }) {
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                             rows={4}
                         />
+                        {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );
             case 'image':
@@ -101,6 +105,7 @@ export default function Create({ contentType, slug, availableRelationships }) {
                                 <img src={data[name]} alt="Preview" className="w-full h-full object-cover" />
                             </div>
                         )}
+                        {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );
             case 'date':
@@ -113,6 +118,7 @@ export default function Create({ contentType, slug, availableRelationships }) {
                             onChange={e => setData(name, e.target.value)}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
+                        {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );
             case 'relation':
@@ -129,6 +135,7 @@ export default function Create({ contentType, slug, availableRelationships }) {
                                 <option key={item.id} value={item.id}>{item.label}</option>
                             ))}
                         </select>
+                        {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );
             case 'integer':
@@ -141,6 +148,7 @@ export default function Create({ contentType, slug, availableRelationships }) {
                             onChange={e => setData(name, e.target.value)}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
+                        {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );
             default:
@@ -153,6 +161,7 @@ export default function Create({ contentType, slug, availableRelationships }) {
                             onChange={e => setData(name, e.target.value)}
                             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                         />
+                        {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );
         }

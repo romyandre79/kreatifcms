@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('content_fields', function (Blueprint $table) {
-            //
+            $table->boolean('is_unique')->default(false)->after('required');
         });
     }
 
@@ -22,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('content_fields', function (Blueprint $table) {
-            //
+            $table->dropColumn('is_unique');
         });
     }
 };
