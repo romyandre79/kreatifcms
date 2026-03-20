@@ -1,0 +1,37 @@
+{
+    "name": "Seo",
+    "alias": "seo",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Seo\\Providers\\SeoServiceProvider"
+    ],
+    "settings": [
+        {
+            "name": "google_analytics_id",
+            "label": "Google Analytics ID",
+            "type": "text",
+            "default": ""
+        },
+        {
+            "name": "meta_description",
+            "label": "Global Meta Description",
+            "type": "textarea",
+            "default": ""
+        },
+        {
+            "name": "site_name",
+            "label": "Site Name",
+            "type": "text",
+            "default": "Kreatif CMS"
+        },
+        {
+            "name": "title_separator",
+            "label": "Title Separator",
+            "type": "text",
+            "default": "|"
+        }
+    ],
+    "files": []
+}

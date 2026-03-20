@@ -33,10 +33,11 @@ const BLOCK_TYPES = [
     { id: 'text', name: 'Rich Text', icon: Type, desc: 'Standard text, paragraphs, headings' },
     { id: 'image', name: 'Single Image', icon: ImageIcon, desc: 'A full-width or contained image' },
     { id: 'feature_grid', name: 'Feature Grid', icon: Grid, desc: 'Grid of cards with icons/images' },
+    { id: 'content_list', name: 'Dynamic Content', icon: List, desc: 'Display a dynamic list of items from Content Types' },
     { id: 'reusable_block', name: 'Saved Block', icon: Layers, desc: 'Insert a pre-designed block from your library' }
 ];
 
-export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reusableBlocks = [] }) {
+export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reusableBlocks = [], contentTypes = [] }) {
     const generateId = () => Math.random().toString(36).substr(2, 9);
     
     // Ensure all blocks have an ID (for backward compatibility)
@@ -103,6 +104,15 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                 sticky: true, 
                 glass: true 
             };
+        } else if (type === 'content_list') {
+            newBlock.data = {
+                content_type: '',
+                limit: 3,
+                sort_by: 'created_at',
+                sort_dir: 'desc',
+                layout_style: 'grid',
+                mapping: { title: '', description: '', image: '', link_prefix: '/content/' }
+            };
         } else if (type === 'reusable_block') {
             newBlock.data = { block_id: '' };
         }
@@ -134,8 +144,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
             setBlocks((prevBlocks) => prevBlocks.map(block => {
                 if (block.id === blockId) {
                     const items = [...(block.data[field] || [])];
-                    const oldIndex = items.findIndex((item) => (item.id || item.label || item.title) === active.id);
-                    const newIndex = items.findIndex((item) => (item.id || item.label || item.title) === over.id);
+                    const getItemId = (item, idx) => item.id || `item-${idx}`;
+                    const oldIndex = items.findIndex((item, idx) => getItemId(item, idx) === active.id);
+                    const newIndex = items.findIndex((item, idx) => getItemId(item, idx) === over.id);
                     if (oldIndex !== -1 && newIndex !== -1) {
                         return {
                             ...block,
@@ -210,9 +221,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                             </div>
                             <div className="space-y-2">
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'links', e)}>
-                                    <SortableContext items={links.map((l, idx) => l.id || l.label || `link-${idx}`)} strategy={verticalListSortingStrategy}>
+                                    <SortableContext items={links.map((l, idx) => l.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
                                         {links.map((link, idx) => {
-                                            const linkId = link.id || link.label || `link-${idx}`;
+                                            const linkId = link.id || `item-${idx}`;
                                             return (
                                             <SortableNestedItem key={linkId} id={linkId}>
                                                 <div className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 group relative flex-1">
@@ -272,9 +283,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                             </div>
                             <div className="space-y-2">
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'buttons', e)}>
-                                    <SortableContext items={buttons.map((b, idx) => b.id || b.label || `btn-${idx}`)} strategy={verticalListSortingStrategy}>
+                                    <SortableContext items={buttons.map((b, idx) => b.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
                                         {buttons.map((btn, idx) => {
-                                            const btnId = btn.id || btn.label || `btn-${idx}`;
+                                            const btnId = btn.id || `item-${idx}`;
                                             return (
                                             <SortableNestedItem key={btnId} id={btnId}>
                                                 <div className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 group relative flex-1">
@@ -348,6 +359,81 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest">Blur</span>
                             </label>
                         </div>
+                    </div>
+                );
+            }
+            case 'content_list': {
+                const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedType ? selectedType.fields : [];
+                return (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Content Type</label>
+                                <select value={data.content_type || ''} onChange={e => updateBlockData(block.id, 'content_type', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                    <option value="">Select Content Type...</option>
+                                    {contentTypes.map(ct => <option key={ct.id} value={ct.slug}>{ct.name}</option>)}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Layout</label>
+                                <select value={data.layout_style || 'grid'} onChange={e => updateBlockData(block.id, 'layout_style', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                    <option value="grid">Grid View</option>
+                                    <option value="list">List View</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-3 gap-4">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Max Items</label>
+                                <input type="number" min="1" max="100" value={data.limit || 3} onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value))} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500" />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Sort By</label>
+                                <select value={data.sort_by || 'created_at'} onChange={e => updateBlockData(block.id, 'sort_by', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                    <option value="created_at">Creation Date</option>
+                                    <option value="updated_at">Last Updated</option>
+                                    <option value="id">ID</option>
+                                    <optgroup label="Custom Fields">
+                                        {fields.map(f => { const fn = f.name.toLowerCase().replace(/ /g, '_'); return <option key={'sort_'+f.id} value={fn}>{f.name}</option>; })}
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Direction</label>
+                                <select value={data.sort_dir || 'desc'} onChange={e => updateBlockData(block.id, 'sort_dir', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                    <option value="desc">Latest First</option>
+                                    <option value="asc">Oldest First</option>
+                                </select>
+                            </div>
+                        </div>
+                        {data.content_type && (
+                            <div className="p-3 bg-gray-50/50 rounded-xl border border-gray-100">
+                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Field Mapping</h4>
+                                <div className="space-y-3">
+                                    {['title', 'description', 'image'].map(slot => (
+                                        <div key={slot} className="flex items-center gap-3">
+                                            <label className="w-1/3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Card {slot}</label>
+                                            <select
+                                                value={data.mapping?.[slot] || ''}
+                                                onChange={e => { const mapping = { ...(data.mapping || {}), [slot]: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }}
+                                                className="flex-1 text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
+                                            >
+                                                <option value="">-- None --</option>
+                                                {(slot === 'image' ? fields : fields.filter(f => ['text','longtext','string'].includes(f.type))).map(f => {
+                                                    const fn = f.name.toLowerCase().replace(/ /g, '_');
+                                                    return <option key={`m_${slot}_${f.id}`} value={fn}>{f.name}</option>;
+                                                })}
+                                            </select>
+                                        </div>
+                                    ))}
+                                    <div className="flex items-center gap-3">
+                                        <label className="w-1/3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Link Prefix</label>
+                                        <input type="text" value={data.mapping?.link_prefix || '/content/'} onChange={e => { const mapping = { ...(data.mapping || {}), link_prefix: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500" placeholder="/content/slug/" />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 );
             }
@@ -516,9 +602,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                             </div>
                             <div className="space-y-2">
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'features', e)}>
-                                    <SortableContext items={features.map((f, idx) => f.id || f.title || `feature-${idx}`)} strategy={verticalListSortingStrategy}>
+                                    <SortableContext items={features.map((f, idx) => f.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
                                         {features.map((feature, idx) => {
-                                            const featureId = feature.id || feature.title || `feature-${idx}`;
+                                            const featureId = feature.id || `item-${idx}`;
                                             return (
                                             <SortableNestedItem key={featureId} id={featureId}>
                                                 <div className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 group relative flex-1">

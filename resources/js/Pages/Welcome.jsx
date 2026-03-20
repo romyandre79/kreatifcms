@@ -77,13 +77,13 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                     >
                                         <img
                                             src="https://laravel.com/assets/img/welcome/docs-light.svg"
-                                            alt="Laravel documentation screenshot"
+                                            alt="Kreatif documentation screenshot"
                                             className="aspect-video h-full w-full flex-1 rounded-[10px] object-cover object-top drop-shadow-[0px_4px_34px_rgba(0,0,0,0.06)] dark:hidden"
                                             onError={handleImageError}
                                         />
                                         <img
                                             src="https://laravel.com/assets/img/welcome/docs-dark.svg"
-                                            alt="Laravel documentation screenshot"
+                                            alt="Kreatif documentation screenshot"
                                             className="hidden aspect-video h-full w-full flex-1 rounded-[10px] object-cover object-top drop-shadow-[0px_4px_34px_rgba(0,0,0,0.25)] dark:block"
                                         />
                                         <div className="absolute -bottom-16 -left-16 h-40 w-[calc(100%+8rem)] bg-gradient-to-b from-transparent via-white to-white dark:via-zinc-900 dark:to-zinc-900"></div>
@@ -118,12 +118,12 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                                 </h2>
 
                                                 <p className="mt-4 text-sm/relaxed">
-                                                    Laravel has wonderful
+                                                    Kreatif has wonderful
                                                     documentation covering every
                                                     aspect of the framework.
                                                     Whether you are a newcomer
                                                     or have prior experience
-                                                    with Laravel, we recommend
+                                                    with Kreatif, we recommend
                                                     reading our documentation
                                                     from beginning to end.
                                                 </p>
@@ -170,7 +170,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
 
                                         <p className="mt-4 text-sm/relaxed">
                                             Laracasts offers thousands of video
-                                            tutorials on Laravel, PHP, and
+                                            tutorials on Kreatif, PHP, and
                                             JavaScript development. Check them
                                             out, see for yourself, and massively
                                             level up your development skills in
@@ -214,14 +214,14 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
 
                                     <div className="pt-3 sm:pt-5">
                                         <h2 className="text-xl font-semibold text-black dark:text-white">
-                                            Laravel News
+                                            Kreatif News
                                         </h2>
 
                                         <p className="mt-4 text-sm/relaxed">
-                                            Laravel News is a community driven
+                                            Kreatif News is a community driven
                                             portal and newsletter aggregating
                                             all of the latest and most important
-                                            news in the Laravel ecosystem,
+                                            news in the Kreatif ecosystem,
                                             including new package releases and
                                             tutorials.
                                         </p>
@@ -262,7 +262,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                                         </h2>
 
                                         <p className="mt-4 text-sm/relaxed">
-                                            Laravel's robust library of
+                                            Kreatif's robust library of
                                             first-party tools and libraries,
                                             such as{' '}
                                             <a
@@ -351,7 +351,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                         </main>
 
                         <footer className="py-16 text-center text-sm text-black dark:text-white/70">
-                            Laravel v{laravelVersion} (PHP v{phpVersion})
+                            Kreatif v{laravelVersion} (PHP v{phpVersion})
                         </footer>
                     </div>
                 </div>

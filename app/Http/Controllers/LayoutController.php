@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Setting;
+use App\Services\SchemaService;
+use Modules\ReusableBlock\Models\Block;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -10,13 +12,23 @@ class LayoutController extends Controller
 {
     public function index()
     {
+        $schemaService = app(SchemaService::class);
         $header = Setting::where('module', 'layout')->where('key', 'header')->first();
         $footer = Setting::where('module', 'layout')->where('key', 'footer')->first();
 
+        $headerBlocks = $header ? json_decode($header->value, true) : [];
+        $footerBlocks = $footer ? json_decode($footer->value, true) : [];
+
         return Inertia::render('Layout/Editor', [
-            'headerBlocks' => $header ? json_decode($header->value, true) : [],
-            'footerBlocks' => $footer ? json_decode($footer->value, true) : [],
-            'reusableBlocks' => \App\Models\Block::all()
+            'headerBlocks' => $schemaService->hydrateDynamicBlocks($headerBlocks),
+            'footerBlocks' => $schemaService->hydrateDynamicBlocks($footerBlocks),
+            'reusableBlocks' => Block::all()->map(function($rb) use ($schemaService) {
+                if (isset($rb->data) && is_array($rb->data)) {
+                    $rb->data = $schemaService->hydrateDynamicBlocks($rb->data);
+                }
+                return $rb;
+            }),
+            'contentTypes' => \App\Models\ContentType::with('fields')->get()
         ]);
     }
 

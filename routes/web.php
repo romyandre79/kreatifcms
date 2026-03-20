@@ -31,7 +31,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/media/upload', [App\Http\Controllers\MediaController::class, 'upload'])->name('media.upload');
     Route::resource('media', App\Http\Controllers\MediaController::class)->except(['create', 'edit', 'update']);
     Route::resource('pages', App\Http\Controllers\PageController::class);
-    Route::resource('blocks', App\Http\Controllers\BlockController::class);
     
     // Layout Editor
     Route::get('/layouts', [App\Http\Controllers\LayoutController::class, 'index'])->name('layouts.index');

@@ -10,7 +10,20 @@ export default function Page({ page, reusableBlocks, layout }) {
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
-            <Head title={page.title} />
+            <Head>
+                <title>{page.meta_title || page.title}{layout.seo?.site_name ? ` ${layout.seo.title_separator || '|'} ${layout.seo.site_name}` : ''}</title>
+                <meta name="description" content={page.meta_description || layout.seo?.default_meta_description || ''} />
+                <meta name="keywords" content={page.meta_keywords || ''} />
+                {page.og_image && <meta property="og:image" content={page.og_image} />}
+                {layout.seo?.google_analytics_id && (
+                    <>
+                        <script async src={`https://www.googletagmanager.com/gtag/js?id=${layout.seo.google_analytics_id}`}></script>
+                        <script dangerouslySetInnerHTML={{
+                            __html: `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '${layout.seo.google_analytics_id}');`
+                        }} />
+                    </>
+                )}
+            </Head>
 
             {/* Public Header Navbar */}
             {hasGlobalHeader ? (

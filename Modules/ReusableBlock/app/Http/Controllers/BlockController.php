@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Modules\ReusableBlock\Http\Controllers;
 
-use App\Models\Block;
+use Modules\ReusableBlock\Models\Block;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 

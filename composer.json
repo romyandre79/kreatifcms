@@ -30,6 +30,8 @@
             "App\\": "app/",
             "Modules\\ImageConverter\\": "Modules/ImageConverter/app/",
             "Modules\\Security\\": "Modules/Security/app/",
+            "Modules\\ReusableBlock\\": "Modules/ReusableBlock/app/",
+            "Modules\\Seo\\": "Modules/Seo/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

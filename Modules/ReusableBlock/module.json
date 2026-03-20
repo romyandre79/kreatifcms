@@ -1,0 +1,11 @@
+{
+    "name": "ReusableBlock",
+    "alias": "reusableblock",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ReusableBlock\\Providers\\ReusableBlockServiceProvider"
+    ],
+    "files": []
+}

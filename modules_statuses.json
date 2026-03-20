@@ -1,4 +1,6 @@
 {
     "ImageConverter": true,
-    "Security": true
+    "Security": true,
+    "ReusableBlock": true,
+    "Seo": true
 }
