@@ -1,7 +1,122 @@
+import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Link } from '@inertiajs/react';
+import { 
+    ArrowRight, 
+    CheckCircle2, 
+    ChevronRight, 
+    Menu, 
+    X, 
+    Globe, 
+    ChevronDown 
+} from 'lucide-react';
 
 // Block Components for Frontend Display
+
+const NavBarBlock = ({ data = {} }) => {
+    const [isOpen, setIsOpen] = useState(false);
+    const links = Array.isArray(data.links) ? data.links : [];
+    const buttons = data.buttons !== undefined 
+        ? (Array.isArray(data.buttons) ? data.buttons : [])
+        : [
+            { id: 'btn-1', label: 'Login', url: '/login', style: 'ghost' },
+            { id: 'btn-2', label: 'Get Started', url: '#', style: 'primary' }
+        ];
+
+    return (
+        <nav 
+            className={`w-full z-50 transition-all duration-300 ${data.sticky !== false ? 'sticky top-0' : 'relative'} ${data.glass !== false ? 'bg-white/80 backdrop-blur-md border-b border-white/20' : 'bg-white border-b border-gray-100'}`}
+        >
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div className="flex justify-between h-16 items-center">
+                    {/* Logo */}
+                    <div className="flex-shrink-0 flex items-center">
+                        {data.logo ? (
+                            <img src={data.logo} alt="Logo" className="h-8 w-auto" />
+                        ) : (
+                            <div className="flex items-center gap-2 font-bold text-gray-900 cursor-pointer" onClick={() => window.location.href = '/'}>
+                                <Globe className="w-6 h-6 text-indigo-600" />
+                                <span>KreatifCMS</span>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Desktop Menu */}
+                    <div className="hidden md:flex items-center space-x-8">
+                        {links.map((link, i) => (
+                            <div key={i} className="relative group">
+                                <a 
+                                    href={link.url} 
+                                    className="text-sm font-medium text-gray-600 hover:text-indigo-600 transition-colors flex items-center gap-1"
+                                >
+                                    {link.label}
+                                    {link.dropdown && <ChevronDown className="w-3 h-3" />}
+                                </a>
+                            </div>
+                        ))}
+                        {buttons.length > 0 && (
+                            <div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">
+                                {buttons.map((btn, i) => (
+                                    <a 
+                                        key={btn.id || i}
+                                        href={btn.url || '#'} 
+                                        className={btn.style === 'primary' 
+                                            ? "inline-flex items-center px-4 py-2 border border-transparent text-sm font-bold rounded-lg shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 hover:shadow-indigo-200 transition-all"
+                                            : "text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+                                        }
+                                    >
+                                        {btn.label}
+                                    </a>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Mobile menu button */}
+                    <div className="md:hidden flex items-center">
+                        <button
+                            onClick={() => setIsOpen(!isOpen)}
+                            className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none transition-colors"
+                        >
+                            {isOpen ? <X className="block h-6 w-6" /> : <Menu className="block h-6 w-6" />}
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {/* Mobile menu */}
+            <div className={`${isOpen ? 'block animate-in slide-in-from-top-2 duration-200' : 'hidden'} md:hidden bg-white border-t border-gray-100 overflow-hidden`}>
+                <div className="pt-2 pb-3 space-y-1 px-4">
+                    {links.map((link, i) => (
+                        <a
+                            key={i}
+                            href={link.url}
+                            className="block px-3 py-3 rounded-xl text-base font-semibold text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                        >
+                            {link.label}
+                        </a>
+                    ))}
+                    {buttons.length > 0 && (
+                        <div className="pt-4 pb-4 border-t border-gray-100 mt-2 space-y-2">
+                            {buttons.map((btn, i) => (
+                                <a 
+                                    key={btn.id || i}
+                                    href={btn.url || '#'} 
+                                    className={btn.style === 'primary'
+                                        ? "block px-4 py-3 rounded-xl text-center text-base font-bold text-white bg-indigo-600 shadow-lg shadow-indigo-100"
+                                        : "block px-3 py-3 rounded-xl text-base font-medium text-gray-600 hover:bg-gray-50 uppercase tracking-widest text-[10px]"
+                                    }
+                                >
+                                    {btn.label}
+                                </a>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </nav>
+    );
+};
 
 const HeroBlock = ({ data = {} }) => (
     <div className="relative overflow-hidden bg-gray-900 text-white min-h-[60vh] flex items-center justify-center">
@@ -29,13 +144,27 @@ const HeroBlock = ({ data = {} }) => (
     </div>
 );
 
-const TextBlock = ({ data = {} }) => (
-    <div className="max-w-4xl mx-auto px-4 py-16 md:py-24">
-        <div className={`prose prose-lg md:prose-xl max-w-none text-${data.align || 'left'} prose-indigo prose-headings:font-bold prose-headings:tracking-tight prose-a:text-indigo-600 hover:prose-a:text-indigo-500`}>
-            <ReactMarkdown>{data.content || ''}</ReactMarkdown>
+const TextBlock = ({ data = {} }) => {
+    const style = {
+        backgroundColor: data.backgroundColor || 'transparent',
+        color: data.textColor || 'inherit',
+        paddingTop: data.paddingY ? `${data.paddingY}px` : '4rem',
+        paddingBottom: data.paddingY ? `${data.paddingY}px` : '4rem',
+        borderRadius: data.borderRadius ? `${data.borderRadius}px` : '0px',
+    };
+
+    return (
+        <div style={style} className="w-full">
+            <div className="max-w-4xl mx-auto px-4">
+                <div className={`prose prose-lg md:prose-xl max-w-none text-${data.align || 'left'} ${!data.textColor ? 'prose-indigo' : ''} prose-headings:font-bold prose-headings:tracking-tight prose-a:text-indigo-600 hover:prose-a:text-indigo-500`}
+                    style={{ color: data.textColor || 'inherit' }}
+                >
+                    <ReactMarkdown>{data.content || ''}</ReactMarkdown>
+                </div>
+            </div>
         </div>
-    </div>
-);
+    );
+};
 
 const ImageBlock = ({ data = {} }) => (
     <div className="max-w-6xl mx-auto px-4 py-12">
@@ -86,6 +215,7 @@ const FeatureGridBlock = ({ data = {} }) => {
 
 // Component Mapper
 const BlockComponents = {
+    navbar: NavBarBlock,
     hero: HeroBlock,
     text: TextBlock,
     image: ImageBlock,

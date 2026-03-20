@@ -32,6 +32,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::resource('media', App\Http\Controllers\MediaController::class)->except(['create', 'edit', 'update']);
     Route::resource('pages', App\Http\Controllers\PageController::class);
     Route::resource('blocks', App\Http\Controllers\BlockController::class);
+    
+    // Layout Editor
+    Route::get('/layouts', [App\Http\Controllers\LayoutController::class, 'index'])->name('layouts.index');
+    Route::post('/layouts', [App\Http\Controllers\LayoutController::class, 'update'])->name('layouts.update');
 
     // CMS Content Entry Routes
     Route::get('/builder/content-data', [App\Http\Controllers\ContentEntryController::class, 'dataManager'])->name('content-types.data.index');

@@ -12,10 +12,11 @@ class PageRendererController extends Controller
     public function show($slug)
     {
         $page = Page::where('slug', $slug)->where('is_published', true)->firstOrFail();
-
+        
         return Inertia::render('Frontend/Page', [
             'page' => $page,
-            'reusableBlocks' => \App\Models\Block::all()
+            'reusableBlocks' => \App\Models\Block::all(),
+            'layout' => $this->getGlobalLayout()
         ]);
     }
 
@@ -26,16 +27,27 @@ class PageRendererController extends Controller
         if ($page) {
             return Inertia::render('Frontend/Page', [
                 'page' => $page,
-                'reusableBlocks' => \App\Models\Block::all()
+                'reusableBlocks' => \App\Models\Block::all(),
+                'layout' => $this->getGlobalLayout()
             ]);
         }
 
-        // Fallback to default Laravel/React Welcome page if no dynamic 'welcome' page is published
         return Inertia::render('Welcome', [
             'canLogin' => \Illuminate\Support\Facades\Route::has('login'),
             'canRegister' => \Illuminate\Support\Facades\Route::has('register'),
             'laravelVersion' => \Illuminate\Foundation\Application::VERSION,
             'phpVersion' => PHP_VERSION,
         ]);
+    }
+
+    private function getGlobalLayout()
+    {
+        $header = \App\Models\Setting::where('module', 'layout')->where('key', 'header')->first();
+        $footer = \App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first();
+
+        return [
+            'header' => $header ? json_decode($header->value, true) : [],
+            'footer' => $footer ? json_decode($footer->value, true) : [],
+        ];
     }
 }
