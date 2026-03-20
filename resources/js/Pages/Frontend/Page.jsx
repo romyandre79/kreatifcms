@@ -1,97 +1,48 @@
-import { Head, Link, usePage } from '@inertiajs/react';
+import { Head } from '@inertiajs/react';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
-import { LogIn, LayoutDashboard } from 'lucide-react';
 
-export default function Page({ page, reusableBlocks, layout }) {
-    const { auth } = usePage().props;
+export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
+    const title = page?.title || page?.meta_title || 'Page';
+    const metaDesc = page?.meta_description || layout?.seo?.default_meta_description || '';
+    const siteName = layout?.seo?.site_name || 'Kreatif CMS';
+    const separator = layout?.seo?.title_separator || ' | ';
 
-    const hasGlobalHeader = layout?.header && layout.header.length > 0;
-    const hasGlobalFooter = layout?.footer && layout.footer.length > 0;
+    const headerBlocks = Array.isArray(layout?.header) ? layout.header : [];
+    const footerBlocks = Array.isArray(layout?.footer) ? layout.footer : [];
+    const pageBlocks = Array.isArray(page?.blocks) ? page.blocks : [];
+    const safeReusableBlocks = Array.isArray(reusableBlocks) ? reusableBlocks : [];
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+        <>
             <Head>
-                <title>{page.meta_title || page.title}{layout.seo?.site_name ? ` ${layout.seo.title_separator || '|'} ${layout.seo.site_name}` : ''}</title>
-                <meta name="description" content={page.meta_description || layout.seo?.default_meta_description || ''} />
-                <meta name="keywords" content={page.meta_keywords || ''} />
-                {page.og_image && <meta property="og:image" content={page.og_image} />}
-                {layout.seo?.google_analytics_id && (
-                    <>
-                        <script async src={`https://www.googletagmanager.com/gtag/js?id=${layout.seo.google_analytics_id}`}></script>
-                        <script dangerouslySetInnerHTML={{
-                            __html: `window.dataLayer = window.dataLayer || []; function gtag(){dataLayer.push(arguments);} gtag('js', new Date()); gtag('config', '${layout.seo.google_analytics_id}');`
-                        }} />
-                    </>
-                )}
+                <title>{`${title}${separator}${siteName}`}</title>
+                {metaDesc && <meta name="description" content={metaDesc} />}
+                {page?.meta_keywords && <meta name="keywords" content={page.meta_keywords} />}
+                {page?.og_image && <meta property="og:image" content={page.og_image} />}
+                <meta property="og:title" content={`${title}${separator}${siteName}`} />
+                <meta property="og:type" content="website" />
             </Head>
 
-            {/* Public Header Navbar */}
-            {hasGlobalHeader ? (
-                <div className="sticky top-0 z-50">
-                    <DynamicPageRenderer blocks={layout.header} reusableBlocks={reusableBlocks} />
-                </div>
-            ) : (
-                <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 sticky top-0 z-50">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                        <div className="flex justify-between items-center h-16">
-                            <div className="flex-shrink-0 flex items-center gap-3 relative z-10">
-                                <Link href="/" className="flex items-center gap-3" aria-label="Home">
-                                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                                        <span className="text-white font-bold text-xl tracking-tighter">D</span>
-                                    </div>
-                                    <span className="font-bold text-xl tracking-tight text-gray-900 hidden sm:block">Kreatif Internal</span>
-                                </Link>
-                            </div>
-
-                            <nav className="flex items-center gap-4 relative z-10">
-                                {auth && auth.user ? (
-                                    <Link
-                                        href={route('dashboard')}
-                                        className="inline-flex items-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 px-4 py-2 rounded-lg text-sm font-semibold transition-all group"
-                                    >
-                                        <LayoutDashboard className="w-4 h-4 group-hover:scale-110 transition-transform" />
-                                        <span>Dashboard</span>
-                                    </Link>
-                                ) : (
-                                    <Link
-                                        href={route('login')}
-                                        className="inline-flex items-center gap-2 bg-gray-900 text-white hover:bg-black px-5 py-2.5 rounded-lg text-sm font-semibold shadow-md shadow-gray-900/10 hover:shadow-lg hover:-translate-y-0.5 transition-all group"
-                                    >
-                                        <LogIn className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                                        Log in to Portal
-                                    </Link>
-                                )}
-                            </nav>
-                        </div>
-                    </div>
+            {/* Header */}
+            {headerBlocks.length > 0 && (
+                <header>
+                    <DynamicPageRenderer blocks={headerBlocks} reusableBlocks={safeReusableBlocks} />
                 </header>
             )}
 
-            {/* Dynamic Content */}
-            <main className="flex-grow">
-                <DynamicPageRenderer blocks={page.blocks} reusableBlocks={reusableBlocks} />
+            {/* Main Content */}
+            <main className="min-h-screen">
+                <DynamicPageRenderer blocks={pageBlocks} reusableBlocks={safeReusableBlocks} />
             </main>
 
-            {/* Public Footer */}
-            {hasGlobalFooter ? (
-                <DynamicPageRenderer blocks={layout.footer} reusableBlocks={reusableBlocks} />
-            ) : (
-                <footer className="bg-white border-t border-gray-100 py-12 mt-12">
-                    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-                        <div className="flex items-center justify-center gap-3 mb-6">
-                            <Link href="/" className="flex items-center gap-3" aria-label="Home">
-                                <div className="w-8 h-8 rounded-lg bg-gray-900 flex items-center justify-center">
-                                    <span className="text-white font-bold text-sm tracking-tighter">D</span>
-                                </div>
-                                <span className="font-bold text-lg tracking-tight text-gray-900">Kreatif Internal</span>
-                            </Link>
-                        </div>
-                        <p className="text-gray-500 text-sm">
-                            &copy; {new Date().getFullYear()} Kreatif. All rights reserved.
-                        </p>
+            {/* Footer */}
+            {footerBlocks.length > 0 && (
+                <footer className="bg-gray-900 text-gray-300 py-12">
+                    <div className="max-w-7xl mx-auto px-4">
+                        <DynamicPageRenderer blocks={footerBlocks} reusableBlocks={safeReusableBlocks} />
                     </div>
                 </footer>
             )}
-        </div>
+        </>
     );
 }

@@ -227,14 +227,14 @@ const SlideshowBlock = ({ data = {} }) => {
     const [isPaused, setIsPaused] = useState(false);
 
     useEffect(() => {
-        if (!config.autoPlay || isPaused || items.length <= 1) return;
+        if (!config || !config.autoPlay || isPaused || !items || items.length <= 1) return;
         
         const timer = setInterval(() => {
             setCurrentIndex((prev) => (prev + 1) % items.length);
         }, config.interval || 5000);
 
         return () => clearInterval(timer);
-    }, [items.length, config.autoPlay, config.interval, isPaused, currentIndex]);
+    }, [items?.length, config?.autoPlay, config?.interval, isPaused]);
 
     if (items.length === 0) {
         return (
@@ -250,14 +250,16 @@ const SlideshowBlock = ({ data = {} }) => {
 
     // Support dynamic mapping if it's a dynamic source
     const getSlideData = (item) => {
+        if (!item) return { image: '', title: '', link: '#' };
+        
         if (data.source === 'dynamic' && data.mapping) {
             return {
-                image: item[data.mapping.image] || '',
-                title: item[data.mapping.title] || '',
-                link: item[data.mapping.link] || '#'
+                image: (data.mapping.image && item[data.mapping.image]) ? item[data.mapping.image] : '',
+                title: (data.mapping.title && item[data.mapping.title]) ? item[data.mapping.title] : '',
+                link: (data.mapping.link && item[data.mapping.link]) ? item[data.mapping.link] : '#'
             };
         }
-        return item;
+        return item || { image: '', title: '', link: '#' };
     };
 
     return (
@@ -439,36 +441,45 @@ const BlockComponents = {
     content_list: ContentListBlock
 };
 
-export default function DynamicPageRenderer({ blocks, reusableBlocks = [] }) {
-    if (!blocks || blocks.length === 0) {
+export default function DynamicPageRenderer({ blocks = [], reusableBlocks = [] }) {
+    if (!blocks || (Array.isArray(blocks) && blocks.length === 0)) {
         return (
-            <div className="min-h-[50vh] flex items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 m-8">
-                <p className="text-lg font-medium">This page currently has no content.</p>
+            <div className="min-h-[20vh] flex items-center justify-center text-gray-500 bg-gray-50 rounded-2xl border-2 border-dashed border-gray-200 m-8">
+                <p className="text-sm font-medium">Empty section.</p>
             </div>
         );
     }
 
     return (
         <div className="dynamic-page-content font-sans antialiased text-gray-900 bg-white">
-            {blocks.map((block) => {
+            {(Array.isArray(blocks) ? blocks : []).map((block) => {
+                if (!block) return null;
                 let actualType = block.type;
-                let actualData = block.data;
+                let actualData = block.data || {};
 
                 if (block.type === 'reusable_block') {
-                    const savedBlock = reusableBlocks.find(b => b.id == block.data?.block_id);
+                    const savedBlock = (reusableBlocks || []).find(b => b.id == block.data?.block_id);
                     if (savedBlock) {
                         actualType = savedBlock.type;
-                        actualData = savedBlock.data;
+                        actualData = savedBlock.data || {};
                     } else {
-                        return <div key={block.id} className="p-4 text-gray-500 bg-gray-50 border border-gray-200 m-4 rounded">Select a reusable block.</div>;
+                        return null; // Don't show anything for missing reusable blocks in public view
                     }
                 }
 
+                if (actualType === 'reusable_block') return null;
+
                 const Component = BlockComponents[actualType];
                 if (!Component) {
-                    return <div key={block.id} className="p-4 text-red-500 bg-red-50 border border-red-200 m-4 rounded">Unknown block type: {actualType}</div>;
+                    return <div key={block.id} className="p-4 text-red-500 bg-red-50 border border-red-200 m-4 rounded text-xs">Unknown: {actualType}</div>;
                 }
-                return <Component key={block.id} data={actualData} />;
+
+                try {
+                    return <Component key={block.id} data={actualData} />;
+                } catch (err) {
+                    console.error('Error rendering block:', actualType, err);
+                    return <div key={block.id} className="p-4 text-orange-500 bg-orange-50 border border-orange-200 m-4 rounded text-xs">Error: {actualType}</div>;
+                }
             })}
         </div>
     );
