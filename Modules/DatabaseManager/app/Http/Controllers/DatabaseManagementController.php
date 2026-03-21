@@ -69,8 +69,6 @@ class DatabaseManagementController extends Controller
     public function reset()
     {
         try {
-            DB::beginTransaction();
-
             // 1. Drop all dynamic tables
             $contentTypes = ContentType::all();
             foreach ($contentTypes as $ct) {
@@ -83,10 +81,8 @@ class DatabaseManagementController extends Controller
             AuditLog::truncate();
             DashboardWidget::truncate();
 
-            DB::commit();
             return back()->with('success', 'Database has been factory reset successfully.');
         } catch (\Exception $e) {
-            DB::rollBack();
             return back()->with('error', 'Reset failed: ' . $e->getMessage());
         }
     }
@@ -223,8 +219,6 @@ class DatabaseManagementController extends Controller
         $data = json_decode(File::get($path . '/cms_data.json'), true);
         $logs = json_decode(File::get($path . '/audit_logs.json'), true);
 
-        DB::beginTransaction();
-
         // 1. Clear current state (Reset)
         $this->reset();
 
@@ -268,7 +262,5 @@ class DatabaseManagementController extends Controller
         foreach ($logs as $logData) {
             AuditLog::create($logData);
         }
-
-        DB::commit();
     }
 }

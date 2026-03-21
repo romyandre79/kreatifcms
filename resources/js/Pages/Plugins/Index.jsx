@@ -12,7 +12,11 @@ export default function Index({ plugins }) {
 
     const togglePlugin = (plugin) => {
         const action = plugin.enabled ? 'disable' : 'enable';
-        router.post(route(`plugins.${action}`, plugin.name));
+        router.post(route(`plugins.${action}`, plugin.name), {}, {
+            onSuccess: () => {
+                window.location.reload();
+            }
+        });
     };
 
     const handleOpenSettings = (plugin) => {

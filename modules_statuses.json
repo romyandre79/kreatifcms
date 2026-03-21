@@ -10,5 +10,5 @@
     "ImageBlock": true,
     "FeatureGrid": true,
     "ContentList": true,
-    "DatabaseManager": false
+    "DatabaseManager": true
 }
