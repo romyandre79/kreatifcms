@@ -87,7 +87,7 @@ class DatabaseManagementController extends Controller
         }
     }
 
-    protected function createDbBackup($path, ZipArchive $zip)
+    protected function createDbBackup($path, ZipArchive $zip, $zipPrefix = '')
     {
         // 1. Export Content Types and Fields
         $data = [
@@ -96,7 +96,7 @@ class DatabaseManagementController extends Controller
         ];
 
         File::put($path . '/cms_structure.json', json_encode($data, JSON_PRETTY_PRINT));
-        $zip->addFile($path . '/cms_structure.json', 'cms_structure.json');
+        $zip->addFile($path . '/cms_structure.json', $zipPrefix . 'cms_structure.json');
 
         // 2. Export Dynamic Table Data
         $dynamicData = [];
@@ -108,12 +108,12 @@ class DatabaseManagementController extends Controller
         }
 
         File::put($path . '/cms_data.json', json_encode($dynamicData, JSON_PRETTY_PRINT));
-        $zip->addFile($path . '/cms_data.json', 'cms_data.json');
+        $zip->addFile($path . '/cms_data.json', $zipPrefix . 'cms_data.json');
 
         // 3. Export Audit Logs
         $logs = AuditLog::all()->toArray();
         File::put($path . '/audit_logs.json', json_encode($logs, JSON_PRETTY_PRINT));
-        $zip->addFile($path . '/audit_logs.json', 'audit_logs.json');
+        $zip->addFile($path . '/audit_logs.json', $zipPrefix . 'audit_logs.json');
     }
 
     protected function createFullBackup(ZipArchive $zip)
@@ -129,39 +129,38 @@ class DatabaseManagementController extends Controller
             if (!$file->isDir()) {
                 $filePath = $file->getRealPath();
                 $relativePath = substr($filePath, strlen($rootPath) + 1);
+                
+                // NORMALIZE: Windows paths use backslashes, making Str::startsWith fail against 'storage/logs'
+                $normalizedPath = str_replace('\\', '/', $relativePath);
 
-                // Exclude heavy/sensitive folders
-                if (Str::startsWith($relativePath, [
+                // Exclude heavy/sensitive/locked folders
+                if (Str::startsWith($normalizedPath, [
                     'vendor', 
                     'node_modules', 
                     'storage/logs', 
                     'storage/framework/cache', 
                     'storage/framework/sessions', 
                     'storage/framework/views',
-                    '.git'
+                    '.git',
+                    'database/database.sqlite'
                 ])) {
                     continue;
                 }
 
                 // Exclude the backup file itself if it's being created in a watched path
-                if (Str::contains($relativePath, '.zip')) continue;
+                if (Str::contains($normalizedPath, '.zip')) continue;
 
-                $zip->addFile($filePath, 'project/' . $relativePath);
+                $zip->addFile($filePath, 'project/' . $normalizedPath);
             }
         }
 
-        // Also include a DB dump within the full backup? 
-        // For simplicity, we'll just add the JSON ones we did above but into a 'db' folder
+        // Also include a DB dump within the full backup
         $tempPath = storage_path('app/temp_db_dump');
-        if (!File::exists($tempPath)) File::makeDirectory($tempPath);
+        if (!File::exists($tempPath)) {
+            File::makeDirectory($tempPath);
+        }
         
-        $this->createDbBackup($tempPath, $zip);
-        // Map them to 'db/' inside the zip instead of root
-        $zip->addFile($tempPath . '/cms_structure.json', 'db/cms_structure.json');
-        $zip->addFile($tempPath . '/cms_data.json', 'db/cms_data.json');
-        $zip->addFile($tempPath . '/audit_logs.json', 'db/audit_logs.json');
-        
-        // Note: ZipArchive::addFile uses the second param as the path INSIDE the zip
+        $this->createDbBackup($tempPath, $zip, 'db/');
     }
 
     /**
