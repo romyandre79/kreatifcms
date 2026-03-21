@@ -339,8 +339,58 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                                                             updateBlockData(block.id, 'buttons', newButtons);
                                                         }}
                                                         placeholder="URL (e.g. /login or #)"
-                                                        className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 text-gray-400 p-0"
+                                                        className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 text-gray-400 p-0 mb-2"
                                                     />
+
+                                                    {/* Advanced Button Properties */}
+                                                    <div className="mt-2 pt-2 border-t border-gray-200/50 space-y-3">
+                                                        <div>
+                                                            <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Visibility</label>
+                                                            <select
+                                                                value={btn.visibility || 'always'}
+                                                                onChange={(e) => {
+                                                                    const newButtons = [...buttons];
+                                                                    newButtons[idx] = { ...newButtons[idx], visibility: e.target.value };
+                                                                    updateBlockData(block.id, 'buttons', newButtons);
+                                                                }}
+                                                                className="w-full text-[10px] py-1 border-gray-200 rounded focus:ring-indigo-500"
+                                                            >
+                                                                <option value="always">Always Visible</option>
+                                                                <option value="guest">Guest Only (Not Logged In)</option>
+                                                                <option value="auth">Authenticated Only</option>
+                                                            </select>
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 mt-2">Custom CSS</label>
+                                                            <textarea
+                                                                value={btn.custom_css || ''}
+                                                                onChange={(e) => {
+                                                                    const newButtons = [...buttons];
+                                                                    newButtons[idx] = { ...newButtons[idx], custom_css: e.target.value };
+                                                                    updateBlockData(block.id, 'buttons', newButtons);
+                                                                }}
+                                                                placeholder="e.g. background-color: #ff0000; border-radius: 20px;"
+                                                                rows="2"
+                                                                className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500"
+                                                            />
+                                                        </div>
+
+                                                        <div>
+                                                            <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 mt-2">Custom JS (onClick)</label>
+                                                            <textarea
+                                                                value={btn.events?.onClick || ''}
+                                                                onChange={(e) => {
+                                                                    const newButtons = [...buttons];
+                                                                    newButtons[idx] = { ...newButtons[idx], events: { ...(newButtons[idx].events || {}), onClick: e.target.value } };
+                                                                    updateBlockData(block.id, 'buttons', newButtons);
+                                                                }}
+                                                                placeholder="e.g. router.post('/logout')"
+                                                                rows="2"
+                                                                className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500"
+                                                            />
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </SortableNestedItem>
                                             );

@@ -6,7 +6,11 @@ use Illuminate\Database\Eloquent\Model;
 
 class ContentType extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'icon', 'type'];
+    protected $fillable = ['name', 'slug', 'description', 'icon', 'type', 'events'];
+
+    protected $casts = [
+        'events' => 'array',
+    ];
 
     public function fields()
     {

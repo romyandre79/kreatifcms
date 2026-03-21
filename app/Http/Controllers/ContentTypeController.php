@@ -42,6 +42,11 @@ class ContentTypeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'events' => 'nullable|array',
+            'events.onSelect' => 'nullable|string',
+            'events.onInsert' => 'nullable|string',
+            'events.onUpdate' => 'nullable|string',
+            'events.onDelete' => 'nullable|string',
             'fields' => 'required|array|min:1',
             'fields.*.name' => 'required|string|max:255',
             'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation,image,file',
@@ -55,6 +60,7 @@ class ContentTypeController extends Controller
             'slug' => Str::slug($validated['name']),
             'description' => $validated['description'] ?? null,
             'type' => $request->input('type', 'collection'),
+            'events' => $validated['events'] ?? null,
         ]);
 
         foreach ($validated['fields'] as $field) {
@@ -91,6 +97,11 @@ class ContentTypeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'events' => 'nullable|array',
+            'events.onSelect' => 'nullable|string',
+            'events.onInsert' => 'nullable|string',
+            'events.onUpdate' => 'nullable|string',
+            'events.onDelete' => 'nullable|string',
             'fields' => 'required|array|min:1',
             'fields.*.id' => 'nullable', // Use this to distinguish existing vs new
             'fields.*.isNew' => 'nullable|boolean',
@@ -105,6 +116,7 @@ class ContentTypeController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'type' => $request->input('type', $contentType->type),
+            'events' => $validated['events'] ?? null,
         ]);
 
         foreach ($validated['fields'] as $fieldData) {

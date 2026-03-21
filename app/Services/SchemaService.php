@@ -153,6 +153,15 @@ class SchemaService
                                     ->orderBy($sortBy, $sortDir)
                                     ->limit($limit)
                                     ->get();
+
+                                // Process onSelect hook if available
+                                $contentTypeDoc = ContentType::where('slug', $ctSlug)->first();
+                                if ($contentTypeDoc && !empty($contentTypeDoc->events['onSelect'])) {
+                                    foreach ($items as $item) {
+                                        $context = ['entry' => $item];
+                                        $this->executePhpHook($contentTypeDoc->events['onSelect'], $context);
+                                    }
+                                }
                                     
                                 \Illuminate\Support\Facades\Log::info("Hydrated {$block['type']} from {$ctSlug}: " . $items->count() . " items");
                                 $block['data']['items'] = $items;
@@ -171,5 +180,25 @@ class SchemaService
             }
         }
         return $blocks;
+    }
+
+    /**
+     * Safely execute a PHP hook for a content type.
+     */
+    private function executePhpHook(?string $code, array &$context)
+    {
+        if (empty(trim($code))) return;
+
+        try {
+            $executor = function(&$context, $code) {
+                extract($context, EXTR_REFS);
+                eval($code);
+            };
+            $executor($context, $code);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("PHP Hook Error (SchemaService): " . $e->getMessage(), [
+                'exception' => $e
+            ]);
+        }
     }
 }

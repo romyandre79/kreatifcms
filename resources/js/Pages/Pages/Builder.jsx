@@ -368,8 +368,57 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                             updateBlockData(block.id, 'buttons', newButtons);
                                                         }}
                                                         placeholder="URL"
-                                                        className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                                        className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 mb-2"
                                                     />
+                                                    <div>
+                                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Visibility</label>
+                                                        <select
+                                                            value={btn.visibility || 'always'}
+                                                            onChange={(e) => {
+                                                                const newButtons = [...buttons];
+                                                                newButtons[idx] = { ...newButtons[idx], visibility: e.target.value };
+                                                                updateBlockData(block.id, 'buttons', newButtons);
+                                                            }}
+                                                            className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 mb-2"
+                                                        >
+                                                            <option value="always">Always</option>
+                                                            <option value="guest">Guest Only</option>
+                                                            <option value="auth">Logged In</option>
+                                                        </select>
+                                                    </div>
+                                                    <div className="mb-2">
+                                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 mt-2">Custom CSS</label>
+                                                        <textarea
+                                                            value={btn.custom_css || ''}
+                                                            onChange={(e) => {
+                                                                const newButtons = [...buttons];
+                                                                newButtons[idx] = { ...newButtons[idx], custom_css: e.target.value };
+                                                                updateBlockData(block.id, 'buttons', newButtons);
+                                                            }}
+                                                            placeholder="e.g. background-color: #ff0000; border-radius: 20px;"
+                                                            rows="2"
+                                                            className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500"
+                                                        />
+                                                    </div>
+                                                    <div className="mt-2 pt-2 border-t border-dashed border-gray-100">
+                                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Events</label>
+                                                        <div className="space-y-2">
+                                                            <div>
+                                                                <label className="block text-[9px] text-gray-400 mb-0.5">onClick</label>
+                                                                <textarea
+                                                                    value={btn.events?.onClick || ''}
+                                                                    onChange={(e) => {
+                                                                        const newButtons = [...buttons];
+                                                                        newButtons[idx] = { ...newButtons[idx], events: { ...(newButtons[idx].events || {}), onClick: e.target.value } };
+                                                                        updateBlockData(block.id, 'buttons', newButtons);
+                                                                    }}
+                                                                    placeholder="e.g. router.post('/logout')"
+                                                                    rows="2"
+                                                                    className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </SortableNestedItem>
                                             );
@@ -1178,6 +1227,49 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-5">
                                     {renderBlockConfig(activeBlock)}
+
+                                    {/* Universal Custom CSS & Events for all block types */}
+                                    <div className="mt-6 pt-4 border-t border-gray-100">
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
+                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                            Advanced
+                                        </h4>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Custom CSS</label>
+                                                <textarea
+                                                    value={activeBlock.data?.customCss || ''}
+                                                    onChange={e => updateBlockData(activeBlock.id, 'customCss', e.target.value)}
+                                                    placeholder={`.block-${activeBlock.id} {\n  /* your styles here */\n}`}
+                                                    rows="4"
+                                                    className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
+                                                />
+                                                <p className="text-[10px] text-gray-400 mt-1">Use <code className="bg-gray-100 px-1 rounded">.block-{activeBlock.id}</code> as selector.</p>
+                                            </div>
+
+                                            <div className="pt-3 border-t border-dashed border-gray-100">
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Event Handlers</label>
+                                                <p className="text-[9px] text-gray-400 mb-3">JavaScript for each event. Available: <code className="bg-gray-100 px-1 rounded">blockEl</code>, <code className="bg-gray-100 px-1 rounded">blockId</code>, <code className="bg-gray-100 px-1 rounded">event</code></p>
+                                                <div className="space-y-3">
+                                                    {['onLoad', 'onClick', 'onMouseEnter', 'onMouseLeave'].map(evtName => (
+                                                        <div key={evtName}>
+                                                            <label className="block text-[9px] font-mono text-indigo-500 mb-0.5">{evtName}</label>
+                                                            <textarea
+                                                                value={activeBlock.data?.events?.[evtName] || ''}
+                                                                onChange={e => {
+                                                                    const events = { ...(activeBlock.data?.events || {}), [evtName]: e.target.value };
+                                                                    updateBlockData(activeBlock.id, 'events', events);
+                                                                }}
+                                                                placeholder={evtName === 'onLoad' ? `console.log('Block loaded', blockId);` : evtName === 'onClick' ? `console.log('Clicked', event.target);` : ''}
+                                                                rows="2"
+                                                                className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div className="p-4 border-t border-gray-100 bg-gray-50/50">
                                     <button

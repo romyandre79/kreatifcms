@@ -41,6 +41,13 @@ class ContentEntryController extends Controller
 
         $entries = DB::connection($this->connection)->table($tableName)->get();
 
+        if (!empty($contentType->events['onSelect'])) {
+            foreach ($entries as $entry) {
+                $context = ['entry' => $entry];
+                $this->executePhpHook($contentType->events['onSelect'], $context);
+            }
+        }
+
         if (request()->routeIs('api.*')) {
             return response()->json($entries);
         }
@@ -89,6 +96,11 @@ class ContentEntryController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['created_at'] = now();
         $validated['updated_at'] = now();
+
+        if (!empty($contentType->events['onInsert'])) {
+            $context = ['data' => &$validated];
+            $this->executePhpHook($contentType->events['onInsert'], $context);
+        }
 
         $id = DB::connection($this->connection)->table($tableName)->insertGetId($validated);
 
@@ -139,6 +151,11 @@ class ContentEntryController extends Controller
             return response()->json(['message' => 'Entry not found'], 404);
         }
 
+        if (!empty($contentType->events['onSelect'])) {
+            $context = ['entry' => $entry];
+            $this->executePhpHook($contentType->events['onSelect'], $context);
+        }
+
         return response()->json($entry);
     }
 
@@ -168,6 +185,14 @@ class ContentEntryController extends Controller
         
         $validated['user_id'] = Auth::id();
         $validated['updated_at'] = now();
+
+        if (!empty($contentType->events['onUpdate'])) {
+            $context = [
+                'data' => &$validated,
+                'entry' => $oldEntry
+            ];
+            $this->executePhpHook($contentType->events['onUpdate'], $context);
+        }
 
         DB::connection($this->connection)
             ->table($tableName)
@@ -228,6 +253,11 @@ class ContentEntryController extends Controller
         }
 
         $oldEntry = DB::connection($this->connection)->table($tableName)->where('id', $id)->first();
+
+        if (!empty($contentType->events['onDelete'])) {
+            $context = ['entry' => $oldEntry];
+            $this->executePhpHook($contentType->events['onDelete'], $context);
+        }
 
         DB::connection($this->connection)
             ->table($tableName)
@@ -293,5 +323,25 @@ class ContentEntryController extends Controller
             ->get();
 
         return response()->json($logs);
+    }
+
+    /**
+     * Safely execute a PHP hook for a content type.
+     */
+    private function executePhpHook(?string $code, array &$context)
+    {
+        if (empty(trim($code))) return;
+
+        try {
+            $executor = function(&$context, $code) {
+                extract($context, EXTR_REFS);
+                eval($code);
+            };
+            $executor($context, $code);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("PHP Hook Error: " . $e->getMessage(), [
+                'exception' => $e
+            ]);
+        }
     }
 }
