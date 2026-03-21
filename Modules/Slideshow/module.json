@@ -7,5 +7,12 @@
     "providers": [
         "Modules\\Slideshow\\Providers\\SlideshowServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "slideshow",
+        "name": "Slideshow",
+        "icon": "PlaySquare",
+        "desc": "Auto-playing carousel of images and text overlays"
+    }
 }

@@ -7,5 +7,12 @@
     "providers": [
         "Modules\\ReusableBlock\\Providers\\ReusableBlockServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "reusable_block",
+        "name": "Reusable Block",
+        "icon": "Copy",
+        "desc": "Insert a globally saved Reusable Block"
+    }
 }

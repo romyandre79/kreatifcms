@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import * as LucideIcons from 'lucide-react';
 import {
     Layout, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronDown, ChevronRight, X,
@@ -27,18 +28,19 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const BLOCK_TYPES = [
-    { id: 'slideshow', name: 'Slideshow', icon: Layers, desc: 'Rotating carousel of images' },
-    { id: 'navbar', name: 'Navigation Bar', icon: Menu, desc: 'Horizontal logo, menu items, and dropdowns' },
-    { id: 'hero', name: 'Hero Section', icon: Layout, desc: 'Large title with background and CTA' },
-    { id: 'text', name: 'Rich Text', icon: Type, desc: 'Standard text, paragraphs, headings' },
-    { id: 'image', name: 'Single Image', icon: ImageIcon, desc: 'A full-width or contained image' },
-    { id: 'feature_grid', name: 'Feature Grid', icon: Grid, desc: 'Grid of cards with icons/images' },
-    { id: 'content_list', name: 'Dynamic Content', icon: List, desc: 'Display a dynamic list of items from Content Types' },
-    { id: 'reusable_block', name: 'Saved Block', icon: Layers, desc: 'Insert a pre-designed block from your library' }
-];
-
 export default function Builder({ page, reusableBlocks = [], contentTypes = [] }) {
+    const { plugins = [] } = usePage().props;
+    const blockPlugins = plugins.filter(p => p.type === 'block');
+    const BLOCK_TYPES = blockPlugins.map(p => {
+        const IconComponent = p.meta?.icon ? LucideIcons[p.meta.icon] || LucideIcons.LayoutGrid : LucideIcons.LayoutGrid;
+        return {
+            id: p.meta?.id || p.alias,
+            name: p.meta?.name || p.name,
+            icon: IconComponent,
+            desc: p.meta?.desc || p.description || ''
+        };
+    });
+
     const generateId = () => Math.random().toString(36).substr(2, 9);
     
     // Ensure all blocks have an ID (for backward compatibility)
@@ -1112,6 +1114,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                     isActive={activeBlockId === block.id}
                                                     onClick={() => setActiveBlockId(block.id)}
                                                     onRemove={() => removeBlock(block.id)}
+                                                    blockTypes={BLOCK_TYPES}
                                                 />
                                             ))}
                                         </SortableContext>
@@ -1325,6 +1328,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 isOpen={showBlockMenu}
                 onClose={() => setShowBlockMenu(false)}
                 onSelect={(type) => addBlock(type)}
+                blockTypes={BLOCK_TYPES}
             />
 
             <MediaPickerModal
@@ -1336,7 +1340,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
     );
 }
 
-function BlockPickerModal({ isOpen, onClose, onSelect }) {
+function BlockPickerModal({ isOpen, onClose, onSelect, blockTypes = [] }) {
     if (!isOpen) return null;
 
     return (
@@ -1350,7 +1354,7 @@ function BlockPickerModal({ isOpen, onClose, onSelect }) {
                     </button>
                 </div>
                 <div className="p-4 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto">
-                    {BLOCK_TYPES.map(type => (
+                    {blockTypes.map(type => (
                         <button
                             key={type.id}
                             onClick={() => {
@@ -1374,7 +1378,7 @@ function BlockPickerModal({ isOpen, onClose, onSelect }) {
     );
 }
 
-function SortableBlockItem({ block, isActive, onClick, onRemove }) {
+function SortableBlockItem({ block, isActive, onClick, onRemove, blockTypes = [] }) {
     const {
         attributes,
         listeners,
@@ -1391,7 +1395,7 @@ function SortableBlockItem({ block, isActive, onClick, onRemove }) {
         position: 'relative'
     };
 
-    const typeInfo = BLOCK_TYPES.find(t => t.id === block.type);
+    const typeInfo = blockTypes.find(t => t.id === block.type);
     const Icon = typeInfo?.icon || Layout;
 
     return (

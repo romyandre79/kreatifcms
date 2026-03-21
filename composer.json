@@ -33,6 +33,12 @@
             "Modules\\ReusableBlock\\": "Modules/ReusableBlock/app/",
             "Modules\\Seo\\": "Modules/Seo/app/",
             "Modules\\Slideshow\\": "Modules/Slideshow/app/",
+            "Modules\\Navbar\\": "Modules/Navbar/app/",
+            "Modules\\Hero\\": "Modules/Hero/app/",
+            "Modules\\TextBlock\\": "Modules/TextBlock/app/",
+            "Modules\\ImageBlock\\": "Modules/ImageBlock/app/",
+            "Modules\\FeatureGrid\\": "Modules/FeatureGrid/app/",
+            "Modules\\ContentList\\": "Modules/ContentList/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

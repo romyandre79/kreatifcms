@@ -7,5 +7,6 @@
     "providers": [
         "Modules\\ImageConverter\\Providers\\ImageConverterServiceProvider"
     ],
-    "files": []
+    "files": [],
+    "plugin_type": "system"
 }

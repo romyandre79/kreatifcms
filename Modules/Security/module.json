@@ -23,5 +23,6 @@
             "description": "Attempts allowed per minute for the login endpoint."
         }
     ],
-    "files": []
+    "files": [],
+    "plugin_type": "security"
 }

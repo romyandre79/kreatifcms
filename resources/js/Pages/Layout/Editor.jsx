@@ -1,6 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import * as LucideIcons from 'lucide-react';
 import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronDown, ChevronRight, X,
@@ -27,18 +28,21 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-const BLOCK_TYPES = [
-    { id: 'slideshow', name: 'Slideshow', icon: Layers, desc: 'Rotating carousel of images' },
-    { id: 'navbar', name: 'Navigation Bar', icon: Menu, desc: 'Horizontal logo, menu items, and dropdowns' },
-    { id: 'hero', name: 'Hero Section', icon: LayoutIcon, desc: 'Large title with background and CTA' },
-    { id: 'text', name: 'Rich Text', icon: Type, desc: 'Standard text, paragraphs, headings' },
-    { id: 'image', name: 'Single Image', icon: ImageIcon, desc: 'A full-width or contained image' },
-    { id: 'feature_grid', name: 'Feature Grid', icon: Grid, desc: 'Grid of cards with icons/images' },
-    { id: 'content_list', name: 'Dynamic Content', icon: List, desc: 'Display a dynamic list of items from Content Types' },
-    { id: 'reusable_block', name: 'Saved Block', icon: Layers, desc: 'Insert a pre-designed block from your library' }
-];
+
 
 export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reusableBlocks = [], contentTypes = [] }) {
+    const { plugins = [] } = usePage().props;
+    const blockPlugins = plugins.filter(p => p.type === 'block');
+    const BLOCK_TYPES = blockPlugins.map(p => {
+        const IconComponent = p.meta?.icon ? LucideIcons[p.meta.icon] || LucideIcons.LayoutGrid : LucideIcons.LayoutGrid;
+        return {
+            id: p.meta?.id || p.alias,
+            name: p.meta?.name || p.name,
+            icon: IconComponent,
+            desc: p.meta?.desc || p.description || ''
+        };
+    });
+
     const generateId = () => Math.random().toString(36).substr(2, 9);
     
     // Ensure all blocks have an ID (for backward compatibility)
@@ -875,6 +879,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                                             isActive={activeBlockId === block.id}
                                             onClick={() => setActiveBlockId(block.id)}
                                             onRemove={() => removeBlock(block.id)}
+                                            blockTypes={BLOCK_TYPES}
                                         />
                                     ))}
                                 </SortableContext>
@@ -954,6 +959,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                 isOpen={showBlockMenu}
                 onClose={() => setShowBlockMenu(false)}
                 onSelect={addBlock}
+                blockTypes={BLOCK_TYPES}
             />
 
             <MediaPickerModal
@@ -965,7 +971,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
     );
 }
 
-function BlockPickerModal({ isOpen, onClose, onSelect }) {
+function BlockPickerModal({ isOpen, onClose, onSelect, blockTypes = [] }) {
     if (!isOpen) return null;
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
@@ -976,7 +982,7 @@ function BlockPickerModal({ isOpen, onClose, onSelect }) {
                     <button onClick={onClose}><X className="w-5 h-5 text-gray-400" /></button>
                 </div>
                 <div className="p-4 grid grid-cols-1 gap-3 max-h-[60vh] overflow-y-auto px-6 pb-6">
-                    {BLOCK_TYPES.map(type => (
+                    {blockTypes.map(type => (
                         <button key={type.id} onClick={() => { onSelect(type.id); onClose(); }} className="flex items-center gap-4 p-4 hover:bg-indigo-50 rounded-2xl text-left border border-transparent hover:border-indigo-100 group transition-all">
                             <div className="p-3 bg-white text-indigo-600 rounded-xl shadow-sm group-hover:scale-110 transition-transform"><type.icon className="w-6 h-6" /></div>
                             <div>
@@ -991,7 +997,7 @@ function BlockPickerModal({ isOpen, onClose, onSelect }) {
     );
 }
 
-function SortableBlockItem({ block, isActive, onClick, onRemove }) {
+function SortableBlockItem({ block, isActive, onClick, onRemove, blockTypes = [] }) {
     const {
         attributes,
         listeners,
@@ -1008,7 +1014,7 @@ function SortableBlockItem({ block, isActive, onClick, onRemove }) {
         position: 'relative'
     };
 
-    const typeInfo = BLOCK_TYPES.find(t => t.id === block.type);
+    const typeInfo = blockTypes.find(t => t.id === block.type);
     const Icon = typeInfo?.icon || LayoutIcon;
 
     return (

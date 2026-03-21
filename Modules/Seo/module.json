@@ -33,5 +33,6 @@
             "default": "|"
         }
     ],
-    "files": []
+    "files": [],
+    "plugin_type": "system"
 }

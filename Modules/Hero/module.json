@@ -1,0 +1,18 @@
+{
+    "name": "Hero",
+    "alias": "hero",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Hero\\Providers\\HeroServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "hero",
+        "name": "Hero Section",
+        "icon": "Image",
+        "desc": "Large banner with bold headline, subtitle, and CTA"
+    }
+}

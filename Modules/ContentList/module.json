@@ -1,0 +1,18 @@
+{
+    "name": "ContentList",
+    "alias": "contentlist",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ContentList\\Providers\\ContentListServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "content_list",
+        "name": "Dynamic Content",
+        "icon": "Grid",
+        "desc": "Display a list or grid of items from a Content Type"
+    }
+}

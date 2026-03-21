@@ -1,0 +1,18 @@
+{
+    "name": "ImageBlock",
+    "alias": "imageblock",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ImageBlock\\Providers\\ImageBlockServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "image",
+        "name": "Single Image",
+        "icon": "ImagePlus",
+        "desc": "Full width or container width image with optional caption"
+    }
+}

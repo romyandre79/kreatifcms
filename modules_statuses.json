@@ -3,5 +3,11 @@
     "Security": true,
     "ReusableBlock": true,
     "Seo": true,
-    "Slideshow": true
+    "Slideshow": true,
+    "Navbar": true,
+    "Hero": true,
+    "TextBlock": true,
+    "ImageBlock": true,
+    "FeatureGrid": true,
+    "ContentList": true
 }
