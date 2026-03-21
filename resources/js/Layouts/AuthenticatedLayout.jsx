@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const { auth, flash } = usePage().props;
+    const { auth, flash, plugins = [] } = usePage().props;
     const user = auth.user;
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -39,8 +39,11 @@ export default function AuthenticatedLayout({ header, children }) {
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*') },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*') },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*') },
-        { name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') },
     ];
+
+    if (plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
+        navItems.push({ name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') });
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex">

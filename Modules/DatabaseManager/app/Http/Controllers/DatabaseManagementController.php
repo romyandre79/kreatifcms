@@ -1,6 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Modules\DatabaseManager\Http\Controllers;
+
+use App\Http\Controllers\Controller;
 
 use App\Models\ContentType;
 use App\Models\ContentField;

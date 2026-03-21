@@ -68,12 +68,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/api/dashboard/widgets', [App\Http\Controllers\DashboardWidgetController::class, 'store'])->name('dashboard.widgets.store');
     Route::put('/api/dashboard/widgets/{widget}', [App\Http\Controllers\DashboardWidgetController::class, 'update'])->name('dashboard.widgets.update');
     Route::delete('/api/dashboard/widgets/{widget}', [App\Http\Controllers\DashboardWidgetController::class, 'destroy'])->name('dashboard.widgets.destroy');
-
-    // Database Management Routes
-    Route::get('/settings/database', [App\Http\Controllers\DatabaseManagementController::class, 'index'])->name('settings.database.index');
-    Route::get('/settings/database/backup', [App\Http\Controllers\DatabaseManagementController::class, 'backup'])->name('settings.database.backup');
-    Route::post('/settings/database/restore', [App\Http\Controllers\DatabaseManagementController::class, 'restore'])->name('settings.database.restore');
-    Route::post('/settings/database/reset', [App\Http\Controllers\DatabaseManagementController::class, 'reset'])->name('settings.database.reset');
 });
 
 require __DIR__.'/auth.php';

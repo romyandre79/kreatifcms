@@ -39,6 +39,7 @@
             "Modules\\ImageBlock\\": "Modules/ImageBlock/app/",
             "Modules\\FeatureGrid\\": "Modules/FeatureGrid/app/",
             "Modules\\ContentList\\": "Modules/ContentList/app/",
+            "Modules\\DatabaseManager\\": "Modules/DatabaseManager/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }
