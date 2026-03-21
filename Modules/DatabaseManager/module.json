@@ -1,0 +1,11 @@
+{
+    "name": "DatabaseManager",
+    "alias": "databasemanager",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\DatabaseManager\\Providers\\DatabaseManagerServiceProvider"
+    ],
+    "files": []
+}

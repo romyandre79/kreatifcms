@@ -1,7 +1,7 @@
 {
     "name": "Navbar",
     "alias": "navbar",
-    "description": "",
+    "description": "A simple and powerful KreatifCMS plugin to create and manage navigation bars for your website. Add logo, menu items, dropdowns, and custom styling—perfect for landing pages, marketing content, and dynamic layouts.",
     "keywords": [],
     "priority": 0,
     "providers": [

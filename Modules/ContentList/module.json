@@ -1,7 +1,7 @@
 {
     "name": "ContentList",
     "alias": "contentlist",
-    "description": "",
+    "description": "A powerful plugin to display dynamic lists of posts, pages, or custom content anywhere on your website. Easily filter, sort, and showcase content in real-time without coding.",
     "keywords": [],
     "priority": 0,
     "providers": [

@@ -1,7 +1,7 @@
 {
     "name": "Seo",
     "alias": "seo",
-    "description": "",
+    "description": "A lightweight KreatifCMS plugin to optimize your website for search engines. Add meta titles, descriptions, keywords, and social tags—perfect for improving SEO rankings and visibility.",
     "keywords": [],
     "priority": 0,
     "providers": [

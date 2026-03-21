@@ -1,7 +1,7 @@
 {
     "name": "TextBlock",
     "alias": "textblock",
-    "description": "",
+    "description": "A simple and powerful plugin to create and manage customizable text blocks anywhere on your website. Perfect for landing pages, marketing content, and dynamic layouts—no coding required",
     "keywords": [],
     "priority": 0,
     "providers": [

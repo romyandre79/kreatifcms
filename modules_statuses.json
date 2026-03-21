@@ -9,5 +9,6 @@
     "TextBlock": true,
     "ImageBlock": true,
     "FeatureGrid": true,
-    "ContentList": true
+    "ContentList": true,
+    "DatabaseManager": true
 }

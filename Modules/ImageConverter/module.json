@@ -1,7 +1,7 @@
 {
     "name": "ImageConverter",
     "alias": "imageconverter",
-    "description": "",
+    "description": "A lightweight KreatifCMS plugin to automatically convert images in modern formats like WebP.",
     "keywords": [],
     "priority": 0,
     "providers": [

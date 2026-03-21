@@ -1,7 +1,7 @@
 {
     "name": "FeatureGrid",
     "alias": "featuregrid",
-    "description": "",
+    "description": "A lightweight KreatifCMS plugin to create responsive feature grids for your website. Perfect for highlighting services, product features, or key benefits in a clean and modern layout.",
     "keywords": [],
     "priority": 0,
     "providers": [
