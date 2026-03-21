@@ -148,11 +148,24 @@ class SchemaService
                         
                         try {
                             if (Schema::connection($this->connection)->hasTable($tableName)) {
-                                $items = \Illuminate\Support\Facades\DB::connection($this->connection)
-                                    ->table($tableName)
-                                    ->orderBy($sortBy, $sortDir)
-                                    ->limit($limit)
-                                    ->get();
+                                $cacheKey = "query_{$tableName}_" . md5(json_encode([$sortBy, $sortDir, $limit]));
+                                
+                                $queryClosure = function () use ($tableName, $sortBy, $sortDir, $limit) {
+                                    return \Illuminate\Support\Facades\DB::connection($this->connection)
+                                        ->table($tableName)
+                                        ->orderBy($sortBy, $sortDir)
+                                        ->limit($limit)
+                                        ->get();
+                                };
+
+                                if (config('cache.stores.rediscache') && class_exists('\Nwidart\Modules\Facades\Module') && \Nwidart\Modules\Facades\Module::isEnabled('RedisCache')) {
+                                    $ttl = (int)\App\Models\Setting::get('rediscache', 'ttl', 3600);
+                                    $items = \Illuminate\Support\Facades\Cache::store('rediscache')
+                                        ->tags(['content', $ctSlug])
+                                        ->remember($cacheKey, $ttl, $queryClosure);
+                                } else {
+                                    $items = $queryClosure();
+                                }
 
                                 // Process onSelect hook if available
                                 $contentTypeDoc = ContentType::where('slug', $ctSlug)->first();

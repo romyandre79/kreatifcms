@@ -115,9 +115,11 @@ class ContentEntryController extends Controller
         ]);
 
         if ($request->routeIs('api.*')) {
+            $this->clearCache($contentTypeSlug);
             return response()->json(['message' => 'Entry created successfully'], 201);
         }
 
+        $this->clearCache($contentTypeSlug);
         return redirect()->route('content-entries.index', $contentTypeSlug);
     }
 
@@ -211,9 +213,11 @@ class ContentEntryController extends Controller
         ]);
 
         if ($request->routeIs('api.*')) {
+            $this->clearCache($contentTypeSlug);
             return response()->json(['message' => 'Entry updated successfully']);
         }
 
+        $this->clearCache($contentTypeSlug);
         return redirect()->route('content-entries.index', $contentTypeSlug);
     }
 
@@ -275,9 +279,11 @@ class ContentEntryController extends Controller
         ]);
 
         if (request()->routeIs('api.*')) {
+            $this->clearCache($contentTypeSlug);
             return response()->noContent();
         }
 
+        $this->clearCache($contentTypeSlug);
         return redirect()->route('content-entries.index', $contentTypeSlug);
     }
 
@@ -342,6 +348,20 @@ class ContentEntryController extends Controller
             \Illuminate\Support\Facades\Log::error("PHP Hook Error: " . $e->getMessage(), [
                 'exception' => $e
             ]);
+        }
+    }
+
+    /**
+     * Clear dynamic content cache when data is manipulated
+     */
+    private function clearCache(string $contentTypeSlug)
+    {
+        if (config('cache.stores.rediscache') && class_exists('\Nwidart\Modules\Facades\Module') && \Nwidart\Modules\Facades\Module::isEnabled('RedisCache')) {
+            try {
+                \Illuminate\Support\Facades\Cache::store('rediscache')->tags(['content', $contentTypeSlug])->flush();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Could not flush RedisCache for $contentTypeSlug - " . $e->getMessage());
+            }
         }
     }
 }

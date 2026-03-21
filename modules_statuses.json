@@ -10,5 +10,6 @@
     "ImageBlock": true,
     "FeatureGrid": true,
     "ContentList": true,
-    "DatabaseManager": true
+    "DatabaseManager": true,
+    "RedisCache": true
 }

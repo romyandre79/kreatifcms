@@ -1,0 +1,50 @@
+{
+    "name": "RedisCache",
+    "alias": "rediscache",
+    "description": "High-performance Redis caching layer for accelerating dynamic Database Queries.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\RedisCache\\Providers\\RedisCacheServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "system",
+    "icon": "DatabaseZap",
+    "settings": [
+        {
+            "name": "host",
+            "label": "Redis Host",
+            "type": "text",
+            "default": "127.0.0.1",
+            "description": "IP address or hostname of your Redis server."
+        },
+        {
+            "name": "port",
+            "label": "Redis Port",
+            "type": "number",
+            "default": "6379",
+            "description": "Port number of your Redis server."
+        },
+        {
+            "name": "password",
+            "label": "Redis Password",
+            "type": "text",
+            "default": "",
+            "description": "Authentication password (leave entirely blank if none)."
+        },
+        {
+            "name": "database",
+            "label": "Redis Database Index",
+            "type": "number",
+            "default": "0",
+            "description": "The specific Redis database index to use (0-15)."
+        },
+        {
+            "name": "ttl",
+            "label": "Cache TTL (seconds)",
+            "type": "number",
+            "default": "3600",
+            "description": "Time to live for fetched content queries. Lower this if content needs to rotate out based on chron jobs."
+        }
+    ]
+}

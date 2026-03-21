@@ -252,6 +252,25 @@ class PluginController extends Controller
             // Move the extracted module to the Modules directory
             rename($sourceDir, $moduleDir);
 
+            // Update composer.json PSR-4 autoloading
+            $composerPath = base_path('composer.json');
+            $composerData = json_decode(file_get_contents($composerPath), true);
+            $namespace = "Modules\\{$moduleName}\\";
+            
+            if (!isset($composerData['autoload']['psr-4'][$namespace])) {
+                $srcFolder = is_dir($moduleDir . '/app') ? "Modules/{$moduleName}/app/" : "Modules/{$moduleName}/";
+                $composerData['autoload']['psr-4'][$namespace] = $srcFolder;
+                file_put_contents($composerPath, json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+                
+                // Synchronously run composer dump-autoload so the next request doesn't crash on boot
+                $command = "cd " . escapeshellarg(base_path()) . " && composer dump-autoload";
+                exec($command, $output, $returnVar);
+                
+                if ($returnVar !== 0) {
+                    \Illuminate\Support\Facades\Log::warning("Composer dump-autoload failed: " . implode("\n", $output));
+                }
+            }
+
             return redirect()->back()->with('message', "Plugin '{$moduleName}' imported successfully. Security scan passed.");
 
         } catch (\Exception $e) {
@@ -321,6 +340,20 @@ class PluginController extends Controller
 
             // Remove the directory
             $this->deleteDirectory($path);
+
+            // Clean up composer.json PSR-4 autoloading
+            $composerPath = base_path('composer.json');
+            $composerData = json_decode(file_get_contents($composerPath), true);
+            $namespace = "Modules\\{$name}\\";
+
+            if (isset($composerData['autoload']['psr-4'][$namespace])) {
+                unset($composerData['autoload']['psr-4'][$namespace]);
+                file_put_contents($composerPath, json_encode($composerData, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
+
+                // Synchronously run composer dump-autoload
+                $command = "cd " . escapeshellarg(base_path()) . " && composer dump-autoload";
+                exec($command, $output, $returnVar);
+            }
 
             return redirect()->back()->with('message', "Plugin '{$name}' deleted successfully.");
         } catch (\Exception $e) {

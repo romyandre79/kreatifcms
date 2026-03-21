@@ -12,6 +12,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "nwidart/laravel-modules": "^12.0",
+        "predis/predis": "^3.4",
         "tightenco/ziggy": "^2.0",
         "tymon/jwt-auth": "^2.3"
     },
@@ -40,6 +41,7 @@
             "Modules\\FeatureGrid\\": "Modules/FeatureGrid/app/",
             "Modules\\ContentList\\": "Modules/ContentList/app/",
             "Modules\\DatabaseManager\\": "Modules/DatabaseManager/app/",
+            "Modules\\RedisCache\\": "Modules/RedisCache/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }
