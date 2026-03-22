@@ -19,7 +19,14 @@ const FIELD_TYPES = [
 ];
 
 function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: field.id });
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: String(field.id) });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -169,7 +176,11 @@ export default function Create({ allContentTypes }) {
     });
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -177,29 +188,46 @@ export default function Create({ allContentTypes }) {
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
-        if (active.id !== over.id) {
-            setData('fields', (fields) => {
-                const oldIndex = fields.findIndex((f) => f.id === active.id);
-                const newIndex = fields.findIndex((f) => f.id === over.id);
-                return arrayMove(fields, oldIndex, newIndex);
+
+        if (over && active.id !== over.id) {
+            setData(prevData => {
+                const oldIndex = prevData.fields.findIndex((f) => String(f.id) === String(active.id));
+                const overIndex = prevData.fields.findIndex((f) => String(f.id) === String(over.id));
+
+                if (oldIndex !== -1 && overIndex !== -1) {
+                    return {
+                        ...prevData,
+                        fields: arrayMove(prevData.fields, oldIndex, overIndex)
+                    };
+                }
+                return prevData;
             });
         }
     };
 
     const addField = () => {
-        const newId = (data.fields.length + 1).toString();
-        setData('fields', [
-            ...data.fields,
-            { id: newId, name: '', type: 'text', required: false, is_unique: false, options: {} }
-        ]);
+        const newId = `new-${Date.now()}`;
+        setData(prev => ({
+            ...prev,
+            fields: [
+                ...prev.fields,
+                { id: newId, name: '', type: 'text', required: false, is_unique: false, options: {} }
+            ]
+        }));
     };
 
     const removeField = (id) => {
-        setData('fields', data.fields.filter(f => f.id !== id));
+        setData(prev => ({
+            ...prev,
+            fields: prev.fields.filter(f => f.id !== id)
+        }));
     };
 
     const updateField = (id, updates) => {
-        setData('fields', data.fields.map(f => f.id === id ? { ...f, ...updates } : f));
+        setData(prev => ({
+            ...prev,
+            fields: prev.fields.map(f => f.id === id ? { ...f, ...updates } : f)
+        }));
     };
 
     const handleSubmit = (e) => {
@@ -291,10 +319,10 @@ export default function Create({ allContentTypes }) {
                             </div>
 
                             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                <SortableContext items={data.fields.map(f => f.id)} strategy={verticalListSortingStrategy}>
+                                <SortableContext items={data.fields.map(f => String(f.id))} strategy={verticalListSortingStrategy}>
                                     {data.fields.map((field, index) => (
                                         <SortableField
-                                            key={field.id}
+                                            key={String(field.id)}
                                             field={field}
                                             index={index}
                                             onRemove={removeField}
