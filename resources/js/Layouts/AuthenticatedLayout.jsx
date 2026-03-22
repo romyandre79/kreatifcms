@@ -19,6 +19,7 @@ import {
     Shield,
     HardDrive,
     FileText,
+    Mail,
     Image as ImageIcon
 } from 'lucide-react';
 
@@ -43,6 +44,10 @@ export default function AuthenticatedLayout({ header, children }) {
 
     if (plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
         navItems.push({ name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') });
+    }
+
+    if (plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
+        navItems.push({ name: 'Email Templates', href: route('email-templates.index'), icon: Mail, active: route().current('email-templates.*') });
     }
 
     return (

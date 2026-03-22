@@ -42,6 +42,8 @@
             "Modules\\ContentList\\": "Modules/ContentList/app/",
             "Modules\\DatabaseManager\\": "Modules/DatabaseManager/app/",
             "Modules\\RedisCache\\": "Modules/RedisCache/app/",
+            "Modules\\EmailConfig\\": "Modules/EmailConfig/app/",
+            "Modules\\EmailTemplates\\": "Modules/EmailTemplates/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

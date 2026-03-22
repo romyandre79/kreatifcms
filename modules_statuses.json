@@ -11,5 +11,7 @@
     "FeatureGrid": true,
     "ContentList": true,
     "DatabaseManager": true,
-    "RedisCache": true
+    "RedisCache": true,
+    "EmailConfig": true,
+    "EmailTemplates": true
 }

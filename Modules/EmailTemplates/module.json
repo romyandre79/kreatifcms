@@ -1,0 +1,12 @@
+{
+    "name": "EmailTemplates",
+    "alias": "emailtemplates",
+    "description": "Manage database-driven email templates with reusable layouts.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\EmailTemplates\\Providers\\EmailTemplatesServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "standard"
+}
