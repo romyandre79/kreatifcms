@@ -14,6 +14,6 @@ class ContentType extends Model
 
     public function fields()
     {
-        return $this->hasMany(ContentField::class);
+        return $this->hasMany(ContentField::class)->orderBy('sort_order');
     }
 }

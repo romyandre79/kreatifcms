@@ -113,6 +113,7 @@ function SortableField({ field, onRemove, onUpdate, isNew, allContentTypes }) {
                             onChange={(e) => onUpdate(field.id, { required: e.target.checked })}
                             className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
+                    </div>
                     <div className="flex flex-col items-center gap-1">
                         <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Uniq</span>
                         <input
@@ -121,7 +122,7 @@ function SortableField({ field, onRemove, onUpdate, isNew, allContentTypes }) {
                             onChange={(e) => onUpdate(field.id, { is_unique: e.target.checked })}
                             className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
-                    </div></div>
+                    </div>
                     
                     {isNew && (
                         <button
@@ -172,7 +173,11 @@ export default function Edit({ contentType, allContentTypes }) {
     });
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -180,11 +185,16 @@ export default function Edit({ contentType, allContentTypes }) {
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
-        if (active.id !== over.id) {
+
+        if (over && active.id !== over.id) {
             setData('fields', (fields) => {
-                const oldIndex = fields.findIndex((f) => f.id === active.id);
-                const newIndex = fields.findIndex((f) => f.id === over.id);
-                return arrayMove(fields, oldIndex, newIndex);
+                const oldIndex = fields.findIndex((f) => String(f.id) === String(active.id));
+                const overIndex = fields.findIndex((f) => String(f.id) === String(over.id));
+
+                if (oldIndex !== -1 && overIndex !== -1) {
+                    return arrayMove(fields, oldIndex, overIndex);
+                }
+                return fields;
             });
         }
     };

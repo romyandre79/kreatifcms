@@ -63,7 +63,7 @@ class ContentTypeController extends Controller
             'events' => $validated['events'] ?? null,
         ]);
 
-        foreach ($validated['fields'] as $field) {
+        foreach ($validated['fields'] as $index => $field) {
             $contentType->fields()->create([
                 'name' => $field['name'],
                 'type' => $field['type'],
@@ -71,6 +71,7 @@ class ContentTypeController extends Controller
                 'is_unique' => $field['is_unique'] ?? false,
                 'description' => $field['description'] ?? null,
                 'options' => $field['options'] ?? null,
+                'sort_order' => $index,
             ]);
         }
 
@@ -119,7 +120,7 @@ class ContentTypeController extends Controller
             'events' => $validated['events'] ?? null,
         ]);
 
-        foreach ($validated['fields'] as $fieldData) {
+        foreach ($validated['fields'] as $index => $fieldData) {
             if (isset($fieldData['isNew']) && $fieldData['isNew']) {
                 $contentType->fields()->create([
                     'name' => $fieldData['name'],
@@ -127,6 +128,7 @@ class ContentTypeController extends Controller
                     'required' => $fieldData['required'] ?? false,
                     'is_unique' => $fieldData['is_unique'] ?? false,
                     'options' => $fieldData['options'] ?? null,
+                    'sort_order' => $index,
                 ]);
             } else {
                 // Allow updating 'required' and 'description'
@@ -142,6 +144,7 @@ class ContentTypeController extends Controller
                         'is_unique' => $fieldData['is_unique'] ?? false,
                         'description' => $fieldData['description'] ?? null,
                         'options' => $fieldData['options'] ?? null,
+                        'sort_order' => $index,
                     ]);
                 }
             }
