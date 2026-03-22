@@ -41,7 +41,7 @@ function SortableField({ field, onRemove, onUpdate, isNew, allContentTypes }) {
                 <button {...attributes} {...listeners} className="cursor-grab text-gray-400 hover:text-indigo-600 transition-colors">
                     <GripVertical className="w-5 h-5" />
                 </button>
-                
+
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Field Name</label>
@@ -130,7 +130,7 @@ function SortableField({ field, onRemove, onUpdate, isNew, allContentTypes }) {
                             className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
                     </div>
-                    
+
                     {isNew && (
                         <button
                             type="button"
@@ -241,7 +241,7 @@ export default function Edit({ contentType, allContentTypes }) {
 
     const handlePush = () => {
         if (!confirm('Are you sure you want to push this schema to staging/production?')) return;
-        
+
         axios.post(route('content-types.push', contentType.id))
             .then(res => alert('Success: ' + res.data.message))
             .catch(err => alert('Error: ' + (err.response?.data?.error || err.message)));
@@ -291,9 +291,9 @@ export default function Edit({ contentType, allContentTypes }) {
                                     <label className="block text-sm font-medium text-gray-700">Type</label>
                                     <div className="mt-2 flex gap-4">
                                         <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                                type="radio" 
-                                                name="type" 
+                                            <input
+                                                type="radio"
+                                                name="type"
                                                 value="collection"
                                                 checked={data.type === 'collection'}
                                                 onChange={e => setData('type', e.target.value)}
@@ -304,9 +304,9 @@ export default function Edit({ contentType, allContentTypes }) {
                                             </span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                                type="radio" 
-                                                name="type" 
+                                            <input
+                                                type="radio"
+                                                name="type"
                                                 value="single"
                                                 checked={data.type === 'single'}
                                                 onChange={e => setData('type', e.target.value)}
@@ -361,14 +361,14 @@ export default function Edit({ contentType, allContentTypes }) {
                                     PHP Event Hooks (Advanced)
                                 </h3>
                                 <p className="text-sm text-gray-500 mt-1">
-                                    Execute custom PHP code during the content entry lifecycle. 
+                                    Execute custom PHP code during the content entry lifecycle.
                                     <strong> Use with extreme caution.</strong> Available variables: <code className="bg-gray-100 px-1 rounded text-pink-600">$data</code> (for writing hooks) and <code className="bg-gray-100 px-1 rounded text-pink-600">$entry</code> (for reading/updating existing).
                                 </p>
                             </div>
 
                             <div className="space-y-6">
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">onSelect</label>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Select</label>
                                     <p className="text-xs text-gray-500 mb-2">Runs after an entry is retrieved. Modify <code className="bg-gray-50 px-1 rounded">$entry</code> attributes.</p>
                                     <textarea
                                         value={data.events?.onSelect || ''}
@@ -379,7 +379,7 @@ export default function Edit({ contentType, allContentTypes }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">onInsert</label>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Insert</label>
                                     <p className="text-xs text-gray-500 mb-2">Runs before a new entry is saved. Modify the <code className="bg-gray-50 px-1 rounded">$data</code> array.</p>
                                     <textarea
                                         value={data.events?.onInsert || ''}
@@ -390,7 +390,7 @@ export default function Edit({ contentType, allContentTypes }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">onUpdate</label>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Update</label>
                                     <p className="text-xs text-gray-500 mb-2">Runs before an existing entry is updated. Access <code className="bg-gray-50 px-1 rounded">$data</code> array and <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
                                     <textarea
                                         value={data.events?.onUpdate || ''}
@@ -401,7 +401,7 @@ export default function Edit({ contentType, allContentTypes }) {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">onDelete</label>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Delete</label>
                                     <p className="text-xs text-gray-500 mb-2">Runs before an entry is deleted. Access <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
                                     <textarea
                                         value={data.events?.onDelete || ''}
