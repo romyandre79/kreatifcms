@@ -1,8 +1,37 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link } from '@inertiajs/react';
+import { Head, Link, useForm } from '@inertiajs/react';
 import { Plus, Search, Copy, Edit2, Trash2, MoreVertical } from 'lucide-react';
+import { useState } from 'react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ roles }) {
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [roleToDelete, setRoleToDelete] = useState(null);
+    const [search, setSearch] = useState('');
+
+    const { delete: destroy, processing } = useForm();
+
+    const confirmDelete = (role) => {
+        setRoleToDelete(role);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (roleToDelete) {
+            destroy(route('roles.destroy', roleToDelete.id), {
+                onSuccess: () => {
+                    setShowDeleteModal(false);
+                    setRoleToDelete(null);
+                },
+            });
+        }
+    };
+
+    const filteredRoles = roles.filter(role => 
+        role.name.toLowerCase().includes(search.toLowerCase()) || 
+        (role.description && role.description.toLowerCase().includes(search.toLowerCase()))
+    );
+
     return (
         <AuthenticatedLayout
             header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Role Management</h2>}
@@ -24,6 +53,8 @@ export default function Index({ roles }) {
                                 type="text"
                                 className="block w-full pl-10 pr-3 py-2 border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all"
                                 placeholder="Search roles..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
                             />
                         </div>
                         <Link 
@@ -50,7 +81,7 @@ export default function Index({ roles }) {
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-100">
-                            {roles.map((role) => (
+                            {filteredRoles.map((role) => (
                                 <tr key={role.id} className="hover:bg-gray-50/50 transition-colors group">
                                     <td className="px-6 py-5 font-bold text-gray-900 text-sm">{role.name}</td>
                                     <td className="px-6 py-5 text-gray-600 text-sm hidden md:table-cell truncate pr-12">{role.description || 'No description provided'}</td>
@@ -72,25 +103,39 @@ export default function Index({ roles }) {
                                                 <Edit2 className="w-4 h-4" />
                                             </Link>
                                             {role.slug !== 'super-admin' && (
-                                                <Link 
-                                                    href={route('roles.destroy', role.id)}
-                                                    method="delete"
-                                                    as="button"
+                                                <button 
+                                                    onClick={() => confirmDelete(role)}
                                                     className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
                                                     title="Delete"
                                                 >
                                                     <Trash2 className="w-4 h-4" />
-                                                </Link>
+                                                </button>
                                             )}
                                         </div>
                                     </td>
                                 </tr>
                             ))}
+                            {filteredRoles.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-12 text-center text-gray-500">
+                                        No roles found matching "{search}"
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                     </div>
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Role"
+                message={`Are you sure you want to delete the role "${roleToDelete?.name}"? This will affect all users assigned to this role.`}
+                processing={processing}
+            />
         </AuthenticatedLayout>
     );
 }

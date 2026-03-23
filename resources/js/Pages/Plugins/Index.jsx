@@ -3,12 +3,16 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import Modal from '@/Components/Modal';
 import { Box, CheckCircle, XCircle, Settings, Puzzle, Download, Info, Upload, Trash2 } from 'lucide-react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ plugins }) {
     const [selectedPlugin, setSelectedPlugin] = useState(null);
     const [importing, setImporting] = useState(false);
     const [settingsData, setSettingsData] = useState({});
     const [savingSettings, setSavingSettings] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [pluginToDelete, setPluginToDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     const togglePlugin = (plugin) => {
         const action = plugin.enabled ? 'disable' : 'enable';
@@ -43,9 +47,21 @@ export default function Index({ plugins }) {
         });
     };
 
-    const deletePlugin = (plugin) => {
-        if (confirm(`Are you sure you want to permanently delete the plugin "${plugin.name}"? This action cannot be undone.`)) {
-            router.delete(route('plugins.destroy', plugin.name));
+    const confirmDelete = (plugin) => {
+        setPluginToDelete(plugin);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (pluginToDelete) {
+            setDeleting(true);
+            router.delete(route('plugins.destroy', pluginToDelete.name), {
+                onFinish: () => {
+                    setDeleting(false);
+                    setShowDeleteModal(false);
+                    setPluginToDelete(null);
+                }
+            });
         }
     };
 
@@ -163,7 +179,7 @@ export default function Index({ plugins }) {
                                                 <Settings className="w-5 h-5" />
                                             </button>
                                             <button 
-                                                onClick={() => deletePlugin(plugin)}
+                                                onClick={() => confirmDelete(plugin)}
                                                 className="text-gray-400 hover:text-red-600 transition-colors"
                                                 title="Delete Plugin"
                                             >
@@ -291,6 +307,15 @@ export default function Index({ plugins }) {
                     </div>
                 )}
             </Modal>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Plugin"
+                message={`Are you sure you want to permanently delete the plugin "${pluginToDelete?.name}"? This action cannot be undone and will remove all module files.`}
+                processing={deleting}
+            />
         </AuthenticatedLayout>
     );
 }

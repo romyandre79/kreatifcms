@@ -1,13 +1,27 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { Mail, Plus, Edit2, Trash2, ArrowLeft } from 'lucide-react';
+import { useState } from 'react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ auth, templates }) {
-    const { delete: destroy } = useForm();
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [templateToDelete, setTemplateToDelete] = useState(null);
+    const { delete: destroy, processing } = useForm();
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this template?')) {
-            destroy(route('email-templates.destroy', id));
+    const confirmDelete = (template) => {
+        setTemplateToDelete(template);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (templateToDelete) {
+            destroy(route('email-templates.destroy', templateToDelete.id), {
+                onSuccess: () => {
+                    setShowDeleteModal(false);
+                    setTemplateToDelete(null);
+                },
+            });
         }
     };
 
@@ -65,8 +79,9 @@ export default function Index({ auth, templates }) {
                                                                 <Edit2 className="w-4 h-4" />
                                                             </Link>
                                                             <button
-                                                                onClick={() => handleDelete(template.id)}
+                                                                onClick={() => confirmDelete(template)}
                                                                 className="text-red-600 hover:text-red-900"
+                                                                title="Delete Template"
                                                             >
                                                                 <Trash2 className="w-4 h-4" />
                                                             </button>
@@ -82,6 +97,15 @@ export default function Index({ auth, templates }) {
                     </div>
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Email Template"
+                message={`Are you sure you want to delete the email template "${templateToDelete?.name}"? This action cannot be undone.`}
+                processing={processing}
+            />
         </AuthenticatedLayout>
     );
 }

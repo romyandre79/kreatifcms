@@ -90,6 +90,22 @@ class UserController extends Controller
      */
     public function destroy(User $user)
     {
+        // Prevent deleting yourself
+        if (auth()->id() === $user->id) {
+            return redirect()->back()->with('error', 'You cannot delete your own account.');
+        }
+
+        // Prevent deleting the last super admin
+        if ($user->role && $user->role->slug === 'super-admin') {
+            $superAdminCount = User::whereHas('role', function($q) {
+                $q->where('slug', 'super-admin');
+            })->count();
+
+            if ($superAdminCount <= 1) {
+                return redirect()->back()->with('error', 'Cannot delete the last super admin.');
+            }
+        }
+
         $user->delete();
 
         if (request()->routeIs('api.*') || (request()->wantsJson() && !request()->header('X-Inertia'))) {

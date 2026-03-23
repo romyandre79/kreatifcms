@@ -2,11 +2,15 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage, router } from '@inertiajs/react';
 import { useState, useRef } from 'react';
 import { Image as ImageIcon, UploadCloud, Trash2, X, Link as LinkIcon, Search } from 'lucide-react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ media }) {
     const [uploading, setUploading] = useState(false);
     const [search, setSearch] = useState('');
     const [selectedMedia, setSelectedMedia] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [mediaToDelete, setMediaToDelete] = useState(null);
+    const [processing, setProcessing] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
@@ -28,12 +32,21 @@ export default function Index({ media }) {
         });
     };
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this media?')) {
-            router.delete(route('media.destroy', id), {
+    const confirmDelete = (id) => {
+        setMediaToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (mediaToDelete) {
+            setProcessing(true);
+            router.delete(route('media.destroy', mediaToDelete), {
                 preserveScroll: true,
-                onSuccess: () => {
-                    if (selectedMedia?.id === id) setSelectedMedia(null);
+                onFinish: () => {
+                    setProcessing(false);
+                    setShowDeleteModal(false);
+                    if (selectedMedia?.id === mediaToDelete) setSelectedMedia(null);
+                    setMediaToDelete(null);
                 }
             });
         }
@@ -194,7 +207,7 @@ export default function Index({ media }) {
 
                         <div className="p-4 bg-gray-50 border-t border-gray-200">
                             <button 
-                                onClick={() => handleDelete(selectedMedia.id)}
+                                onClick={() => confirmDelete(selectedMedia.id)}
                                 className="w-full py-2 flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 rounded-lg font-medium text-sm transition-colors border border-transparent hover:border-red-100"
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -204,6 +217,15 @@ export default function Index({ media }) {
                     </div>
                 )}
             </div>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Media"
+                message="Are you sure you want to permanently delete this media file? This action cannot be undone."
+                processing={processing}
+            />
         </AuthenticatedLayout>
     );
 }

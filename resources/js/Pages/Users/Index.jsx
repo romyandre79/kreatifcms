@@ -1,10 +1,14 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm, Link } from '@inertiajs/react';
+import { Head, useForm, Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { User, Plus, Edit, Trash2, X, AlertTriangle, Search } from 'lucide-react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ users, roles }) {
+    const { auth } = usePage().props;
     const [showForm, setShowForm] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
     const [editUser, setEditUser] = useState(null);
     const [search, setSearch] = useState('');
 
@@ -53,9 +57,19 @@ export default function Index({ users, roles }) {
         }
     };
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this user?')) {
-            destroy(route('users.destroy', id));
+    const confirmDelete = (user) => {
+        setUserToDelete(user);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (userToDelete) {
+            destroy(route('users.destroy', userToDelete.id), {
+                onSuccess: () => {
+                    setShowDeleteModal(false);
+                    setUserToDelete(null);
+                },
+            });
         }
     };
 
@@ -141,9 +155,16 @@ export default function Index({ users, roles }) {
                                                 <button onClick={() => openEdit(user)} className="p-1.5 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" title="Edit">
                                                     <Edit className="w-4 h-4" />
                                                 </button>
-                                                <button onClick={() => handleDelete(user.id)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
-                                                    <Trash2 className="w-4 h-4" />
-                                                </button>
+                                                {auth.user.id !== user.id && (
+                                                    <button onClick={() => confirmDelete(user)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                                {auth.user.id === user.id && (
+                                                    <div className="p-1.5 text-gray-300 cursor-not-allowed" title="You cannot delete your own account">
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </div>
+                                                )}
                                             </div>
                                         </td>
                                     </tr>
@@ -161,29 +182,29 @@ export default function Index({ users, roles }) {
                 </div>
             </div>
 
-            {/* Modal Form */}
+            {/* User Form Modal */}
             {showForm && (
                 <div className="fixed inset-0 z-50 overflow-y-auto">
                     <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                        <div className="fixed inset-0 transition-opacity" aria-hidden="true">
-                            <div className="absolute inset-0 bg-gray-500 opacity-75" onClick={() => !processing && setShowForm(false)}></div>
+                        <div className="fixed inset-0 transition-opacity" aria-hidden="true" onClick={() => !processing && setShowForm(false)}>
+                            <div className="absolute inset-0 bg-gray-500 opacity-75"></div>
                         </div>
                         <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-                        <div className="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                        <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
                             <form onSubmit={handleSubmit}>
                                 <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                                     <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-lg font-medium text-gray-900">{editUser ? 'Edit User' : 'Add User'}</h3>
-                                        <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-500">
+                                        <h3 className="text-lg font-bold text-gray-900">{editUser ? 'Edit User' : 'Add User'}</h3>
+                                        <button type="button" onClick={() => setShowForm(false)} className="text-gray-400 hover:text-gray-500 transition-colors">
                                             <X className="w-5 h-5" />
                                         </button>
                                     </div>
                                     
                                     {Object.keys(errors).length > 0 && (
-                                        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-md text-sm">
-                                            <div className="flex items-center mb-1">
+                                        <div className="mb-4 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-xl text-sm">
+                                            <div className="flex items-center mb-1 font-bold">
                                                 <AlertTriangle className="w-4 h-4 mr-2" />
-                                                <span className="font-bold">Validation Errors:</span>
+                                                Validation Errors:
                                             </div>
                                             <ul className="list-disc list-inside">
                                                 {Object.values(errors).map((err, i) => <li key={i}>{err}</li>)}
@@ -193,29 +214,29 @@ export default function Index({ users, roles }) {
 
                                     <div className="space-y-4">
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Name</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
                                             <input
                                                 type="text"
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                className="block w-full border-gray-200 rounded-xl focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
                                                 value={data.name}
                                                 onChange={e => setData('name', e.target.value)}
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Email</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
                                             <input
                                                 type="email"
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                className="block w-full border-gray-200 rounded-xl focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
                                                 value={data.email}
                                                 onChange={e => setData('email', e.target.value)}
                                                 required
                                             />
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">Role</label>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">Role</label>
                                             <select
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                className="block w-full border-gray-200 rounded-xl focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
                                                 value={data.role_id}
                                                 onChange={e => setData('role_id', e.target.value)}
                                                 required
@@ -227,12 +248,12 @@ export default function Index({ users, roles }) {
                                             </select>
                                         </div>
                                         <div>
-                                            <label className="block text-sm font-medium text-gray-700">
-                                                Password {editUser && '(Leave blank to stay unchanged)'}
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Password {editUser && <span className="text-gray-400 font-normal ml-1">(Leave blank to keep current)</span>}
                                             </label>
                                             <input
                                                 type="password"
-                                                className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                                className="block w-full border-gray-200 rounded-xl focus:ring-indigo-500/20 focus:border-indigo-500 sm:text-sm transition-all shadow-sm"
                                                 value={data.password}
                                                 onChange={e => setData('password', e.target.value)}
                                                 placeholder={editUser ? '••••••••' : 'Min 8 characters'}
@@ -241,18 +262,18 @@ export default function Index({ users, roles }) {
                                         </div>
                                     </div>
                                 </div>
-                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                                <div className="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse border-t border-gray-100">
                                     <button
                                         type="submit"
                                         disabled={processing}
-                                        className="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
+                                        className="w-full inline-flex justify-center rounded-xl border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-sm font-bold text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto transition-all"
                                     >
                                         {processing ? 'Saving...' : editUser ? 'Update User' : 'Create User'}
                                     </button>
                                     <button
                                         type="button"
                                         onClick={() => setShowForm(false)}
-                                        className="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm"
+                                        className="mt-3 w-full inline-flex justify-center rounded-xl border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-bold text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto transition-all"
                                     >
                                         Cancel
                                     </button>
@@ -262,6 +283,15 @@ export default function Index({ users, roles }) {
                     </div>
                 </div>
             )}
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete User"
+                message={`Are you sure you want to delete ${userToDelete?.name}? This action cannot be undone and all data associated with this user will be permanently removed.`}
+                processing={processing}
+            />
         </AuthenticatedLayout>
     );
 }
