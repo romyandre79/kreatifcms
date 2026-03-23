@@ -180,7 +180,7 @@ export default function Index({ plugins }) {
 
             <Modal show={selectedPlugin !== null} onClose={() => setSelectedPlugin(null)} maxWidth="xl">
                 {selectedPlugin && (
-                    <div className="p-6">
+                    <div className="p-6 max-h-[85vh] overflow-y-auto">
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 rounded-lg text-gray-500">

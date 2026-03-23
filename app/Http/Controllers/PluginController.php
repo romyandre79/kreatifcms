@@ -18,7 +18,7 @@ class PluginController extends Controller
         $pluginData = [];
 
         foreach ($modules as $module) {
-            $settingsDefinition = $module->get('settings_fields') ?: ($module->get('settings') ?: []);
+            $settingsDefinition = $module->json()->get('settings_fields') ?: ($module->json()->get('settings') ?: []);
             $settingsValues = [];
 
             foreach ($settingsDefinition as $def) {
