@@ -70,7 +70,7 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
 
                     <div className="md:col-span-2">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">
-                            {field.type === 'relation' ? 'Relation Config' : 'Field Description (Optional)'}
+                            {field.type === 'relation' ? 'Relation Config' : (field.type === 'text' ? 'Length & Description' : 'Field Description (Optional)')}
                         </label>
                         {field.type === 'relation' ? (
                             <div className="grid grid-cols-2 gap-2">
@@ -97,13 +97,24 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
                                 </select>
                             </div>
                         ) : (
-                            <input
-                                type="text"
-                                placeholder="Describe this field..."
-                                value={field.description || ''}
-                                onChange={(e) => onUpdate(field.id, { description: e.target.value })}
-                                className="block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            />
+                            <div className="flex gap-2">
+                                {field.type === 'text' && (
+                                    <input
+                                        type="number"
+                                        placeholder="Length"
+                                        value={field.options?.length || 255}
+                                        onChange={(e) => onUpdate(field.id, { options: { ...field.options, length: e.target.value } })}
+                                        className="block w-24 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    />
+                                )}
+                                <input
+                                    type="text"
+                                    placeholder="Describe this field..."
+                                    value={field.description || ''}
+                                    onChange={(e) => onUpdate(field.id, { description: e.target.value })}
+                                    className="block flex-1 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                />
+                            </div>
                         )}
                     </div>
                 </div>

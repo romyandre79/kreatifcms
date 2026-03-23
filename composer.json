@@ -44,6 +44,7 @@
             "Modules\\RedisCache\\": "Modules/RedisCache/app/",
             "Modules\\EmailConfig\\": "Modules/EmailConfig/app/",
             "Modules\\EmailTemplates\\": "Modules/EmailTemplates/app/",
+            "Modules\\EditorSummernote\\": "Modules/EditorSummernote/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

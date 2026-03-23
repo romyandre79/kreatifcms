@@ -9,9 +9,10 @@
     "TextBlock": true,
     "ImageBlock": true,
     "FeatureGrid": true,
-    "ContentList": true,
+    "ContentList": false,
     "DatabaseManager": true,
     "RedisCache": true,
     "EmailConfig": true,
-    "EmailTemplates": true
+    "EmailTemplates": true,
+    "EditorSummernote": true
 }

@@ -5,6 +5,8 @@ import PrimaryButton from '@/Components/PrimaryButton';
 import InputLabel from '@/Components/InputLabel';
 import TextInput from '@/Components/TextInput';
 import InputError from '@/Components/InputError';
+import Summernote from '@/Components/Summernote';
+import { usePage } from '@inertiajs/react';
 
 export default function Edit({ auth, template }) {
     const { data, setData, put, processing, errors } = useForm({
@@ -77,13 +79,22 @@ export default function Edit({ auth, template }) {
 
                             <div>
                                 <InputLabel htmlFor="content" value="HTML Content" />
-                                <textarea
-                                    id="content"
-                                    className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm min-h-[300px] font-mono whitespace-pre"
-                                    value={data.content}
-                                    onChange={(e) => setData('content', e.target.value)}
-                                    required
-                                />
+                                {usePage().props.plugins?.some(p => p.alias === 'editorsummernote') ? (
+                                    <Summernote
+                                        value={data.content}
+                                        onChange={value => setData('content', value)}
+                                        placeholder="Enter email content..."
+                                        className="mt-1"
+                                    />
+                                ) : (
+                                    <textarea
+                                        id="content"
+                                        className="mt-1 block w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm min-h-[300px] font-mono whitespace-pre"
+                                        value={data.content}
+                                        onChange={(e) => setData('content', e.target.value)}
+                                        required
+                                    />
+                                )}
                                 <InputError message={errors.content} className="mt-2" />
                             </div>
 

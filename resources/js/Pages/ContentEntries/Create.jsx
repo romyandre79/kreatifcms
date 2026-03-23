@@ -4,6 +4,8 @@ import { Save, ArrowLeft, Image as ImageIcon, Paperclip, X } from 'lucide-react'
 import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
+import Summernote from '@/Components/Summernote';
+import { usePage } from '@inertiajs/react';
 
 export default function Create({ contentType, slug, availableRelationships }) {
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
@@ -31,6 +33,8 @@ export default function Create({ contentType, slug, availableRelationships }) {
 
     const renderField = (field) => {
         const name = field.attribute_name;
+        const { plugins } = usePage().props;
+        const isSummernoteEnabled = plugins?.some(p => p.alias === 'editorsummernote');
         
         switch (field.type) {
             case 'boolean':
@@ -52,13 +56,21 @@ export default function Create({ contentType, slug, availableRelationships }) {
             case 'longtext':
                 return (
                     <div>
-                        <label className="block text-sm font-medium text-gray-700">{field.name}</label>
-                        <textarea
-                            value={data[name]}
-                            onChange={e => setData(name, e.target.value)}
-                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            rows={4}
-                        />
+                        <label className="block text-sm font-medium text-gray-700 mb-1">{field.name}</label>
+                        {isSummernoteEnabled ? (
+                            <Summernote
+                                value={data[name]}
+                                onChange={value => setData(name, value)}
+                                placeholder={`Enter ${field.name}...`}
+                            />
+                        ) : (
+                            <textarea
+                                value={data[name]}
+                                onChange={e => setData(name, e.target.value)}
+                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                rows={4}
+                            />
+                        )}
                         {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
                     </div>
                 );

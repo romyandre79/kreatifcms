@@ -59,6 +59,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/plugins/{name}', [App\Http\Controllers\PluginController::class, 'destroy'])->name('plugins.destroy');
     Route::post('/plugins/{name}/settings', [App\Http\Controllers\PluginController::class, 'updateSettings'])->name('plugins.settings.update');
 
+    // Email Template Routes (Moved from module to fix precedence)
+    Route::resource('email-templates', \Modules\EmailTemplates\Http\Controllers\EmailTemplatesController::class);
+
     // User & Role Management Routes
     Route::resource('users', App\Http\Controllers\UserController::class);
     Route::resource('roles', App\Http\Controllers\RoleController::class);

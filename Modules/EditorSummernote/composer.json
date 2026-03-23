@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/editorsummernote",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\EditorSummernote\\": "app/",
+            "Modules\\EditorSummernote\\Database\\Factories\\": "database/factories/",
+            "Modules\\EditorSummernote\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\EditorSummernote\\Tests\\": "tests/"
+        }
+    }
+}

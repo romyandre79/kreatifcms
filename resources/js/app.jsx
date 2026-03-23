@@ -1,3 +1,4 @@
+import './jquery-global';
 import '../css/app.css';
 import './bootstrap';
 

@@ -41,16 +41,16 @@ class SchemaService
         $name = Str::snake($field->name);
 
         $column = match ($type) {
-            'text' => $table->string($name),
-            'longtext' => $table->text($name),
+            'text' => $table->string($name, $field->options['length'] ?? 255),
+            'longtext' => $table->mediumText($name),
             'integer' => $table->integer($name),
             'boolean' => $table->boolean($name),
             'date' => $table->date($name),
             'json' => $table->json($name),
-            'image' => $table->string($name),
-            'file' => $table->string($name),
+            'image' => $table->string($name, 255),
+            'file' => $table->string($name, 255),
             'relation' => $table->unsignedBigInteger($name),
-            default => $table->string($name),
+            default => $table->string($name, 255),
         };
 
         if (!$field->required) {
@@ -100,6 +100,8 @@ class SchemaService
                 $columnName = Str::snake($field->name);
                 if (!in_array($columnName, $existingColumns)) {
                     $this->addFieldToTable($table, $field);
+                } else {
+                    $this->addFieldToTable($table, $field)->change();
                 }
             }
         });

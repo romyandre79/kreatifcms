@@ -83,6 +83,10 @@ class ContentEntryController extends Controller
         foreach ($contentType->fields as $field) {
             $fieldName = Str::snake($field->name);
             $fieldRule = ($field->required ? 'required' : 'nullable');
+            if ($field->type === 'text') {
+                $length = $field->options['length'] ?? 255;
+                $fieldRule .= "|max:{$length}";
+            }
             if ($field->is_unique) {
                 $fieldRule .= "|unique:secondary.{$tableName},{$fieldName}";
             }
@@ -173,6 +177,10 @@ class ContentEntryController extends Controller
         foreach ($contentType->fields as $field) {
             $fieldName = Str::snake($field->name);
             $fieldRule = ($field->required ? 'required' : 'nullable');
+            if ($field->type === 'text') {
+                $length = $field->options['length'] ?? 255;
+                $fieldRule .= "|max:{$length}";
+            }
             if ($field->is_unique) {
                 $fieldRule .= "|unique:secondary.{$tableName},{$fieldName},{$id}";
             }
