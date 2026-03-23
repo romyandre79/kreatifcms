@@ -1,0 +1,18 @@
+{
+    "name": "ReusableBlock",
+    "alias": "reusableblock",
+    "description": "A simple and powerful KreatifCMS plugin to display reusable blocks anywhere on your website. Add blocks with captions, links, and custom styling—perfect for landing pages, portfolios, and marketing content.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ReusableBlock\\Providers\\ReusableBlockServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "reusable_block",
+        "name": "Reusable Block",
+        "icon": "Copy",
+        "desc": "Insert a globally saved Reusable Block"
+    }
+}

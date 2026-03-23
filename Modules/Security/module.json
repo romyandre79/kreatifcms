@@ -1,7 +1,7 @@
 {
     "name": "Security",
     "alias": "security",
-    "description": "Security and Rate Limiting features for Doran Portal CMS.",
+    "description": "Security and Rate Limiting features for Kreatif.",
     "keywords": [],
     "priority": 0,
     "providers": [
@@ -23,5 +23,6 @@
             "description": "Attempts allowed per minute for the login endpoint."
         }
     ],
-    "files": []
+    "files": [],
+    "plugin_type": "security"
 }

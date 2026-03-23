@@ -1,0 +1,61 @@
+{
+    "name": "EmailConfig",
+    "alias": "emailconfig",
+    "description": "System plugin to configure SMTP and Mail server settings.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\EmailConfig\\Providers\\EmailConfigServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "system",
+    "settings_fields": [
+        {
+            "name": "mail_host",
+            "label": "SMTP Host",
+            "type": "text",
+            "default": "127.0.0.1"
+        },
+        {
+            "name": "mail_port",
+            "label": "SMTP Port",
+            "type": "number",
+            "default": 1025
+        },
+        {
+            "name": "mail_username",
+            "label": "SMTP Username",
+            "type": "text",
+            "default": ""
+        },
+        {
+            "name": "mail_password",
+            "label": "SMTP Password",
+            "type": "password",
+            "default": ""
+        },
+        {
+            "name": "mail_encryption",
+            "label": "Encryption",
+            "type": "select",
+            "options": [
+                {"label": "None", "value": "null"},
+                {"label": "TLS", "value": "tls"},
+                {"label": "SSL", "value": "ssl"}
+            ],
+            "default": "null"
+        },
+        {
+            "name": "mail_from_address",
+            "label": "From Address",
+            "type": "text",
+            "default": "hello@example.com"
+        },
+        {
+            "name": "mail_from_name",
+            "label": "From Name",
+            "type": "text",
+            "default": "Kreatif CMS"
+        }
+    ]
+}

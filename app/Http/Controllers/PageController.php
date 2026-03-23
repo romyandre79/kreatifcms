@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Page;
+use App\Services\SchemaService;
+use Modules\ReusableBlock\Models\Block;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -35,9 +37,18 @@ class PageController extends Controller
 
     public function edit(Page $page)
     {
+        $schemaService = app(SchemaService::class);
+        $page->blocks = $schemaService->hydrateDynamicBlocks($page->blocks ?: []);
+
         return Inertia::render('Pages/Builder', [
             'page' => $page,
-            'reusableBlocks' => \App\Models\Block::all()
+            'reusableBlocks' => Block::all()->map(function($rb) use ($schemaService) {
+                if (isset($rb->data) && is_array($rb->data)) {
+                    $rb->data = $schemaService->hydrateDynamicBlocks($rb->data);
+                }
+                return $rb;
+            }),
+            'contentTypes' => \App\Models\ContentType::with('fields')->get()
         ]);
     }
 
@@ -48,6 +59,10 @@ class PageController extends Controller
             'slug' => 'sometimes|required|string|max:255|unique:pages,slug,' . $page->id,
             'blocks' => 'nullable|array',
             'is_published' => 'boolean',
+            'meta_title' => 'nullable|string|max:255',
+            'meta_description' => 'nullable|string',
+            'meta_keywords' => 'nullable|string',
+            'og_image' => 'nullable|string',
         ]);
 
         if (isset($validated['slug'])) {
@@ -60,6 +75,9 @@ class PageController extends Controller
         }
 
         $page->update($validated);
+        
+        $schemaService = app(SchemaService::class);
+        $page->blocks = $schemaService->hydrateDynamicBlocks($page->blocks ?: []);
 
         if ($request->wantsJson()) {
             return response()->json(['message' => 'Page saved successfully', 'page' => $page]);

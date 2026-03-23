@@ -1,4 +1,18 @@
 {
     "ImageConverter": true,
-    "Security": true
+    "Security": true,
+    "ReusableBlock": true,
+    "Seo": true,
+    "Slideshow": true,
+    "Navbar": true,
+    "Hero": true,
+    "TextBlock": true,
+    "ImageBlock": true,
+    "FeatureGrid": true,
+    "ContentList": true,
+    "DatabaseManager": true,
+    "RedisCache": true,
+    "EmailConfig": true,
+    "EmailTemplates": true,
+    "EditorSummernote": true
 }

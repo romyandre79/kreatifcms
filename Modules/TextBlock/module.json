@@ -1,0 +1,18 @@
+{
+    "name": "TextBlock",
+    "alias": "textblock",
+    "description": "A simple and powerful plugin to create and manage customizable text blocks anywhere on your website. Perfect for landing pages, marketing content, and dynamic layouts—no coding required",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\TextBlock\\Providers\\TextBlockServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "text",
+        "name": "Rich Text",
+        "icon": "AlignLeft",
+        "desc": "Markdown editor for paragraphs, lists, and headings"
+    }
+}

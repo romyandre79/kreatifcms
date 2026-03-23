@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/featuregrid",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\FeatureGrid\\": "app/",
+            "Modules\\FeatureGrid\\Database\\Factories\\": "database/factories/",
+            "Modules\\FeatureGrid\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\FeatureGrid\\Tests\\": "tests/"
+        }
+    }
+}

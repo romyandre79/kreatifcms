@@ -43,6 +43,22 @@ class HandleInertiaRequests extends Middleware
                 'success' => $request->session()->get('success'),
                 'error' => $request->session()->get('error'),
             ],
+            'plugins' => function () {
+                if (!class_exists('\Nwidart\Modules\Facades\Module')) {
+                    return [];
+                }
+                $enabledModules = \Nwidart\Modules\Facades\Module::allEnabled();
+                $plugins = [];
+                foreach ($enabledModules as $module) {
+                    $plugins[] = [
+                        'name' => $module->getName(),
+                        'alias' => $module->getLowerName(),
+                        'type' => $module->get('plugin_type', 'system'),
+                        'meta' => $module->get('block_meta', []),
+                    ];
+                }
+                return $plugins;
+            },
         ];
     }
 }

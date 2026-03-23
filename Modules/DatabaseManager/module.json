@@ -1,0 +1,13 @@
+{
+    "name": "DatabaseManager",
+    "alias": "databasemanager",
+    "description": "Powerful database backup, restore, and factory reset management platform.",
+    "plugin_type": "system",
+    "icon": "HardDrive",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\DatabaseManager\\Providers\\DatabaseManagerServiceProvider"
+    ],
+    "files": []
+}

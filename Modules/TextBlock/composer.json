@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/textblock",
+    "description": "",
+    "authors": [
+        {
+            "name": "Nicolas Widart",
+            "email": "n.widart@gmail.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\TextBlock\\": "app/",
+            "Modules\\TextBlock\\Database\\Factories\\": "database/factories/",
+            "Modules\\TextBlock\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\TextBlock\\Tests\\": "tests/"
+        }
+    }
+}

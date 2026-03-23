@@ -217,7 +217,7 @@ export default function Builder({ block }) {
         <AuthenticatedLayout>
             <Head title={`Block Builder: ${block.name}`} />
             
-            <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div className="max-w-4xl mx-auto pt-0 pb-8 px-4 sm:px-6 lg:px-8">
                 <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden flex flex-col min-h-[calc(100vh-12rem)]">
                     
                     {/* Header */}

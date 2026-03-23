@@ -41,6 +41,13 @@ class ContentEntryController extends Controller
 
         $entries = DB::connection($this->connection)->table($tableName)->get();
 
+        if (!empty($contentType->events['onSelect'])) {
+            foreach ($entries as $entry) {
+                $context = ['entry' => $entry];
+                $this->executePhpHook($contentType->events['onSelect'], $context);
+            }
+        }
+
         if (request()->routeIs('api.*')) {
             return response()->json($entries);
         }
@@ -76,6 +83,13 @@ class ContentEntryController extends Controller
         foreach ($contentType->fields as $field) {
             $fieldName = Str::snake($field->name);
             $fieldRule = ($field->required ? 'required' : 'nullable');
+            if ($field->type === 'text') {
+                $length = $field->options['length'] ?? 255;
+                $fieldRule .= "|max:{$length}";
+            }
+            if ($field->is_unique) {
+                $fieldRule .= "|unique:secondary.{$tableName},{$fieldName}";
+            }
             if ($field->type === 'relation') {
                 $fieldRule .= '|integer';
             }
@@ -86,6 +100,11 @@ class ContentEntryController extends Controller
         $validated['user_id'] = Auth::id();
         $validated['created_at'] = now();
         $validated['updated_at'] = now();
+
+        if (!empty($contentType->events['onInsert'])) {
+            $context = ['data' => &$validated];
+            $this->executePhpHook($contentType->events['onInsert'], $context);
+        }
 
         $id = DB::connection($this->connection)->table($tableName)->insertGetId($validated);
 
@@ -100,9 +119,11 @@ class ContentEntryController extends Controller
         ]);
 
         if ($request->routeIs('api.*')) {
+            $this->clearCache($contentTypeSlug);
             return response()->json(['message' => 'Entry created successfully'], 201);
         }
 
+        $this->clearCache($contentTypeSlug);
         return redirect()->route('content-entries.index', $contentTypeSlug);
     }
 
@@ -136,6 +157,11 @@ class ContentEntryController extends Controller
             return response()->json(['message' => 'Entry not found'], 404);
         }
 
+        if (!empty($contentType->events['onSelect'])) {
+            $context = ['entry' => $entry];
+            $this->executePhpHook($contentType->events['onSelect'], $context);
+        }
+
         return response()->json($entry);
     }
 
@@ -151,6 +177,13 @@ class ContentEntryController extends Controller
         foreach ($contentType->fields as $field) {
             $fieldName = Str::snake($field->name);
             $fieldRule = ($field->required ? 'required' : 'nullable');
+            if ($field->type === 'text') {
+                $length = $field->options['length'] ?? 255;
+                $fieldRule .= "|max:{$length}";
+            }
+            if ($field->is_unique) {
+                $fieldRule .= "|unique:secondary.{$tableName},{$fieldName},{$id}";
+            }
             if ($field->type === 'relation') {
                 $fieldRule .= '|integer';
             }
@@ -162,6 +195,14 @@ class ContentEntryController extends Controller
         
         $validated['user_id'] = Auth::id();
         $validated['updated_at'] = now();
+
+        if (!empty($contentType->events['onUpdate'])) {
+            $context = [
+                'data' => &$validated,
+                'entry' => $oldEntry
+            ];
+            $this->executePhpHook($contentType->events['onUpdate'], $context);
+        }
 
         DB::connection($this->connection)
             ->table($tableName)
@@ -180,9 +221,11 @@ class ContentEntryController extends Controller
         ]);
 
         if ($request->routeIs('api.*')) {
+            $this->clearCache($contentTypeSlug);
             return response()->json(['message' => 'Entry updated successfully']);
         }
 
+        $this->clearCache($contentTypeSlug);
         return redirect()->route('content-entries.index', $contentTypeSlug);
     }
 
@@ -223,6 +266,11 @@ class ContentEntryController extends Controller
 
         $oldEntry = DB::connection($this->connection)->table($tableName)->where('id', $id)->first();
 
+        if (!empty($contentType->events['onDelete'])) {
+            $context = ['entry' => $oldEntry];
+            $this->executePhpHook($contentType->events['onDelete'], $context);
+        }
+
         DB::connection($this->connection)
             ->table($tableName)
             ->where('id', $id)
@@ -239,9 +287,11 @@ class ContentEntryController extends Controller
         ]);
 
         if (request()->routeIs('api.*')) {
+            $this->clearCache($contentTypeSlug);
             return response()->noContent();
         }
 
+        $this->clearCache($contentTypeSlug);
         return redirect()->route('content-entries.index', $contentTypeSlug);
     }
 
@@ -287,5 +337,39 @@ class ContentEntryController extends Controller
             ->get();
 
         return response()->json($logs);
+    }
+
+    /**
+     * Safely execute a PHP hook for a content type.
+     */
+    private function executePhpHook(?string $code, array &$context)
+    {
+        if (empty(trim($code))) return;
+
+        try {
+            $executor = function(&$context, $code) {
+                extract($context, EXTR_REFS);
+                eval($code);
+            };
+            $executor($context, $code);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error("PHP Hook Error: " . $e->getMessage(), [
+                'exception' => $e
+            ]);
+        }
+    }
+
+    /**
+     * Clear dynamic content cache when data is manipulated
+     */
+    private function clearCache(string $contentTypeSlug)
+    {
+        if (config('cache.stores.rediscache') && class_exists('\Nwidart\Modules\Facades\Module') && \Nwidart\Modules\Facades\Module::isEnabled('RedisCache')) {
+            try {
+                \Illuminate\Support\Facades\Cache::store('rediscache')->tags(['content', $contentTypeSlug])->flush();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning("Could not flush RedisCache for $contentTypeSlug - " . $e->getMessage());
+            }
+        }
     }
 }

@@ -1,0 +1,12 @@
+{
+    "name": "EditorSummernote",
+    "alias": "editorsummernote",
+    "description": "Integrates the Summernote WYSIWYG editor for longtext fields and other content areas.",
+    "keywords": ["editor", "summernote", "wysiwyg"],
+    "priority": 0,
+    "providers": [
+        "Modules\\EditorSummernote\\Providers\\EditorSummernoteServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "editor"
+}

@@ -42,10 +42,16 @@ class ContentTypeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'events' => 'nullable|array',
+            'events.onSelect' => 'nullable|string',
+            'events.onInsert' => 'nullable|string',
+            'events.onUpdate' => 'nullable|string',
+            'events.onDelete' => 'nullable|string',
             'fields' => 'required|array|min:1',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation',
+            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation,image,file',
             'fields.*.required' => 'boolean',
+            'fields.*.is_unique' => 'boolean',
             'fields.*.options' => 'nullable|array',
         ]);
 
@@ -54,15 +60,18 @@ class ContentTypeController extends Controller
             'slug' => Str::slug($validated['name']),
             'description' => $validated['description'] ?? null,
             'type' => $request->input('type', 'collection'),
+            'events' => $validated['events'] ?? null,
         ]);
 
-        foreach ($validated['fields'] as $field) {
+        foreach ($validated['fields'] as $index => $field) {
             $contentType->fields()->create([
                 'name' => $field['name'],
                 'type' => $field['type'],
                 'required' => $field['required'] ?? false,
+                'is_unique' => $field['is_unique'] ?? false,
                 'description' => $field['description'] ?? null,
                 'options' => $field['options'] ?? null,
+                'sort_order' => $index,
             ]);
         }
 
@@ -89,12 +98,18 @@ class ContentTypeController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'description' => 'nullable|string',
+            'events' => 'nullable|array',
+            'events.onSelect' => 'nullable|string',
+            'events.onInsert' => 'nullable|string',
+            'events.onUpdate' => 'nullable|string',
+            'events.onDelete' => 'nullable|string',
             'fields' => 'required|array|min:1',
             'fields.*.id' => 'nullable', // Use this to distinguish existing vs new
             'fields.*.isNew' => 'nullable|boolean',
             'fields.*.name' => 'required|string|max:255',
-            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation',
+            'fields.*.type' => 'required|string|in:text,longtext,integer,boolean,date,json,relation,image,file',
             'fields.*.required' => 'boolean',
+            'fields.*.is_unique' => 'boolean',
             'fields.*.options' => 'nullable|array',
         ]);
 
@@ -102,15 +117,18 @@ class ContentTypeController extends Controller
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'type' => $request->input('type', $contentType->type),
+            'events' => $validated['events'] ?? null,
         ]);
 
-        foreach ($validated['fields'] as $fieldData) {
+        foreach ($validated['fields'] as $index => $fieldData) {
             if (isset($fieldData['isNew']) && $fieldData['isNew']) {
                 $contentType->fields()->create([
                     'name' => $fieldData['name'],
                     'type' => $fieldData['type'],
                     'required' => $fieldData['required'] ?? false,
+                    'is_unique' => $fieldData['is_unique'] ?? false,
                     'options' => $fieldData['options'] ?? null,
+                    'sort_order' => $index,
                 ]);
             } else {
                 // Allow updating 'required' and 'description'
@@ -123,8 +141,10 @@ class ContentTypeController extends Controller
                     $field->update([
                         'type' => $canUpdateType ? $newType : $field->type,
                         'required' => $fieldData['required'] ?? false,
+                        'is_unique' => $fieldData['is_unique'] ?? false,
                         'description' => $fieldData['description'] ?? null,
                         'options' => $fieldData['options'] ?? null,
+                        'sort_order' => $index,
                     ]);
                 }
             }

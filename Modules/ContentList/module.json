@@ -1,0 +1,18 @@
+{
+    "name": "ContentList",
+    "alias": "contentlist",
+    "description": "A powerful plugin to display dynamic lists of posts, pages, or custom content anywhere on your website. Easily filter, sort, and showcase content in real-time without coding.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ContentList\\Providers\\ContentListServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "content_list",
+        "name": "Dynamic Content",
+        "icon": "Grid",
+        "desc": "Display a list or grid of items from a Content Type"
+    }
+}

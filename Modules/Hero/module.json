@@ -1,0 +1,18 @@
+{
+    "name": "Hero",
+    "alias": "hero",
+    "description": "A simple and powerful KreatifCMS plugin to build eye-catching hero sections for your website. Add headlines, backgrounds, buttons, and overlays—perfect for landing pages and marketing.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Hero\\Providers\\HeroServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "hero",
+        "name": "Hero Section",
+        "icon": "Image",
+        "desc": "Large banner with bold headline, subtitle, and CTA"
+    }
+}

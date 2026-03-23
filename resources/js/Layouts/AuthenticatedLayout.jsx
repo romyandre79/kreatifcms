@@ -4,6 +4,7 @@ import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import {
     LayoutDashboard,
+    Layout,
     Database,
     Puzzle,
     Users,
@@ -18,11 +19,12 @@ import {
     Shield,
     HardDrive,
     FileText,
+    Mail,
     Image as ImageIcon
 } from 'lucide-react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const { auth, flash } = usePage().props;
+    const { auth, flash, plugins = [] } = usePage().props;
     const user = auth.user;
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -32,13 +34,21 @@ export default function AuthenticatedLayout({ header, children }) {
         { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
         { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*') },
         { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*') },
+        { name: 'Layout Editor', href: route('layouts.index'), icon: Layout, active: route().current('layouts.index') },
         { name: 'Media Library', href: route('media.index'), icon: ImageIcon, active: route().current('media.*') },
         { name: 'Content Type', href: route('content-types.index'), icon: Database, active: route().current('content-types.*') && !route().current('content-types.data.*') },
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*') },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*') },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*') },
-        { name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') },
     ];
+
+    if (plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
+        navItems.push({ name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') });
+    }
+
+    if (plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
+        navItems.push({ name: 'Email Templates', href: route('email-templates.index'), icon: Mail, active: route().current('email-templates.*') });
+    }
 
     return (
         <div className="min-h-screen bg-gray-50 flex">

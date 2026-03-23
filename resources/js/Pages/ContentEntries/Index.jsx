@@ -66,7 +66,7 @@ export default function Index({ contentType, entries, slug }) {
                                             <tr key={entry.id}>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{entry.id}</td>
                                                 {contentType.fields.slice(0, 3).map(field => {
-                                                    const fieldName = field.name.toLowerCase().replace(/\s+/g, '_');
+                                                    const fieldName = field.attribute_name;
                                                     const value = entry[fieldName];
                                                     
                                                     const formatValue = (val, type) => {
@@ -97,7 +97,13 @@ export default function Index({ contentType, entries, slug }) {
 
                                                     return (
                                                         <td key={field.id} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                                            {formatValue(value, field.type)}
+                                                            {field.type === 'image' && value ? (
+                                                                <div className="w-10 h-10 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                                                                    <img src={value} alt="Preview" className="w-full h-full object-cover" />
+                                                                </div>
+                                                            ) : (
+                                                                formatValue(value, field.type)
+                                                            )}
                                                         </td>
                                                     );
                                                 })}

@@ -30,15 +30,12 @@ class RoleController extends Controller
      */
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
+        $name = $request->input('name', 'New Role ' . Str::random(4));
 
         $role = Role::create([
-            'name' => $validated['name'],
-            'slug' => Str::slug($validated['name']),
-            'description' => $validated['description'],
+            'name' => $name,
+            'slug' => Str::slug($name),
+            'description' => $request->input('description', ''),
         ]);
 
         return redirect()->route('roles.edit', $role->id)->with('success', 'Role created successfully.');

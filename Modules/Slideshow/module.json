@@ -1,0 +1,18 @@
+{
+    "name": "Slideshow",
+    "alias": "slideshow",
+    "description": "A simple and powerful KreatifCMS plugin to create and manage slideshows for your website. Add slides with images, text, buttons, and custom styling—perfect for landing pages, marketing content, and dynamic layouts.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Slideshow\\Providers\\SlideshowServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "slideshow",
+        "name": "Slideshow",
+        "icon": "PlaySquare",
+        "desc": "Auto-playing carousel of images and text overlays"
+    }
+}

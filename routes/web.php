@@ -31,7 +31,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/media/upload', [App\Http\Controllers\MediaController::class, 'upload'])->name('media.upload');
     Route::resource('media', App\Http\Controllers\MediaController::class)->except(['create', 'edit', 'update']);
     Route::resource('pages', App\Http\Controllers\PageController::class);
-    Route::resource('blocks', App\Http\Controllers\BlockController::class);
+    
+    // Module Routes
+    Route::resource('blocks', \Modules\ReusableBlock\Http\Controllers\BlockController::class);
+    Route::get('/seo', [\Modules\Seo\Http\Controllers\SeoController::class, 'index'])->name('seo.index');
+    Route::post('/seo/settings', [\Modules\Seo\Http\Controllers\SeoController::class, 'updateSettings'])->name('seo.settings.update');
+    
+    // Layout Editor
+    Route::get('/layouts', [App\Http\Controllers\LayoutController::class, 'index'])->name('layouts.index');
+    Route::post('/layouts', [App\Http\Controllers\LayoutController::class, 'update'])->name('layouts.update');
 
     // CMS Content Entry Routes
     Route::get('/builder/content-data', [App\Http\Controllers\ContentEntryController::class, 'dataManager'])->name('content-types.data.index');
@@ -51,6 +59,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/plugins/{name}', [App\Http\Controllers\PluginController::class, 'destroy'])->name('plugins.destroy');
     Route::post('/plugins/{name}/settings', [App\Http\Controllers\PluginController::class, 'updateSettings'])->name('plugins.settings.update');
 
+    // Email Template Routes (Moved from module to fix precedence)
+    Route::resource('email-templates', \Modules\EmailTemplates\Http\Controllers\EmailTemplatesController::class);
+
     // User & Role Management Routes
     Route::resource('users', App\Http\Controllers\UserController::class);
     Route::resource('roles', App\Http\Controllers\RoleController::class);
@@ -60,12 +71,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/api/dashboard/widgets', [App\Http\Controllers\DashboardWidgetController::class, 'store'])->name('dashboard.widgets.store');
     Route::put('/api/dashboard/widgets/{widget}', [App\Http\Controllers\DashboardWidgetController::class, 'update'])->name('dashboard.widgets.update');
     Route::delete('/api/dashboard/widgets/{widget}', [App\Http\Controllers\DashboardWidgetController::class, 'destroy'])->name('dashboard.widgets.destroy');
-
-    // Database Management Routes
-    Route::get('/settings/database', [App\Http\Controllers\DatabaseManagementController::class, 'index'])->name('settings.database.index');
-    Route::get('/settings/database/backup', [App\Http\Controllers\DatabaseManagementController::class, 'backup'])->name('settings.database.backup');
-    Route::post('/settings/database/restore', [App\Http\Controllers\DatabaseManagementController::class, 'restore'])->name('settings.database.restore');
-    Route::post('/settings/database/reset', [App\Http\Controllers\DatabaseManagementController::class, 'reset'])->name('settings.database.reset');
 });
 
 require __DIR__.'/auth.php';

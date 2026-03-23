@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Image as ImageIcon } from 'lucide-react';
+import { X, Search, Image as ImageIcon, Plus } from 'lucide-react';
 import axios from 'axios';
 
 class ModalErrorBoundary extends React.Component {
@@ -30,7 +30,9 @@ class ModalErrorBoundary extends React.Component {
 export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
     const [media, setMedia] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [search, setSearch] = useState('');
+    const fileInputRef = React.useRef(null);
 
     useEffect(() => {
         if (isOpen) {
@@ -49,6 +51,33 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
             console.error('Failed to fetch media:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleUpload = async (e) => {
+        const files = e.target.files;
+        if (!files || files.length === 0) return;
+
+        setUploading(true);
+        const formData = new FormData();
+        for (let i = 0; i < files.length; i++) {
+            formData.append('files[]', files[i]);
+        }
+
+        try {
+            await axios.post(route('media.upload'), formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Accept': 'application/json'
+                }
+            });
+            await fetchMedia();
+            if (fileInputRef.current) fileInputRef.current.value = '';
+        } catch (error) {
+            console.error('Upload failed:', error);
+            alert('Upload failed. Please try again.');
+        } finally {
+            setUploading(false);
         }
     };
 
@@ -80,6 +109,31 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
                                         onChange={(e) => setSearch(e.target.value)}
                                     />
                                 </div>
+                                <input 
+                                    type="file" 
+                                    multiple 
+                                    className="hidden" 
+                                    ref={fileInputRef} 
+                                    onChange={handleUpload}
+                                    accept="image/*"
+                                />
+                                <button 
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={uploading}
+                                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                >
+                                    {uploading ? (
+                                        <>
+                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                            <span>UPLOADING...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Plus className="w-4 h-4" />
+                                            <span>UPLOAD</span>
+                                        </>
+                                    )}
+                                </button>
                                 <button onClick={onClose} className="text-gray-400 hover:text-gray-500 bg-white border border-gray-200 rounded-lg p-2 shadow-sm transition-colors">
                                     <X className="w-5 h-5" />
                                 </button>
@@ -95,7 +149,13 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
                                 <div className="flex flex-col items-center justify-center h-full text-gray-400">
                                     <ImageIcon className="w-12 h-12 mb-3 text-gray-300" />
                                     <p className="font-medium text-gray-500">No media found in library.</p>
-                                    <p className="text-sm">Please upload images in the Media Library first.</p>
+                                    <p className="text-sm mb-4">You can upload images using the button above.</p>
+                                    <button 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="px-6 py-2 border-2 border-dashed border-gray-300 rounded-xl hover:border-indigo-400 hover:text-indigo-600 transition-all font-medium"
+                                    >
+                                        Click to Upload Media
+                                    </button>
                                 </div>
                             ) : (
                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-4">

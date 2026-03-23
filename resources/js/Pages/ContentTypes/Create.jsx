@@ -1,7 +1,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { Plus, Trash2, GripVertical, Save, Type, Type as TypeIcon, Hash, Calendar, CheckSquare, Code, FileText } from 'lucide-react';
+import { Plus, Trash2, GripVertical, Save, Type, Type as TypeIcon, Hash, Calendar, CheckSquare, Code, FileText, Image as ImageIcon } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -13,11 +13,20 @@ const FIELD_TYPES = [
     { type: 'boolean', label: 'Boolean', icon: CheckSquare },
     { type: 'date', label: 'Date', icon: Calendar },
     { type: 'json', label: 'JSON', icon: Code },
+    { type: 'image', label: 'Image', icon: ImageIcon },
+    { type: 'file', label: 'File', icon: FileText },
     { type: 'relation', label: 'Relation', icon: Plus },
 ];
 
 function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
-    const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id: field.id });
+    const {
+        attributes,
+        listeners,
+        setNodeRef,
+        transform,
+        transition,
+        isDragging,
+    } = useSortable({ id: String(field.id) });
 
     const style = {
         transform: CSS.Transform.toString(transform),
@@ -33,7 +42,7 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
                 <button {...attributes} {...listeners} className="cursor-grab text-gray-400 hover:text-indigo-600 transition-colors">
                     <GripVertical className="w-5 h-5" />
                 </button>
-                
+
                 <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-4 items-start">
                     <div>
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">Field Name</label>
@@ -61,7 +70,7 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
 
                     <div className="md:col-span-2">
                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 px-1">
-                            {field.type === 'relation' ? 'Relation Config' : 'Field Description (Optional)'}
+                            {field.type === 'relation' ? 'Relation Config' : (field.type === 'text' ? 'Length & Description' : 'Field Description (Optional)')}
                         </label>
                         {field.type === 'relation' ? (
                             <div className="grid grid-cols-2 gap-2">
@@ -88,13 +97,24 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
                                 </select>
                             </div>
                         ) : (
-                            <input
-                                type="text"
-                                placeholder="Describe this field..."
-                                value={field.description || ''}
-                                onChange={(e) => onUpdate(field.id, { description: e.target.value })}
-                                className="block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                            />
+                            <div className="flex gap-2">
+                                {field.type === 'text' && (
+                                    <input
+                                        type="number"
+                                        placeholder="Length"
+                                        value={field.options?.length || 255}
+                                        onChange={(e) => onUpdate(field.id, { options: { ...field.options, length: e.target.value } })}
+                                        className="block w-24 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                    />
+                                )}
+                                <input
+                                    type="text"
+                                    placeholder="Describe this field..."
+                                    value={field.description || ''}
+                                    onChange={(e) => onUpdate(field.id, { description: e.target.value })}
+                                    className="block flex-1 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                />
+                            </div>
                         )}
                     </div>
                 </div>
@@ -109,7 +129,15 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
                             className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
                     </div>
-                    
+                    <div className="flex flex-col items-center gap-1">
+                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Uniq</span>
+                        <input
+                            type="checkbox"
+                            checked={field.is_unique || false}
+                            onChange={(e) => onUpdate(field.id, { is_unique: e.target.checked })}
+                            className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                        />
+                    </div>
                     <button
                         type="button"
                         onClick={() => onRemove(field.id)}
@@ -147,13 +175,23 @@ export default function Create({ allContentTypes }) {
         name: '',
         description: '',
         type: 'collection',
+        events: {
+            onSelect: '',
+            onInsert: '',
+            onUpdate: '',
+            onDelete: ''
+        },
         fields: [
-            { id: '1', name: 'title', type: 'text', required: true, options: {} }
+            { id: '1', name: 'title', type: 'text', required: true, is_unique: false, options: {} }
         ],
     });
 
     const sensors = useSensors(
-        useSensor(PointerSensor),
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 5,
+            },
+        }),
         useSensor(KeyboardSensor, {
             coordinateGetter: sortableKeyboardCoordinates,
         })
@@ -161,29 +199,46 @@ export default function Create({ allContentTypes }) {
 
     const handleDragEnd = (event) => {
         const { active, over } = event;
-        if (active.id !== over.id) {
-            setData('fields', (fields) => {
-                const oldIndex = fields.findIndex((f) => f.id === active.id);
-                const newIndex = fields.findIndex((f) => f.id === over.id);
-                return arrayMove(fields, oldIndex, newIndex);
+
+        if (over && active.id !== over.id) {
+            setData(prevData => {
+                const oldIndex = prevData.fields.findIndex((f) => String(f.id) === String(active.id));
+                const overIndex = prevData.fields.findIndex((f) => String(f.id) === String(over.id));
+
+                if (oldIndex !== -1 && overIndex !== -1) {
+                    return {
+                        ...prevData,
+                        fields: arrayMove(prevData.fields, oldIndex, overIndex)
+                    };
+                }
+                return prevData;
             });
         }
     };
 
     const addField = () => {
-        const newId = (data.fields.length + 1).toString();
-        setData('fields', [
-            ...data.fields,
-            { id: newId, name: '', type: 'text', required: false, options: {} }
-        ]);
+        const newId = `new-${Date.now()}`;
+        setData(prev => ({
+            ...prev,
+            fields: [
+                ...prev.fields,
+                { id: newId, name: '', type: 'text', required: false, is_unique: false, options: {} }
+            ]
+        }));
     };
 
     const removeField = (id) => {
-        setData('fields', data.fields.filter(f => f.id !== id));
+        setData(prev => ({
+            ...prev,
+            fields: prev.fields.filter(f => f.id !== id)
+        }));
     };
 
     const updateField = (id, updates) => {
-        setData('fields', data.fields.map(f => f.id === id ? { ...f, ...updates } : f));
+        setData(prev => ({
+            ...prev,
+            fields: prev.fields.map(f => f.id === id ? { ...f, ...updates } : f)
+        }));
     };
 
     const handleSubmit = (e) => {
@@ -226,9 +281,9 @@ export default function Create({ allContentTypes }) {
                                     <label className="block text-sm font-medium text-gray-700">Type</label>
                                     <div className="mt-2 flex gap-4">
                                         <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                                type="radio" 
-                                                name="type" 
+                                            <input
+                                                type="radio"
+                                                name="type"
                                                 value="collection"
                                                 checked={data.type === 'collection'}
                                                 onChange={e => setData('type', e.target.value)}
@@ -239,9 +294,9 @@ export default function Create({ allContentTypes }) {
                                             </span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input 
-                                                type="radio" 
-                                                name="type" 
+                                            <input
+                                                type="radio"
+                                                name="type"
                                                 value="single"
                                                 checked={data.type === 'single'}
                                                 onChange={e => setData('type', e.target.value)}
@@ -253,8 +308,8 @@ export default function Create({ allContentTypes }) {
                                         </label>
                                     </div>
                                     <p className="mt-1.5 text-xs text-gray-500">
-                                        {data.type === 'collection' 
-                                            ? 'Collections allow multiple entries (e.g. blog posts, products)' 
+                                        {data.type === 'collection'
+                                            ? 'Collections allow multiple entries (e.g. blog posts, products)'
                                             : 'Single types only allow one entry (e.g. about page, global settings)'}
                                     </p>
                                 </div>
@@ -275,10 +330,10 @@ export default function Create({ allContentTypes }) {
                             </div>
 
                             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                <SortableContext items={data.fields.map(f => f.id)} strategy={verticalListSortingStrategy}>
+                                <SortableContext items={data.fields.map(f => String(f.id))} strategy={verticalListSortingStrategy}>
                                     {data.fields.map((field, index) => (
                                         <SortableField
-                                            key={field.id}
+                                            key={String(field.id)}
                                             field={field}
                                             index={index}
                                             onRemove={removeField}
@@ -290,6 +345,67 @@ export default function Create({ allContentTypes }) {
                             </DndContext>
 
                             {errors.fields && <p className="mt-4 text-sm text-red-600">{errors.fields}</p>}
+                        </div>
+
+                        {/* PHP Hooks Section */}
+                        <div className="bg-white p-6 shadow sm:rounded-lg border-l-4 border-yellow-400">
+                            <div className="mb-6">
+                                <h3 className="text-lg font-medium text-gray-900 font-premium flex items-center gap-2">
+                                    <Code className="w-5 h-5 text-yellow-500" />
+                                    PHP Event Hooks (Advanced)
+                                </h3>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Execute custom PHP code during the content entry lifecycle.
+                                    <strong> Use with extreme caution.</strong> Available variables: <code className="bg-gray-100 px-1 rounded text-pink-600">$data</code> (for writing hooks) and <code className="bg-gray-100 px-1 rounded text-pink-600">$entry</code> (for reading/updating existing).
+                                </p>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Select</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs after an entry is retrieved. Modify <code className="bg-gray-50 px-1 rounded">$entry</code> attributes.</p>
+                                    <textarea
+                                        value={data.events?.onSelect || ''}
+                                        onChange={e => setData('events', { ...data.events, onSelect: e.target.value })}
+                                        placeholder="// e.g. $entry->title = strtoupper($entry->title);"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Insert</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs before a new entry is saved. Modify the <code className="bg-gray-50 px-1 rounded">$data</code> array.</p>
+                                    <textarea
+                                        value={data.events?.onInsert || ''}
+                                        onChange={e => setData('events', { ...data.events, onInsert: e.target.value })}
+                                        placeholder="// e.g. $data['slug'] = Str::slug($data['title']);"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Update</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs before an existing entry is updated. Access <code className="bg-gray-50 px-1 rounded">$data</code> array and <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
+                                    <textarea
+                                        value={data.events?.onUpdate || ''}
+                                        onChange={e => setData('events', { ...data.events, onUpdate: e.target.value })}
+                                        placeholder="// e.g. if (!isset($data['updated_by'])) $data['updated_by'] = auth()->id();"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Delete</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs before an entry is deleted. Access <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
+                                    <textarea
+                                        value={data.events?.onDelete || ''}
+                                        onChange={e => setData('events', { ...data.events, onDelete: e.target.value })}
+                                        placeholder="// e.g. Log::info('Deleting entry ' . $entry->id);"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex justify-end">
