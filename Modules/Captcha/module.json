@@ -1,0 +1,26 @@
+{
+    "name": "Captcha",
+    "alias": "captcha",
+    "description": "Google ReCaptcha v2 plugin for login and registration forms.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Captcha\\Providers\\CaptchaServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "security",
+    "settings_fields": [
+        {
+            "name": "captcha_site_key",
+            "label": "ReCaptcha Site Key",
+            "type": "text",
+            "default": ""
+        },
+        {
+            "name": "captcha_secret_key",
+            "label": "ReCaptcha Secret Key",
+            "type": "password",
+            "default": ""
+        }
+    ]
+}

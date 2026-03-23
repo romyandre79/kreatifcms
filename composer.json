@@ -45,6 +45,7 @@
             "Modules\\EmailConfig\\": "Modules/EmailConfig/app/",
             "Modules\\EmailTemplates\\": "Modules/EmailTemplates/app/",
             "Modules\\EditorSummernote\\": "Modules/EditorSummernote/app/",
+            "Modules\\Captcha\\": "Modules/Captcha/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

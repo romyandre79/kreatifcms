@@ -14,5 +14,6 @@
     "RedisCache": true,
     "EmailConfig": true,
     "EmailTemplates": true,
-    "EditorSummernote": true
+    "EditorSummernote": true,
+    "Captcha": true
 }

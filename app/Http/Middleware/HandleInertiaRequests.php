@@ -29,6 +29,18 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $captchaConfigured = false;
+        if (class_exists('\Nwidart\Modules\Facades\Module')) {
+            $module = \Nwidart\Modules\Facades\Module::find('Captcha');
+            if ($module && $module->isEnabled()) {
+                $siteKey = \App\Models\Setting::get('captcha', 'captcha_site_key');
+                $secretKey = \App\Models\Setting::get('captcha', 'captcha_secret_key');
+                if ($siteKey && $secretKey) {
+                    $captchaConfigured = true;
+                }
+            }
+        }
+
         return [
             ...parent::share($request),
             'auth' => [
@@ -59,6 +71,7 @@ class HandleInertiaRequests extends Middleware
                 }
                 return $plugins;
             },
+            'captcha_site_key' => $captchaConfigured ? \App\Models\Setting::get('captcha', 'captcha_site_key') : null,
         ];
     }
 }
