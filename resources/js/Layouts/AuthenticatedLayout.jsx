@@ -22,6 +22,7 @@ import {
     Mail,
     Image as ImageIcon
 } from 'lucide-react';
+import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
 
 export default function AuthenticatedLayout({ header, children }) {
     const { auth, flash, plugins = [] } = usePage().props;
@@ -203,6 +204,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </main>
             </div>
+            {plugins.some(p => p.alias === 'aiassistant' && p.enabled !== false) && <AiAssistantSidebar />}
         </div>
     );
 }

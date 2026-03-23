@@ -1,0 +1,61 @@
+{
+    "name": "AiAssistant",
+    "alias": "aiassistant",
+    "description": "AI-powered assistant supporting Ollama, Gemini, and OpenAI.",
+    "keywords": ["ai", "assistant", "ollama", "gemini", "openai"],
+    "priority": 0,
+    "providers": [
+        "Modules\\AiAssistant\\Providers\\AiAssistantServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "system",
+    "settings_fields": [
+        {
+            "name": "ai_provider",
+            "label": "AI Provider",
+            "type": "select",
+            "options": [
+                {"label": "Ollama (Local)", "value": "ollama"},
+                {"label": "Google Gemini", "value": "gemini"},
+                {"label": "OpenAI (ChatGPT)", "value": "openai"}
+            ],
+            "default": "gemini"
+        },
+        {
+            "name": "gemini_api_key",
+            "label": "Gemini API Key",
+            "type": "password",
+            "default": ""
+        },
+        {
+            "name": "gemini_model",
+            "label": "Gemini Model",
+            "type": "text",
+            "default": "gemini-1.5-flash"
+        },
+        {
+            "name": "openai_api_key",
+            "label": "OpenAI API Key",
+            "type": "password",
+            "default": ""
+        },
+        {
+            "name": "openai_model",
+            "label": "OpenAI Model",
+            "type": "text",
+            "default": "gpt-4o"
+        },
+        {
+            "name": "ollama_base_url",
+            "label": "Ollama Base URL",
+            "type": "text",
+            "default": "http://localhost:11434"
+        },
+        {
+            "name": "ollama_model",
+            "label": "Ollama Model",
+            "type": "text",
+            "default": "llama3"
+        }
+    ]
+}

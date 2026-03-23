@@ -15,5 +15,6 @@
     "EmailConfig": true,
     "EmailTemplates": true,
     "EditorSummernote": true,
-    "Captcha": true
+    "Captcha": true,
+    "AiAssistant": true
 }
