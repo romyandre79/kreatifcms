@@ -204,13 +204,27 @@ export default function Index({ plugins }) {
                                                 {setting.label}
                                             </label>
                                             <div className="relative">
-                                                <input
-                                                    type={setting.type === 'number' ? 'number' : 'text'}
-                                                    value={settingsData[setting.name] || ''}
-                                                    onChange={(e) => handleSettingChange(setting.name, e.target.value)}
-                                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                                    placeholder={setting.default}
-                                                />
+                                                {setting.type === 'select' ? (
+                                                    <select
+                                                        value={settingsData[setting.name] || setting.default || ''}
+                                                        onChange={(e) => handleSettingChange(setting.name, e.target.value)}
+                                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                                    >
+                                                        {setting.options?.map((opt) => (
+                                                            <option key={opt.value} value={opt.value}>
+                                                                {opt.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type={setting.type === 'password' ? 'password' : (setting.type === 'number' ? 'number' : 'text')}
+                                                        value={settingsData[setting.name] || ''}
+                                                        onChange={(e) => handleSettingChange(setting.name, e.target.value)}
+                                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                                        placeholder={setting.default}
+                                                    />
+                                                )}
                                             </div>
                                             {setting.description && (
                                                 <p className="text-xs text-gray-500">{setting.description}</p>

@@ -174,6 +174,10 @@ class EmailConfigServiceProvider extends ServiceProvider
             ];
 
             // Only override if settings are actually present in the DB
+            if (isset($settings['mail.mailers.smtp.host'])) {
+                config(['mail.default' => 'smtp']);
+            }
+
             foreach ($settings as $key => $value) {
                 if ($value !== null) {
                     if ($key === 'mail.mailers.smtp.encryption' && $value === 'null') {
