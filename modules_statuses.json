@@ -9,7 +9,7 @@
     "TextBlock": true,
     "ImageBlock": true,
     "FeatureGrid": true,
-    "ContentList": false,
+    "ContentList": true,
     "DatabaseManager": true,
     "RedisCache": true,
     "EmailConfig": true,
