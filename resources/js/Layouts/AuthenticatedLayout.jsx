@@ -20,7 +20,8 @@ import {
     HardDrive,
     FileText,
     Mail,
-    Image as ImageIcon
+    Image as ImageIcon,
+    Activity
 } from 'lucide-react';
 import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
 
@@ -49,6 +50,10 @@ export default function AuthenticatedLayout({ header, children }) {
 
     if (plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
         navItems.push({ name: 'Email Templates', href: route('email-templates.index'), icon: Mail, active: route().current('email-templates.*') });
+    }
+
+    if (plugins.some(p => p.alias === 'jobmanager') && route().has('jobmanager.index')) {
+        navItems.push({ name: 'Jobs', href: route('jobmanager.index'), icon: Activity, active: route().current('jobmanager.*') });
     }
 
     return (

@@ -1,6 +1,6 @@
 <?php
 
-namespace Modules\OtpService\Providers;
+namespace Modules\JobManager\Providers;
 
 use Illuminate\Support\Facades\Blade;
 use Illuminate\Support\ServiceProvider;
@@ -8,13 +8,13 @@ use Nwidart\Modules\Traits\PathNamespace;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
 
-class OtpServiceServiceProvider extends ServiceProvider
+class JobManagerServiceProvider extends ServiceProvider
 {
     use PathNamespace;
 
-    protected string $name = 'OtpService';
+    protected string $name = 'JobManager';
 
-    protected string $nameLower = 'otpservice';
+    protected string $nameLower = 'jobmanager';
 
     /**
      * Boot the application events.
@@ -36,16 +36,6 @@ class OtpServiceServiceProvider extends ServiceProvider
     {
         $this->app->register(EventServiceProvider::class);
         $this->app->register(RouteServiceProvider::class);
-
-        $this->app->singleton(\Modules\OtpService\Interfaces\OtpServiceInterface::class, function ($app) {
-            $provider = \App\Models\Setting::get('otpservice', 'otp_provider', 'whatsapp');
-            
-            if ($provider === 'telegram') {
-                return new \Modules\OtpService\Services\TelegramOtpService();
-            }
-            
-            return new \Modules\OtpService\Services\WhatsAppOtpService();
-        });
     }
 
     /**
@@ -53,9 +43,7 @@ class OtpServiceServiceProvider extends ServiceProvider
      */
     protected function registerCommands(): void
     {
-        $this->commands([
-            \Modules\OtpService\Console\CleanupOtpLogs::class,
-        ]);
+        // $this->commands([]);
     }
 
     /**
@@ -65,7 +53,14 @@ class OtpServiceServiceProvider extends ServiceProvider
     {
         $this->app->booted(function () {
             $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
-            $schedule->command('otpservice:cleanup-otp-logs')->daily();
+            
+            // Example: Run a closure every hour to log heartbeat
+            $schedule->call(function () {
+                \Illuminate\Support\Facades\Log::info('JobManager Heartbeat: Scheduled task running...');
+            })->hourly();
+
+            // Example: Run the ContentTypeReportJob every day at midnight
+            $schedule->job(new \Modules\JobManager\Jobs\ContentTypeReportJob())->daily();
         });
     }
 

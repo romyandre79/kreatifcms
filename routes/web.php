@@ -62,6 +62,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Email Template Routes (Moved from module to fix precedence)
     Route::resource('email-templates', \Modules\EmailTemplates\Http\Controllers\EmailTemplatesController::class);
 
+    // Job Manager Routes
+    Route::get('/jobs', [\Modules\JobManager\Http\Controllers\JobController::class, 'index'])->name('jobmanager.index');
+    Route::post('/jobs/dispatch', [\Modules\JobManager\Http\Controllers\JobController::class, 'dispatch'])->name('jobmanager.dispatch');
+
     // User & Role Management Routes
     Route::resource('users', App\Http\Controllers\UserController::class);
     Route::resource('roles', App\Http\Controllers\RoleController::class);

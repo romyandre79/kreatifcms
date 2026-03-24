@@ -17,5 +17,6 @@
     "EditorSummernote": true,
     "Captcha": true,
     "AiAssistant": true,
-    "OtpService": true
+    "OtpService": true,
+    "JobManager": true
 }

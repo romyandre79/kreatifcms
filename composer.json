@@ -48,6 +48,7 @@
             "Modules\\Captcha\\": "Modules/Captcha/app/",
             "Modules\\AiAssistant\\": "Modules/AiAssistant/app/",
             "Modules\\OtpService\\": "Modules/OtpService/app/",
+            "Modules\\JobManager\\": "Modules/JobManager/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }
