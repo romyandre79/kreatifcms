@@ -47,6 +47,7 @@
             "Modules\\EditorSummernote\\": "Modules/EditorSummernote/app/",
             "Modules\\Captcha\\": "Modules/Captcha/app/",
             "Modules\\AiAssistant\\": "Modules/AiAssistant/app/",
+            "Modules\\OtpService\\": "Modules/OtpService/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

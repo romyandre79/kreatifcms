@@ -1,0 +1,48 @@
+{
+    "name": "OtpService",
+    "alias": "otpservice",
+    "description": "Unified OTP service for WhatsApp and Telegram.",
+    "keywords": [],
+    "priority": 0,
+    "plugin_type": "system",
+    "providers": [
+        "Modules\\OtpService\\Providers\\OtpServiceServiceProvider"
+    ],
+    "files": [],
+    "settings_fields": [
+        {
+            "name": "otp_provider",
+            "label": "OTP Provider",
+            "type": "select",
+            "options": [
+                {"label": "WhatsApp", "value": "whatsapp"},
+                {"label": "Telegram", "value": "telegram"}
+            ],
+            "default": "whatsapp"
+        },
+        {
+            "name": "whatsapp_api_url",
+            "label": "WhatsApp API URL",
+            "type": "text",
+            "default": "https://api.whatsapp.com/send"
+        },
+        {
+            "name": "whatsapp_api_key",
+            "label": "WhatsApp API Key",
+            "type": "password",
+            "default": ""
+        },
+        {
+            "name": "whatsapp_sender_number",
+            "label": "WhatsApp Sender Number",
+            "type": "text",
+            "default": ""
+        },
+        {
+            "name": "telegram_bot_token",
+            "label": "Telegram Bot Token",
+            "type": "password",
+            "default": ""
+        }
+    ]
+}

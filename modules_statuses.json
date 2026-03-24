@@ -16,5 +16,6 @@
     "EmailTemplates": true,
     "EditorSummernote": true,
     "Captcha": true,
-    "AiAssistant": true
+    "AiAssistant": true,
+    "OtpService": true
 }
