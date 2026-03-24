@@ -59,13 +59,14 @@ class HandleInertiaRequests extends Middleware
                 if (!class_exists('\Nwidart\Modules\Facades\Module')) {
                     return [];
                 }
-                $enabledModules = \Nwidart\Modules\Facades\Module::allEnabled();
+                $modules = \Nwidart\Modules\Facades\Module::all();
                 $plugins = [];
-                foreach ($enabledModules as $module) {
+                foreach ($modules as $module) {
                     $plugins[] = [
                         'name' => $module->getName(),
                         'alias' => $module->getLowerName(),
                         'type' => $module->get('plugin_type', 'system'),
+                        'enabled' => $module->isEnabled(),
                         'meta' => $module->get('block_meta', []),
                     ];
                 }

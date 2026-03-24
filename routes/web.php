@@ -66,6 +66,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/jobs', [\Modules\JobManager\Http\Controllers\JobController::class, 'index'])->name('jobmanager.index');
     Route::post('/jobs/dispatch', [\Modules\JobManager\Http\Controllers\JobController::class, 'dispatch'])->name('jobmanager.dispatch');
 
+    // Scheduled Job Routes
+    Route::post('/jobs/scheduled', [\Modules\JobManager\Http\Controllers\JobController::class, 'storeScheduled'])->name('jobmanager.scheduled.store');
+    Route::put('/jobs/scheduled/{scheduledJob}', [\Modules\JobManager\Http\Controllers\JobController::class, 'updateScheduled'])->name('jobmanager.scheduled.update');
+    Route::delete('/jobs/scheduled/{scheduledJob}', [\Modules\JobManager\Http\Controllers\JobController::class, 'destroyScheduled'])->name('jobmanager.scheduled.destroy');
+
     // User & Role Management Routes
     Route::resource('users', App\Http\Controllers\UserController::class);
     Route::resource('roles', App\Http\Controllers\RoleController::class);

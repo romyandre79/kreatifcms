@@ -54,12 +54,32 @@ class JobManagerServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $schedule = $this->app->make(\Illuminate\Console\Scheduling\Schedule::class);
             
-            // Example: Run a closure every hour to log heartbeat
-            $schedule->call(function () {
-                \Illuminate\Support\Facades\Log::info('JobManager Heartbeat: Scheduled task running...');
-            })->hourly();
+            // Register Dynamic Scheduled Jobs from Database
+            try {
+                if (\Illuminate\Support\Facades\Schema::hasTable('scheduled_jobs')) {
+                    $activeJobs = \Modules\JobManager\Models\ScheduledJob::where('is_active', true)->get();
+                    
+                    foreach ($activeJobs as $job) {
+                        if ($job->type === 'php') {
+                            $schedule->call(function () use ($job) {
+                                try {
+                                    \Illuminate\Support\Facades\Log::info("Running dynamic job: {$job->name}");
+                                    eval($job->command_code);
+                                    $job->update(['last_run_at' => now()]);
+                                } catch (\Throwable $e) {
+                                    \Illuminate\Support\Facades\Log::error("Error in dynamic job {$job->name}: " . $e->getMessage());
+                                }
+                            })->cron($job->cron);
+                        } else {
+                            $schedule->command($job->command_code)->cron($job->cron);
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to load dynamic schedules: " . $e->getMessage());
+            }
 
-            // Example: Run the ContentTypeReportJob every day at midnight
+            // Static Example: Run the ContentTypeReportJob every day at midnight
             $schedule->job(new \Modules\JobManager\Jobs\ContentTypeReportJob())->daily();
         });
     }
