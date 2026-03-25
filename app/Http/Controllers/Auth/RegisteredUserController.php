@@ -31,11 +31,24 @@ class RegisteredUserController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $validationRules = [
             'name' => 'required|string|max:255',
             'email' => 'required|string|lowercase|email|max:255|unique:'.User::class,
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        ];
+
+        if (class_exists('\Nwidart\Modules\Facades\Module')) {
+            $module = \Nwidart\Modules\Facades\Module::find('Captcha');
+            if ($module && $module->isEnabled()) {
+                $siteKey = \App\Models\Setting::get('captcha', 'captcha_site_key');
+                $secretKey = \App\Models\Setting::get('captcha', 'captcha_secret_key');
+                if ($siteKey && $secretKey) {
+                    $validationRules['captcha_token'] = ['required', 'captcha'];
+                }
+            }
+        }
+
+        $request->validate($validationRules);
 
         $user = User::create([
             'name' => $request->name,

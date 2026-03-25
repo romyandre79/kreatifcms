@@ -27,10 +27,23 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'email' => ['required', 'string', 'email'],
             'password' => ['required', 'string'],
         ];
+
+        if (class_exists('\Nwidart\Modules\Facades\Module')) {
+            $module = \Nwidart\Modules\Facades\Module::find('Captcha');
+            if ($module && $module->isEnabled()) {
+                $siteKey = \App\Models\Setting::get('captcha', 'captcha_site_key');
+                $secretKey = \App\Models\Setting::get('captcha', 'captcha_secret_key');
+                if ($siteKey && $secretKey) {
+                    $rules['captcha_token'] = ['required', 'captcha'];
+                }
+            }
+        }
+
+        return $rules;
     }
 
     /**

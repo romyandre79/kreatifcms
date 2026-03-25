@@ -1,12 +1,16 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, usePage, router } from '@inertiajs/react';
 import { useState, useRef } from 'react';
-import { Image as ImageIcon, UploadCloud, Trash2, X, Link as LinkIcon, Search } from 'lucide-react';
+import { Image as ImageIcon, Video, FileText, UploadCloud, Trash2, X, Link as LinkIcon, Search } from 'lucide-react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ media }) {
     const [uploading, setUploading] = useState(false);
     const [search, setSearch] = useState('');
     const [selectedMedia, setSelectedMedia] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [mediaToDelete, setMediaToDelete] = useState(null);
+    const [processing, setProcessing] = useState(false);
     const fileInputRef = useRef(null);
 
     const handleFileChange = (e) => {
@@ -28,12 +32,21 @@ export default function Index({ media }) {
         });
     };
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this media?')) {
-            router.delete(route('media.destroy', id), {
+    const confirmDelete = (id) => {
+        setMediaToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (mediaToDelete) {
+            setProcessing(true);
+            router.delete(route('media.destroy', mediaToDelete), {
                 preserveScroll: true,
-                onSuccess: () => {
-                    if (selectedMedia?.id === id) setSelectedMedia(null);
+                onFinish: () => {
+                    setProcessing(false);
+                    setShowDeleteModal(false);
+                    if (selectedMedia?.id === mediaToDelete) setSelectedMedia(null);
+                    setMediaToDelete(null);
                 }
             });
         }
@@ -56,6 +69,9 @@ export default function Index({ media }) {
         const i = Math.floor(Math.log(bytes) / Math.log(k))
         return `${parseFloat((bytes / Math.pow(k, i)).toFixed(dm))} ${sizes[i]}`
     };
+
+    const isVideo = (mimeType) => mimeType?.startsWith('video/');
+    const isImage = (mimeType) => mimeType?.startsWith('image/');
 
     const sanitizePath = (path) => {
         if (!path) return '';
@@ -88,7 +104,7 @@ export default function Index({ media }) {
                             <input 
                                 type="file" 
                                 multiple 
-                                accept="image/*" 
+                                accept="image/*,video/*" 
                                 className="hidden" 
                                 ref={fileInputRef}
                                 onChange={handleFileChange}
@@ -122,12 +138,30 @@ export default function Index({ media }) {
                                             selectedMedia?.id === item.id ? 'border-indigo-500 shadow-md scale-[0.98]' : 'border-transparent hover:border-gray-300'
                                         }`}
                                     >
-                                        <img 
-                                            src={sanitizePath(`/storage/${item.path}`)} 
-                                            alt={item.name} 
-                                            className="w-full h-full object-cover"
-                                            loading="lazy"
-                                        />
+                                        {isImage(item.mime_type) ? (
+                                            <img 
+                                                src={sanitizePath(`/storage/${item.path}`)} 
+                                                alt={item.name} 
+                                                className="w-full h-full object-cover"
+                                                loading="lazy"
+                                            />
+                                        ) : isVideo(item.mime_type) ? (
+                                            <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
+                                                <video 
+                                                    src={sanitizePath(`/storage/${item.path}`)} 
+                                                    className="w-full h-full object-cover opacity-80"
+                                                />
+                                                <div className="absolute inset-0 flex items-center justify-center">
+                                                    <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center">
+                                                        <Video className="w-5 h-5 text-white fill-white" />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                                <FileText className="w-10 h-10 text-gray-300" />
+                                            </div>
+                                        )}
                                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
                                     </div>
                                 ))}
@@ -147,8 +181,18 @@ export default function Index({ media }) {
                         </div>
                         
                         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden border border-gray-200">
-                                <img src={sanitizePath(`/storage/${selectedMedia.path}`)} alt={selectedMedia.name} className="w-full h-full object-contain" />
+                            <div className="aspect-video bg-gray-900 rounded-lg overflow-hidden border border-gray-200 flex items-center justify-center">
+                                {isImage(selectedMedia.mime_type) ? (
+                                    <img src={sanitizePath(`/storage/${selectedMedia.path}`)} alt={selectedMedia.name} className="w-full h-full object-contain" />
+                                ) : isVideo(selectedMedia.mime_type) ? (
+                                    <video 
+                                        src={sanitizePath(`/storage/${selectedMedia.path}`)} 
+                                        controls 
+                                        className="w-full h-full max-h-full"
+                                    />
+                                ) : (
+                                    <FileText className="w-16 h-16 text-gray-300" />
+                                )}
                             </div>
                             
                             <div className="space-y-3 text-sm">
@@ -194,7 +238,7 @@ export default function Index({ media }) {
 
                         <div className="p-4 bg-gray-50 border-t border-gray-200">
                             <button 
-                                onClick={() => handleDelete(selectedMedia.id)}
+                                onClick={() => confirmDelete(selectedMedia.id)}
                                 className="w-full py-2 flex items-center justify-center gap-2 text-red-600 hover:bg-red-50 rounded-lg font-medium text-sm transition-colors border border-transparent hover:border-red-100"
                             >
                                 <Trash2 className="w-4 h-4" />
@@ -204,6 +248,15 @@ export default function Index({ media }) {
                     </div>
                 )}
             </div>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Media"
+                message="Are you sure you want to permanently delete this media file? This action cannot be undone."
+                processing={processing}
+            />
         </AuthenticatedLayout>
     );
 }

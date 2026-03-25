@@ -3,14 +3,30 @@ import { Head, Link, router } from '@inertiajs/react';
 import { Plus, Edit, Trash2, Search, Clock } from 'lucide-react';
 import HistoryModal from '@/Components/HistoryModal';
 import { useState } from 'react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ contentType, entries, slug }) {
     const [historyOpen, setHistoryOpen] = useState(false);
     const [selectedId, setSelectedId] = useState(null);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [entryToDelete, setEntryToDelete] = useState(null);
+    const [processing, setProcessing] = useState(false);
 
-    const handleDelete = (id) => {
-        if (confirm('Are you sure you want to delete this entry?')) {
-            router.delete(route('content-entries.destroy', { slug, id }));
+    const confirmDelete = (id) => {
+        setEntryToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (entryToDelete) {
+            setProcessing(true);
+            router.delete(route('content-entries.destroy', { slug, id: entryToDelete }), {
+                onFinish: () => {
+                    setProcessing(false);
+                    setShowDeleteModal(false);
+                    setEntryToDelete(null);
+                }
+            });
         }
     };
 
@@ -119,8 +135,9 @@ export default function Index({ contentType, entries, slug }) {
                                                         <Clock className="w-4 h-4 inline" />
                                                     </button>
                                                     <button 
-                                                        onClick={() => handleDelete(entry.id)}
+                                                        onClick={() => confirmDelete(entry.id)}
                                                         className="text-red-600 hover:text-red-900"
+                                                        title="Delete Entry"
                                                     >
                                                         <Trash2 className="w-4 h-4 inline" />
                                                     </button>
@@ -140,6 +157,15 @@ export default function Index({ contentType, entries, slug }) {
                 onClose={() => setHistoryOpen(false)}
                 contentTypeSlug={slug}
                 rowId={selectedId}
+            />
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Entry"
+                message="Are you sure you want to delete this entry? This action cannot be undone."
+                processing={processing}
             />
         </AuthenticatedLayout>
     );

@@ -3,12 +3,16 @@ import { Head, router } from '@inertiajs/react';
 import { useState } from 'react';
 import Modal from '@/Components/Modal';
 import { Box, CheckCircle, XCircle, Settings, Puzzle, Download, Info, Upload, Trash2 } from 'lucide-react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ plugins }) {
     const [selectedPlugin, setSelectedPlugin] = useState(null);
     const [importing, setImporting] = useState(false);
     const [settingsData, setSettingsData] = useState({});
     const [savingSettings, setSavingSettings] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [pluginToDelete, setPluginToDelete] = useState(null);
+    const [deleting, setDeleting] = useState(false);
 
     const togglePlugin = (plugin) => {
         const action = plugin.enabled ? 'disable' : 'enable';
@@ -43,9 +47,21 @@ export default function Index({ plugins }) {
         });
     };
 
-    const deletePlugin = (plugin) => {
-        if (confirm(`Are you sure you want to permanently delete the plugin "${plugin.name}"? This action cannot be undone.`)) {
-            router.delete(route('plugins.destroy', plugin.name));
+    const confirmDelete = (plugin) => {
+        setPluginToDelete(plugin);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (pluginToDelete) {
+            setDeleting(true);
+            router.delete(route('plugins.destroy', pluginToDelete.name), {
+                onFinish: () => {
+                    setDeleting(false);
+                    setShowDeleteModal(false);
+                    setPluginToDelete(null);
+                }
+            });
         }
     };
 
@@ -163,7 +179,7 @@ export default function Index({ plugins }) {
                                                 <Settings className="w-5 h-5" />
                                             </button>
                                             <button 
-                                                onClick={() => deletePlugin(plugin)}
+                                                onClick={() => confirmDelete(plugin)}
                                                 className="text-gray-400 hover:text-red-600 transition-colors"
                                                 title="Delete Plugin"
                                             >
@@ -180,7 +196,7 @@ export default function Index({ plugins }) {
 
             <Modal show={selectedPlugin !== null} onClose={() => setSelectedPlugin(null)} maxWidth="xl">
                 {selectedPlugin && (
-                    <div className="p-6">
+                    <div className="p-6 max-h-[85vh] overflow-y-auto">
                         <div className="flex items-start justify-between mb-4">
                             <div className="flex items-center gap-3">
                                 <div className="p-2 bg-gray-100 rounded-lg text-gray-500">
@@ -204,13 +220,27 @@ export default function Index({ plugins }) {
                                                 {setting.label}
                                             </label>
                                             <div className="relative">
-                                                <input
-                                                    type={setting.type === 'number' ? 'number' : 'text'}
-                                                    value={settingsData[setting.name] || ''}
-                                                    onChange={(e) => handleSettingChange(setting.name, e.target.value)}
-                                                    className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
-                                                    placeholder={setting.default}
-                                                />
+                                                {setting.type === 'select' ? (
+                                                    <select
+                                                        value={settingsData[setting.name] || setting.default || ''}
+                                                        onChange={(e) => handleSettingChange(setting.name, e.target.value)}
+                                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                                    >
+                                                        {setting.options?.map((opt) => (
+                                                            <option key={opt.value} value={opt.value}>
+                                                                {opt.label}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                ) : (
+                                                    <input
+                                                        type={setting.type === 'password' ? 'password' : (setting.type === 'number' ? 'number' : 'text')}
+                                                        value={settingsData[setting.name] || ''}
+                                                        onChange={(e) => handleSettingChange(setting.name, e.target.value)}
+                                                        className="w-full px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all"
+                                                        placeholder={setting.default}
+                                                    />
+                                                )}
                                             </div>
                                             {setting.description && (
                                                 <p className="text-xs text-gray-500">{setting.description}</p>
@@ -277,6 +307,15 @@ export default function Index({ plugins }) {
                     </div>
                 )}
             </Modal>
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Plugin"
+                message={`Are you sure you want to permanently delete the plugin "${pluginToDelete?.name}"? This action cannot be undone and will remove all module files.`}
+                processing={deleting}
+            />
         </AuthenticatedLayout>
     );
 }

@@ -1,0 +1,12 @@
+{
+    "name": "JobManager",
+    "alias": "jobmanager",
+    "description": "System plugin to manage and trigger background jobs.",
+    "keywords": [],
+    "priority": 0,
+    "plugin_type": "system",
+    "providers": [
+        "Modules\\JobManager\\Providers\\JobManagerServiceProvider"
+    ],
+    "files": []
+}

@@ -45,6 +45,11 @@
             "Modules\\EmailConfig\\": "Modules/EmailConfig/app/",
             "Modules\\EmailTemplates\\": "Modules/EmailTemplates/app/",
             "Modules\\EditorSummernote\\": "Modules/EditorSummernote/app/",
+            "Modules\\Captcha\\": "Modules/Captcha/app/",
+            "Modules\\AiAssistant\\": "Modules/AiAssistant/app/",
+            "Modules\\OtpService\\": "Modules/OtpService/app/",
+            "Modules\\JobManager\\": "Modules/JobManager/app/",
+            "Modules\\MediaLibrary\\": "Modules/MediaLibrary/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

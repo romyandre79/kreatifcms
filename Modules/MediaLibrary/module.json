@@ -1,0 +1,12 @@
+{
+    "name": "MediaLibrary",
+    "alias": "medialibrary",
+    "description": "Media management plugin with support for images and videos.",
+    "keywords": [],
+    "priority": 0,
+    "plugin_type": "system",
+    "providers": [
+        "Modules\\MediaLibrary\\Providers\\MediaLibraryServiceProvider"
+    ],
+    "files": []
+}

@@ -27,9 +27,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::delete('/builder/content-types/{contentType}', [App\Http\Controllers\ContentTypeController::class, 'destroy'])->name('content-types.destroy');
     Route::post('/builder/content-types/{contentType}/push', [App\Http\Controllers\SchemaSyncController::class, 'push'])->name('content-types.push');
 
-    // Page Builder & Media
-    Route::post('/media/upload', [App\Http\Controllers\MediaController::class, 'upload'])->name('media.upload');
-    Route::resource('media', App\Http\Controllers\MediaController::class)->except(['create', 'edit', 'update']);
+    // Page Builder
+    Route::post('/media/upload', [\Modules\MediaLibrary\Http\Controllers\MediaController::class, 'upload'])->name('media.upload');
+    Route::resource('media', \Modules\MediaLibrary\Http\Controllers\MediaController::class)->except(['create', 'edit', 'update']);
     Route::resource('pages', App\Http\Controllers\PageController::class);
     
     // Module Routes
@@ -61,6 +61,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
 
     // Email Template Routes (Moved from module to fix precedence)
     Route::resource('email-templates', \Modules\EmailTemplates\Http\Controllers\EmailTemplatesController::class);
+
+    // Job Manager Routes
+    Route::get('/jobs', [\Modules\JobManager\Http\Controllers\JobController::class, 'index'])->name('jobmanager.index');
+    Route::post('/jobs/dispatch', [\Modules\JobManager\Http\Controllers\JobController::class, 'dispatch'])->name('jobmanager.dispatch');
+
+    // Scheduled Job Routes
+    Route::post('/jobs/scheduled', [\Modules\JobManager\Http\Controllers\JobController::class, 'storeScheduled'])->name('jobmanager.scheduled.store');
+    Route::put('/jobs/scheduled/{scheduledJob}', [\Modules\JobManager\Http\Controllers\JobController::class, 'updateScheduled'])->name('jobmanager.scheduled.update');
+    Route::delete('/jobs/scheduled/{scheduledJob}', [\Modules\JobManager\Http\Controllers\JobController::class, 'destroyScheduled'])->name('jobmanager.scheduled.destroy');
 
     // User & Role Management Routes
     Route::resource('users', App\Http\Controllers\UserController::class);

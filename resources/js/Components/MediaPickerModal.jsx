@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Image as ImageIcon, Plus } from 'lucide-react';
+import { X, Search, Image as ImageIcon, Video, Plus, FileText } from 'lucide-react';
 import axios from 'axios';
 
 class ModalErrorBoundary extends React.Component {
@@ -115,7 +115,7 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
                                     className="hidden" 
                                     ref={fileInputRef} 
                                     onChange={handleUpload}
-                                    accept="image/*"
+                                    accept="image/*,video/*"
                                 />
                                 <button 
                                     onClick={() => fileInputRef.current?.click()}
@@ -168,12 +168,28 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
                                             }}
                                             className="group relative aspect-square bg-gray-100 rounded-xl overflow-hidden cursor-pointer border-2 border-transparent hover:border-indigo-400 hover:shadow-lg transition-all"
                                         >
-                                            <img 
-                                                src={`/storage/${item.path}`} 
-                                                alt={item.name} 
-                                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                                                loading="lazy"
-                                            />
+                                            {item.mime_type?.startsWith('image/') ? (
+                                                <img 
+                                                    src={`/storage/${item.path}`} 
+                                                    alt={item.name} 
+                                                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                                    loading="lazy"
+                                                />
+                                            ) : item.mime_type?.startsWith('video/') ? (
+                                                <div className="relative w-full h-full bg-gray-900 flex items-center justify-center">
+                                                    <video 
+                                                        src={`/storage/${item.path}`} 
+                                                        className="w-full h-full object-cover opacity-80"
+                                                    />
+                                                    <div className="absolute inset-0 flex items-center justify-center">
+                                                        <Video className="w-8 h-8 text-white fill-white opacity-50" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="w-full h-full flex items-center justify-center bg-gray-50">
+                                                    <FileText className="w-8 h-8 text-gray-300" />
+                                                </div>
+                                            )}
                                             <div className="absolute inset-0 bg-black/0 group-hover:bg-indigo-900/10 transition-colors" />
                                         </div>
                                     ))}

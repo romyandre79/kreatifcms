@@ -5,6 +5,7 @@ import { Plus, Layout } from 'lucide-react';
 import axios from 'axios';
 import DashboardGrid from '@/Components/Dashboard/DashboardGrid';
 import WidgetEditor from '@/Components/Dashboard/WidgetEditor';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Dashboard() {
     const { contentTypes } = usePage().props;
@@ -12,6 +13,11 @@ export default function Dashboard() {
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [editingWidget, setEditingWidget] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
+    
+    // Deletion Modal State
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [widgetToDelete, setWidgetToDelete] = useState(null);
+    const [isDeleting, setIsDeleting] = useState(false);
 
     useEffect(() => {
         fetchWidgets();
@@ -52,13 +58,23 @@ export default function Dashboard() {
         }
     };
 
-    const handleDeleteWidget = async (id) => {
-        if (confirm('Are you sure you want to remove this widget?')) {
+    const confirmDeleteWidget = (id) => {
+        setWidgetToDelete(id);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = async () => {
+        if (widgetToDelete) {
+            setIsDeleting(true);
             try {
-                await axios.delete(route('dashboard.widgets.destroy', id));
+                await axios.delete(route('dashboard.widgets.destroy', widgetToDelete));
                 fetchWidgets();
+                setShowDeleteModal(false);
+                setWidgetToDelete(null);
             } catch (error) {
                 console.error('Failed to delete widget', error);
+            } finally {
+                setIsDeleting(false);
             }
         }
     };
@@ -129,7 +145,7 @@ export default function Dashboard() {
                             widgets={widgets} 
                             onOrderChange={handleOrderChange}
                             onEdit={handleEditWidget}
-                            onDelete={handleDeleteWidget}
+                            onDelete={confirmDeleteWidget}
                         />
                     )}
                 </div>
@@ -141,6 +157,15 @@ export default function Dashboard() {
                 onSave={handleSaveWidget}
                 widget={editingWidget}
                 contentTypes={contentTypes}
+            />
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Remove Widget"
+                message="Are you sure you want to remove this widget from your dashboard? This action will only remove the widget, not the underlying data."
+                processing={isDeleting}
             />
         </AuthenticatedLayout>
     );

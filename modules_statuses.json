@@ -14,5 +14,10 @@
     "RedisCache": true,
     "EmailConfig": true,
     "EmailTemplates": true,
-    "EditorSummernote": true
+    "EditorSummernote": true,
+    "Captcha": true,
+    "AiAssistant": true,
+    "OtpService": true,
+    "JobManager": true,
+    "MediaLibrary": true
 }

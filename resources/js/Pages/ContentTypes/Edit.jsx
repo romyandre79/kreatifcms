@@ -4,6 +4,9 @@ import { Plus, Trash2, GripVertical, Save, Type as TypeIcon, Hash, Calendar, Che
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { arrayMove, SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useState } from 'react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
+import axios from 'axios';
 
 const FIELD_TYPES = [
     { type: 'text', label: 'Short Text', icon: TypeIcon },
@@ -177,6 +180,9 @@ function SortableField({ field, onRemove, onUpdate, isNew, allContentTypes }) {
 }
 
 export default function Edit({ contentType, allContentTypes }) {
+    const [showPushModal, setShowPushModal] = useState(false);
+    const [pushing, setPushing] = useState(false);
+
     const { data, setData, put, processing, errors } = useForm({
         name: contentType.name,
         description: contentType.description || '',
@@ -251,11 +257,14 @@ export default function Edit({ contentType, allContentTypes }) {
     };
 
     const handlePush = () => {
-        if (!confirm('Are you sure you want to push this schema to staging/production?')) return;
-
+        setPushing(true);
         axios.post(route('content-types.push', contentType.id))
-            .then(res => alert('Success: ' + res.data.message))
-            .catch(err => alert('Error: ' + (err.response?.data?.error || err.message)));
+            .then(res => {
+                alert('Success: ' + res.data.message);
+                setShowPushModal(false);
+            })
+            .catch(err => alert('Error: ' + (err.response?.data?.error || err.message)))
+            .finally(() => setPushing(false));
     };
 
     return (
@@ -429,7 +438,7 @@ export default function Edit({ contentType, allContentTypes }) {
                             {!contentType.isNew && (
                                 <button
                                     type="button"
-                                    onClick={handlePush}
+                                    onClick={() => setShowPushModal(true)}
                                     className="inline-flex items-center px-6 py-3 bg-white border border-indigo-600 rounded-md font-semibold text-sm text-indigo-600 shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
                                 >
                                     <Send className="w-5 h-5 mr-2" />
@@ -448,6 +457,16 @@ export default function Edit({ contentType, allContentTypes }) {
                     </form>
                 </div>
             </div>
+
+            <DeleteConfirmationModal
+                show={showPushModal}
+                onClose={() => setShowPushModal(false)}
+                onConfirm={handlePush}
+                title="Push Schema Changes"
+                message="Are you sure you want to push this schema to staging/production? This will synchronize the remote environment with your local changes."
+                processing={pushing}
+                confirmText="Push Now"
+            />
         </AuthenticatedLayout>
     );
 }

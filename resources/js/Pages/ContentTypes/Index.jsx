@@ -3,21 +3,35 @@ import { Head, Link, usePage, router } from '@inertiajs/react';
 import { Plus, Database, Settings, Trash2, Table, ListPlus, Code } from 'lucide-react';
 import ApiDocsModal from '@/Components/ApiDocsModal';
 import { useState } from 'react';
+import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
 export default function Index({ contentTypes }) {
     const { auth } = usePage().props;
     const [selectedContentType, setSelectedContentType] = useState(null);
     const [isApiModalOpen, setIsApiModalOpen] = useState(false);
+    const [showDeleteModal, setShowDeleteModal] = useState(false);
+    const [contentTypeToDelete, setContentTypeToDelete] = useState(null);
+    const [processing, setProcessing] = useState(false);
 
     const openApiDocs = (type) => {
         setSelectedContentType(type);
         setIsApiModalOpen(true);
     };
 
-    const handleDelete = (id, name) => {
-        if (confirm(`Are you sure you want to delete the "${name}" content type? This will PERMANENTLY delete all data in this collection.`)) {
-            router.delete(route('content-types.destroy', id), {
-                onSuccess: () => alert('Content type deleted successfully'),
+    const confirmDelete = (type) => {
+        setContentTypeToDelete(type);
+        setShowDeleteModal(true);
+    };
+
+    const handleDelete = () => {
+        if (contentTypeToDelete) {
+            setProcessing(true);
+            router.delete(route('content-types.destroy', contentTypeToDelete.id), {
+                onFinish: () => {
+                    setProcessing(false);
+                    setShowDeleteModal(false);
+                    setContentTypeToDelete(null);
+                },
             });
         }
     };
@@ -100,7 +114,7 @@ export default function Index({ contentTypes }) {
                                                 <Settings className="w-4 h-4" />
                                             </Link>
                                             <button 
-                                                onClick={() => handleDelete(type.id, type.name)}
+                                                onClick={() => confirmDelete(type)}
                                                 className="p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-md transition-colors"
                                                 title="Delete Content Type"
                                             >
@@ -119,6 +133,15 @@ export default function Index({ contentTypes }) {
                 isOpen={isApiModalOpen} 
                 onClose={() => setIsApiModalOpen(false)} 
                 contentType={selectedContentType} 
+            />
+
+            <DeleteConfirmationModal
+                show={showDeleteModal}
+                onClose={() => setShowDeleteModal(false)}
+                onConfirm={handleDelete}
+                title="Delete Content Type"
+                message={`Are you sure you want to delete the "${contentTypeToDelete?.name}" content type? This will PERMANENTLY delete all data in this collection.`}
+                processing={processing}
             />
         </AuthenticatedLayout>
     );
