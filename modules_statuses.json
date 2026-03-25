@@ -18,5 +18,6 @@
     "Captcha": true,
     "AiAssistant": true,
     "OtpService": true,
-    "JobManager": true
+    "JobManager": true,
+    "MediaLibrary": true
 }

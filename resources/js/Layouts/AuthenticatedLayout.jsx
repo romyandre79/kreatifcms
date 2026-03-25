@@ -37,12 +37,15 @@ export default function AuthenticatedLayout({ header, children }) {
         { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*') },
         { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*') },
         { name: 'Layout Editor', href: route('layouts.index'), icon: Layout, active: route().current('layouts.index') },
-        { name: 'Media Library', href: route('media.index'), icon: ImageIcon, active: route().current('media.*') },
         { name: 'Content Type', href: route('content-types.index'), icon: Database, active: route().current('content-types.*') && !route().current('content-types.data.*') },
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*') },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*') },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*') },
     ];
+
+    if (plugins.some(p => p.alias === 'medialibrary' && p.enabled !== false) && route().has('media.index')) {
+        navItems.splice(3, 0, { name: 'Media Library', href: route('media.index'), icon: ImageIcon, active: route().current('media.*') });
+    }
 
     if (plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
         navItems.push({ name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') });

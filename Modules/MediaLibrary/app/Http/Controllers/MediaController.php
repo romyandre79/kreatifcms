@@ -1,11 +1,13 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Modules\MediaLibrary\Http\Controllers;
 
-use App\Models\Media;
+use App\Http\Controllers\Controller;
+use Modules\MediaLibrary\Models\Media;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Inertia\Inertia;
+use Modules\MediaLibrary\Events\MediaUploaded;
 
 class MediaController extends Controller
 {
@@ -25,7 +27,7 @@ class MediaController extends Controller
     public function upload(Request $request)
     {
         $request->validate([
-            'files.*' => 'required|file|image|max:10240', // 10MB max per file
+            'files.*' => 'required|file|mimes:jpg,jpeg,png,gif,svg,mp4,mov,ogg,webm,qt,m4v|max:102400', // 100MB max per file for videos
         ]);
 
         $uploadedMedia = [];
@@ -34,7 +36,6 @@ class MediaController extends Controller
             foreach ($request->file('files') as $file) {
                 $path = $file->store('media', 'public');
                 
-                // Sanitize filename to prevent path traversal or odd characters
                 $originalName = $file->getClientOriginalName();
                 $extension = $file->getClientOriginalExtension();
                 $safeName = \Illuminate\Support\Str::slug(pathinfo($originalName, PATHINFO_FILENAME)) . '.' . $extension;
@@ -46,7 +47,7 @@ class MediaController extends Controller
                     'size' => $file->getSize(),
                 ]);
 
-                event(new \App\Events\MediaUploaded($media));
+                event(new MediaUploaded($media));
 
                 $uploadedMedia[] = $media;
             }
@@ -59,8 +60,10 @@ class MediaController extends Controller
         return redirect()->back()->with('success', count($uploadedMedia) . ' files uploaded successfully.');
     }
 
-    public function destroy(Media $medium) // Route model binding uses singular of media -> medium or we can just use $id
+    public function destroy($id)
     {
+        $medium = Media::findOrFail($id);
+        
         // Delete from storage
         Storage::disk('public')->delete($medium->path);
         

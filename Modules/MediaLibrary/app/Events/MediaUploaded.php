@@ -1,13 +1,9 @@
 <?php
 
-namespace App\Events;
+namespace Modules\MediaLibrary\Events;
 
-use App\Models\Media;
-use Illuminate\Broadcasting\Channel;
+use Modules\MediaLibrary\Models\Media;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Broadcasting\PresenceChannel;
-use Illuminate\Broadcasting\PrivateChannel;
-use Illuminate\Contracts\Broadcasting\ShouldBroadcast;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
@@ -17,9 +13,6 @@ class MediaUploaded
 
     public $media;
 
-    /**
-     * Create a new event instance.
-     */
     public function __construct(Media $media)
     {
         $this->media = $media;
