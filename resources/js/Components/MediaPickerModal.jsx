@@ -43,11 +43,26 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
     const fetchMedia = async () => {
         setLoading(true);
         try {
-            const response = await axios.get(route('media.index'), {
+            const response = await axios.get(`${route('media.index')}?json=1`, {
                 headers: { 'Accept': 'application/json' }
             });
             console.log('Media API Response:', response.data);
-            setMedia(response.data);
+            
+            // Handle both direct array and Inertia response
+            if (Array.isArray(response.data)) {
+                setMedia(response.data);
+            } else if (response.data && typeof response.data === 'object') {
+                // If it's an Inertia response, the data might be in props
+                const mediaArray = response.data.media || response.data.props?.media;
+                if (Array.isArray(mediaArray)) {
+                    setMedia(mediaArray);
+                } else {
+                    console.error('Expected media array but got:', response.data);
+                    setMedia([]);
+                }
+            } else {
+                setMedia([]);
+            }
         } catch (error) {
             console.error('Failed to fetch media:', error);
         } finally {
