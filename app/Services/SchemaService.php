@@ -161,10 +161,15 @@ class SchemaService
                                 };
 
                                 if (config('cache.stores.rediscache') && class_exists('\Nwidart\Modules\Facades\Module') && \Nwidart\Modules\Facades\Module::isEnabled('RedisCache')) {
-                                    $ttl = (int)\App\Models\Setting::get('rediscache', 'ttl', 3600);
-                                    $items = \Illuminate\Support\Facades\Cache::store('rediscache')
-                                        ->tags(['content', $ctSlug])
-                                        ->remember($cacheKey, $ttl, $queryClosure);
+                                    try {
+                                        $ttl = (int)\App\Models\Setting::get('rediscache', 'ttl', 3600);
+                                        $items = \Illuminate\Support\Facades\Cache::store('rediscache')
+                                            ->tags(['content', $ctSlug])
+                                            ->remember($cacheKey, $ttl, $queryClosure);
+                                    } catch (\Exception $e) {
+                                        \Illuminate\Support\Facades\Log::warning("RedisCache failed, falling back to direct query: " . $e->getMessage());
+                                        $items = $queryClosure();
+                                    }
                                 } else {
                                     $items = $queryClosure();
                                 }

@@ -50,6 +50,7 @@
             "Modules\\OtpService\\": "Modules/OtpService/app/",
             "Modules\\JobManager\\": "Modules/JobManager/app/",
             "Modules\\MediaLibrary\\": "Modules/MediaLibrary/app/",
+            "Modules\\FormBlock\\": "Modules/FormBlock/app/",
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/"
         }

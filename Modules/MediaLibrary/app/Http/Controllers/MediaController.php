@@ -15,7 +15,7 @@ class MediaController extends Controller
     {
         $media = Media::latest()->get();
         
-        if (request()->wantsJson()) {
+        if (request()->wantsJson() || request()->ajax() || request()->has('json') || str_contains(request()->header('Accept', ''), 'application/json')) {
             return response()->json($media);
         }
 

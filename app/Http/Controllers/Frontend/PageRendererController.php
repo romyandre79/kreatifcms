@@ -35,7 +35,8 @@ class PageRendererController extends Controller
 
     public function home()
     {
-        $page = Page::where('slug', 'welcome')->where('is_published', true)->first();
+        $homeSlug = \App\Models\Setting::get('general', 'home_page_slug', 'welcome');
+        $page = Page::where('slug', $homeSlug)->where('is_published', true)->first();
 
         if ($page) {
             $pageData = $page->toArray();
