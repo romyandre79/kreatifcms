@@ -11,7 +11,8 @@ export default function FormBlock({ data, contentTypes = [] }) {
         description = '',
         success_message = 'Thank you for your submission!',
         submit_button_text = 'Submit',
-        align = 'left'
+        align = 'left',
+        onSuccessJs = ''
     } = data;
 
     const [submitted, setSubmitted] = useState(false);
@@ -54,6 +55,15 @@ export default function FormBlock({ data, contentTypes = [] }) {
 
             if (response.data.success) {
                 setSubmitted(true);
+                // Execute custom success JS if provided
+                if (onSuccessJs) {
+                    try {
+                        const fn = new Function('response', 'formData', onSuccessJs);
+                        fn(response.data, formData);
+                    } catch (err) {
+                        console.error('[Form onSuccessJs] error:', err);
+                    }
+                }
             } else {
                 setError(response.data.message || 'Something went wrong.');
             }

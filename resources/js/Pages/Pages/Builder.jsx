@@ -152,7 +152,8 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                     { id: generateId(), label: 'Message', name: 'message', type: 'textarea', placeholder: 'How can we help?', required: true }
                 ],
                 content_type: '',
-                align: 'left'
+                align: 'left',
+                onSuccessJs: ''
             };
         }
 
@@ -1302,6 +1303,17 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Success Message</label>
                                 <textarea value={data.success_message || ''} onChange={e => updateBlockData(block.id, 'success_message', e.target.value)} rows="2" className="w-full text-xs border-gray-200 rounded-lg bg-gray-50" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">On Success JS</label>
+                                <textarea
+                                    value={data.onSuccessJs || ''}
+                                    onChange={e => updateBlockData(block.id, 'onSuccessJs', e.target.value)}
+                                    rows="3"
+                                    placeholder="console.log('Form submitted!', response, formData);"
+                                    className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
+                                />
+                                <p className="text-[9px] text-gray-400 mt-1">Available variables: <code>response</code>, <code>formData</code></p>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Alignment</label>

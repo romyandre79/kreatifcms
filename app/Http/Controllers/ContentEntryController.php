@@ -108,6 +108,14 @@ class ContentEntryController extends Controller
 
         $id = DB::connection($this->connection)->table($tableName)->insertGetId($validated);
 
+        if (!empty($contentType->events['onAfterInsert'])) {
+            $context = [
+                'id' => $id,
+                'data' => $validated
+            ];
+            $this->executePhpHook($contentType->events['onAfterInsert'], $context);
+        }
+
         \App\Models\AuditLog::create([
             'user_id' => Auth::id(),
             'content_type' => $contentTypeSlug,
