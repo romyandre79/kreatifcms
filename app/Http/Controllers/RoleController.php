@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Nwidart\Modules\Facades\Module;
 
 class RoleController extends Controller
 {
@@ -56,10 +57,20 @@ class RoleController extends Controller
     {
         $role->load(['permissions', 'users']);
         $contentTypes = ContentType::all();
+        
+        $modules = Module::allEnabled();
+        $plugins = [];
+        foreach ($modules as $module) {
+            $plugins[] = [
+                'name' => $module->getName(),
+                'alias' => $module->getLowerName(),
+            ];
+        }
 
         return Inertia::render('Roles/Edit', [
             'role' => $role,
             'contentTypes' => $contentTypes,
+            'plugins' => $plugins
         ]);
     }
 

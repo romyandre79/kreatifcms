@@ -3,7 +3,7 @@ import { Head, Link, useForm } from '@inertiajs/react';
 import { ChevronLeft, Save, Check } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
-export default function Edit({ role, contentTypes }) {
+export default function Edit({ role, contentTypes, plugins = [] }) {
     const [activeTab, setActiveTab] = useState('Collection Types');
 
     const tabs = [
@@ -35,16 +35,24 @@ export default function Edit({ role, contentTypes }) {
         });
     });
 
-    // Add placeholder permissions for Plugins and Settings if needed
-    // In a real app, these would come from a plugin/settings registry
-    const pluginSubjects = ['Permissions', 'Roles', 'Users'];
+    // Add dynamic permissions for Plugins (including core subjects)
+    const pluginSubjects = [
+        { name: 'Permissions', slug: 'permissions' },
+        { name: 'Roles', slug: 'roles' },
+        { name: 'Users', slug: 'users' },
+        ...plugins.map(p => ({ 
+            name: p.name, 
+            slug: p.alias 
+        }))
+    ];
+
     pluginSubjects.forEach(subject => {
         actions.forEach(action => {
             initialPermissions.push({
                 name: 'Plugins',
-                content_type: subject.toLowerCase(),
+                content_type: subject.slug,
                 action: action.toLowerCase(),
-                enabled: hasPermission(subject.toLowerCase(), action)
+                enabled: hasPermission(subject.slug, action)
             });
         });
     });
@@ -225,16 +233,16 @@ export default function Edit({ role, contentTypes }) {
                                         ))}
 
                                         {activeTab === 'Plugins' && pluginSubjects.map(subject => (
-                                            <tr key={subject} className="hover:bg-gray-50/50 transition-colors group">
+                                            <tr key={subject.slug} className="hover:bg-gray-50/50 transition-colors group">
                                                 <td className="px-8 py-4">
                                                     <div className="flex items-center gap-3">
                                                         <input 
                                                             type="checkbox"
-                                                            checked={actions.every(action => isPermissionEnabled(subject.toLowerCase(), action))}
+                                                            checked={actions.every(action => isPermissionEnabled(subject.slug, action))}
                                                             onChange={(e) => {
                                                                 const checked = e.target.checked;
                                                                 const newPermissions = data.permissions.map(p => {
-                                                                    if (p.content_type === subject.toLowerCase()) {
+                                                                    if (p.content_type === subject.slug) {
                                                                         return { ...p, enabled: checked };
                                                                     }
                                                                     return p;
@@ -243,15 +251,15 @@ export default function Edit({ role, contentTypes }) {
                                                             }}
                                                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500/20 transition-all h-4 w-4"
                                                         />
-                                                        <span className="text-sm font-semibold text-gray-700">{subject}</span>
+                                                        <span className="text-sm font-semibold text-gray-700">{subject.name}</span>
                                                     </div>
                                                 </td>
                                                 {actions.map(action => (
                                                     <td key={action} className="px-4 py-4 text-center">
                                                         <input 
                                                             type="checkbox"
-                                                            checked={isPermissionEnabled(subject.toLowerCase(), action)}
-                                                            onChange={() => togglePermission(subject.toLowerCase(), action)}
+                                                            checked={isPermissionEnabled(subject.slug, action)}
+                                                            onChange={() => togglePermission(subject.slug, action)}
                                                             className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500/20 transition-all h-5 w-5 cursor-pointer"
                                                         />
                                                     </td>

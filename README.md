@@ -93,11 +93,15 @@ Significant improvements to the Form block and its submission logic.
   - **PHP Hook**: Added `onAfterInsert` hook in `ContentEntryController` for server-side actions like sending emails.
 - **Hydration**: Form blocks now automatically fetch content type fields from the backend for both builder and public views.
 
-### **3. Navbar Enhancements**
+### **4. Dynamic Plugin Permissions**
+- **Plugin Registry**: Added support for dynamic plugin discovery in the Role/Permission management UI.
+- **Granular Control**: All active plugins (e.g., FormBlock, NavBar, EmailTemplates) are now listed in the permissions tab, allowing for modular access control.
+
+### **5. Navbar Enhancements**
 - **Multi-Level Dropdowns**: Support for nested sub-links with mobile-optimized rendering.
 - **Custom Code Injection**: Per-block `Custom CSS` and `Custom JS` support for the Navbar.
 
-### **4. Home Page & Media Improvements**
+### **6. Home Page & Media Improvements**
 - **Configurable Home Page**: Any page can now be set as the site root via the Page Manager.
 - **Premium Start Page**: Replaced the default Laravel welcome page with a stunning Kreatif CMS dashboard.
 - **Media Uploads**: Newly uploaded files now appear in the picker immediately without a refresh.
@@ -132,3 +136,7 @@ Significant improvements to the Form block and its submission logic.
 - [x] Fix Page Builder blank page (syntax error in Builder.jsx)
 - [x] Implement Navbar multi-dropdown support
 - [x] Add Custom CSS and Custom JS support to Navbar block
+- [x] Fix Missing Plugins in Role Permissions
+    - [x] Update RoleController to pass dynamic plugins
+    - [x] Update Roles/Edit.jsx to display dynamic plugins
+    - [x] Verify persistence

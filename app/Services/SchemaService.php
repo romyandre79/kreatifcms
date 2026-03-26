@@ -144,8 +144,9 @@ class SchemaService
                 
                 if ($mode === 'dynamic' && $ctSlug) {
                     $contentType = ContentType::with('fields')->where('slug', $ctSlug)->first();
-                    if ($contentType && $contentType->fields) {
-                        $block['data']['fields'] = $contentType->fields->map(function($f) {
+                    if ($contentType) {
+                        $fields = $contentType->fields ?? collect();
+                        $block['data']['fields'] = $fields->map(function($f) {
                             $options = $f->options ?: [];
                             return [
                                 'id' => $f->id,
