@@ -144,12 +144,12 @@ class SchemaService
                 
                 if ($mode === 'dynamic' && $ctSlug) {
                     $contentType = ContentType::with('fields')->where('slug', $ctSlug)->first();
-                    if ($contentType) {
-                        $block['data']['fields'] = ($contentType->fields ?: collect())->map(function($f) {
-                            $options = is_string($f->options) ? json_decode($f->options, true) : ($f->options ?: []);
+                    if ($contentType && $contentType->fields) {
+                        $block['data']['fields'] = $contentType->fields->map(function($f) {
+                            $options = $f->options ?: [];
                             return [
                                 'id' => $f->id,
-                                'name' => Str::snake($f->name),
+                                'name' => \Illuminate\Support\Str::snake($f->name),
                                 'label' => $f->name,
                                 'type' => $f->type === 'longtext' ? 'textarea' : ($f->type === 'number' ? 'number' : 'text'),
                                 'placeholder' => $options['placeholder'] ?? '',
