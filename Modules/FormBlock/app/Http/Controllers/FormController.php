@@ -71,6 +71,12 @@ class FormController extends Controller
                 'success' => true,
                 'message' => $request->input('success_message', 'Entry created successfully!')
             ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed.',
+                'errors' => $e->errors()
+            ], 422);
         } catch (\Exception $e) {
             Log::error('Dynamic Form Submission Error: ' . $e->getMessage());
             return response()->json([

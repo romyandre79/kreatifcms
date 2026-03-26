@@ -136,7 +136,32 @@ class SchemaService
         if (!is_array($blocks)) return $blocks ?? [];
         
         foreach ($blocks as &$block) {
-            if (isset($block['type']) && ($block['type'] === 'content_list' || $block['type'] === 'slideshow')) {
+            if (!isset($block['type'])) continue;
+
+            if ($block['type'] === 'form') {
+                $mode = $block['data']['mode'] ?? 'static';
+                $ctSlug = $block['data']['content_type'] ?? null;
+                
+                if ($mode === 'dynamic' && $ctSlug) {
+                    $contentType = ContentType::with('fields')->where('slug', $ctSlug)->first();
+                    if ($contentType) {
+                        $block['data']['fields'] = ($contentType->fields ?: collect())->map(function($f) {
+                            $options = is_string($f->options) ? json_decode($f->options, true) : ($f->options ?: []);
+                            return [
+                                'id' => $f->id,
+                                'name' => Str::snake($f->name),
+                                'label' => $f->name,
+                                'type' => $f->type === 'longtext' ? 'textarea' : ($f->type === 'number' ? 'number' : 'text'),
+                                'placeholder' => $options['placeholder'] ?? '',
+                                'required' => (bool)$f->required
+                            ];
+                        })->toArray();
+                        \Illuminate\Support\Facades\Log::info("Hydrated form fields from content type: {$ctSlug}");
+                    }
+                }
+            }
+
+            if ($block['type'] === 'content_list' || $block['type'] === 'slideshow') {
                 $source = $block['data']['source'] ?? ($block['type'] === 'content_list' ? 'dynamic' : 'manual');
                 
                 if ($source === 'dynamic' || $block['type'] === 'content_list') {

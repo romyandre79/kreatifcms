@@ -119,7 +119,9 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 ],
                 sticky: true,
                 glass: true,
-                align: 'center'
+                align: 'center',
+                customCss: '',
+                customJs: ''
             };
         } else if (type === 'content_list') {
             newBlock.data = {
@@ -278,6 +280,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                     <SortableContext items={links.map((l, idx) => l.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
                                         {links.map((link, idx) => {
                                             const linkId = link.id || `item-${idx}`;
+                                            const children = Array.isArray(link.children) ? link.children : [];
                                             return (
                                             <SortableNestedItem key={linkId} id={linkId}>
                                                 <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
@@ -290,7 +293,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </button>
-                                                    <div className="grid grid-cols-2 gap-2">
+                                                    <div className="grid grid-cols-2 gap-2 mb-3">
                                                         <input
                                                             type="text"
                                                             value={link.label || ''}
@@ -313,6 +316,65 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                             placeholder="URL"
                                                             className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
                                                         />
+                                                    </div>
+
+                                                    {/* Sub Links (Dropdown) */}
+                                                    <div className="pl-4 border-l-2 border-indigo-50 space-y-2 mt-2">
+                                                        <div className="flex items-center justify-between mb-1">
+                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Sub-links (Dropdown)</label>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const newLinks = [...links];
+                                                                    const newChildren = [...children, { id: generateId(), label: 'New Sub-link', url: '#' }];
+                                                                    newLinks[idx] = { ...newLinks[idx], children: newChildren };
+                                                                    updateBlockData(block.id, 'links', newLinks);
+                                                                }}
+                                                                className="text-[10px] text-indigo-500 hover:text-indigo-700 font-bold"
+                                                            >
+                                                                + Add
+                                                            </button>
+                                                        </div>
+                                                        {children.map((child, childIdx) => (
+                                                            <div key={child.id || childIdx} className="flex gap-1 group/child relative">
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={child.label || ''} 
+                                                                    onChange={(e) => {
+                                                                        const newLinks = [...links];
+                                                                        const newChildren = [...children];
+                                                                        newChildren[childIdx] = { ...newChildren[childIdx], label: e.target.value };
+                                                                        newLinks[idx] = { ...newLinks[idx], children: newChildren };
+                                                                        updateBlockData(block.id, 'links', newLinks);
+                                                                    }}
+                                                                    placeholder="Sub-label"
+                                                                    className="flex-1 text-[10px] p-1 border-gray-100 rounded focus:ring-indigo-200"
+                                                                />
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={child.url || ''} 
+                                                                    onChange={(e) => {
+                                                                        const newLinks = [...links];
+                                                                        const newChildren = [...children];
+                                                                        newChildren[childIdx] = { ...newChildren[childIdx], url: e.target.value };
+                                                                        newLinks[idx] = { ...newLinks[idx], children: newChildren };
+                                                                        updateBlockData(block.id, 'links', newLinks);
+                                                                    }}
+                                                                    placeholder="Sub-URL"
+                                                                    className="flex-1 text-[10px] p-1 border-gray-100 rounded focus:ring-indigo-200"
+                                                                />
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        const newLinks = [...links];
+                                                                        const newChildren = children.filter((_, ci) => ci !== childIdx);
+                                                                        newLinks[idx] = { ...newLinks[idx], children: newChildren };
+                                                                        updateBlockData(block.id, 'links', newLinks);
+                                                                    }}
+                                                                    className="text-gray-300 hover:text-red-400 opacity-0 group-hover/child:opacity-100 transition-opacity"
+                                                                >
+                                                                    <X className="w-3 h-3" />
+                                                                </button>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 </div>
                                             </SortableNestedItem>
@@ -457,6 +519,29 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 <input type="checkbox" checked={data.glass !== false} onChange={e => updateBlockData(block.id, 'glass', e.target.checked)} className="rounded text-indigo-600" />
                                 <span className="text-xs font-semibold text-gray-700">Glassmorphism</span>
                             </label>
+                        </div>
+
+                        <div className="space-y-4 pt-4 border-t border-gray-100">
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Custom CSS</label>
+                                <textarea
+                                    value={data.customCss || ''}
+                                    onChange={e => updateBlockData(block.id, 'customCss', e.target.value)}
+                                    rows="3"
+                                    placeholder=".nav-link { color: red; }"
+                                    className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Custom JS</label>
+                                <textarea
+                                    value={data.customJs || ''}
+                                    onChange={e => updateBlockData(block.id, 'customJs', e.target.value)}
+                                    rows="3"
+                                    placeholder="console.log('Navbar loaded');"
+                                    className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
+                                />
+                            </div>
                         </div>
                     </div>
                 );
