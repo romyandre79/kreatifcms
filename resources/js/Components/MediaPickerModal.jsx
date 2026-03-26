@@ -36,37 +36,29 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
 
     useEffect(() => {
         if (isOpen) {
-            fetchMedia();
+            fetchMedia(true);
         }
     }, [isOpen]);
 
-    const fetchMedia = async () => {
-        setLoading(true);
+    const fetchMedia = async (isInitial = false) => {
+        if (isInitial) setLoading(true);
         try {
             const response = await axios.get(`${route('media.index')}?json=1`, {
                 headers: { 'Accept': 'application/json' }
             });
-            console.log('Media API Response:', response.data);
             
-            // Handle both direct array and Inertia response
+            let data = [];
             if (Array.isArray(response.data)) {
-                setMedia(response.data);
+                data = response.data;
             } else if (response.data && typeof response.data === 'object') {
-                // If it's an Inertia response, the data might be in props
-                const mediaArray = response.data.media || response.data.props?.media;
-                if (Array.isArray(mediaArray)) {
-                    setMedia(mediaArray);
-                } else {
-                    console.error('Expected media array but got:', response.data);
-                    setMedia([]);
-                }
-            } else {
-                setMedia([]);
+                data = response.data.media || response.data.props?.media || [];
             }
+            
+            setMedia(data);
         } catch (error) {
             console.error('Failed to fetch media:', error);
         } finally {
-            setLoading(false);
+            if (isInitial) setLoading(false);
         }
     };
 
@@ -81,13 +73,20 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
         }
 
         try {
-            await axios.post(route('media.upload'), formData, {
+            const response = await axios.post(route('media.upload'), formData, {
                 headers: {
                     'Content-Type': 'multipart/form-data',
                     'Accept': 'application/json'
                 }
             });
-            await fetchMedia();
+            
+            // Add new items to state immediately
+            if (response.data && Array.isArray(response.data.media)) {
+                setMedia(prev => [...response.data.media, ...prev]);
+            } else {
+                await fetchMedia();
+            }
+            
             if (fileInputRef.current) fileInputRef.current.value = '';
         } catch (error) {
             console.error('Upload failed:', error);
