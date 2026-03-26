@@ -1,0 +1,30 @@
+{
+    "name": "nwidart/formblock",
+    "description": "Form Block module for KreatifCMS",
+    "authors": [
+        {
+            "name": "Romy",
+            "email": "romy@example.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\FormBlock\\": "app/",
+            "Modules\\FormBlock\\Database\\Factories\\": "database/factories/",
+            "Modules\\FormBlock\\Database\\Seeders\\": "database/seeders/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Modules\\FormBlock\\Tests\\": "tests/"
+        }
+    }
+}

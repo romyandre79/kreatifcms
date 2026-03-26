@@ -1,0 +1,18 @@
+{
+    "name": "FormBlock",
+    "alias": "formblock",
+    "description": "A versatile form builder block for your pages. Support static forms and dynamic forms connected to content types.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\FormBlock\\Providers\\FormBlockServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "form",
+        "name": "Form Builder",
+        "icon": "FileText",
+        "desc": "Add a customizable form (static or dynamic)"
+    }
+}

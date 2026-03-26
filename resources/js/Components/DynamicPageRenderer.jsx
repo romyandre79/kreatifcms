@@ -9,6 +9,7 @@ const ImageBlock = lazy(() => import('./Blocks/ImageBlock'));
 const FeatureGridBlock = lazy(() => import('./Blocks/FeatureGridBlock'));
 const SlideshowBlock = lazy(() => import('./Blocks/SlideshowBlock'));
 const ContentListBlock = lazy(() => import('./Blocks/ContentListBlock'));
+const FormBlock = lazy(() => import('./Blocks/FormBlock'));
 
 const BlockComponents = {
     navbar: NavBarBlock,
@@ -17,7 +18,8 @@ const BlockComponents = {
     image: ImageBlock,
     feature_grid: FeatureGridBlock,
     slideshow: SlideshowBlock,
-    content_list: ContentListBlock
+    content_list: ContentListBlock,
+    form: FormBlock
 };
 
 
@@ -126,7 +128,7 @@ export default React.memo(function DynamicPageRenderer({ blocks = [], reusableBl
                             )}
                             {/* Block component */}
                             <Suspense fallback={<div className="p-10 w-full flex items-center justify-center text-gray-400 bg-gray-50/50 animate-pulse border-y border-gray-100">Loading {actualType}...</div>}>
-                                <Component data={actualData} />
+                                <Component data={actualData} contentTypes={usePage().props.content_types || []} />
                             </Suspense>
                             {/* Per-block event handlers */}
                             {hasEvents && (

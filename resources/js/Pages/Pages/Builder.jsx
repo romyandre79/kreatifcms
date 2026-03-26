@@ -31,15 +31,18 @@ import { CSS } from '@dnd-kit/utilities';
 export default function Builder({ page, reusableBlocks = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
     const blockPlugins = plugins.filter(p => p.type === 'block');
-    const BLOCK_TYPES = blockPlugins.map(p => {
-        const IconComponent = p.meta?.icon ? LucideIcons[p.meta.icon] || LucideIcons.LayoutGrid : LucideIcons.LayoutGrid;
-        return {
-            id: p.meta?.id || p.alias,
-            name: p.meta?.name || p.name,
-            icon: IconComponent,
-            desc: p.meta?.desc || p.description || ''
-        };
-    });
+    const BLOCK_TYPES = [
+        ...blockPlugins.map(p => {
+            const IconComponent = p.meta?.icon ? LucideIcons[p.meta.icon] || LucideIcons.LayoutGrid : LucideIcons.LayoutGrid;
+            return {
+                id: p.meta?.id || p.alias,
+                name: p.meta?.name || p.name,
+                icon: IconComponent,
+                desc: p.meta?.desc || p.description || ''
+            };
+        }),
+        { id: 'reusable_block', name: 'Saved Block', icon: LucideIcons.Box || LucideIcons.Layers, desc: 'Import a saved block' }
+    ];
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
     
@@ -134,6 +137,21 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
             };
         } else if (type === 'reusable_block') {
             newBlock.data = { block_id: '' };
+        } else if (type === 'form') {
+            newBlock.data = { 
+                mode: 'static', 
+                title: 'Contact Us', 
+                description: 'We would love to hear from you.',
+                success_message: 'Thank you for your submission!',
+                submit_button_text: 'Send Message',
+                fields: [
+                    { id: generateId(), label: 'Name', name: 'name', type: 'text', placeholder: 'Your Name', required: true },
+                    { id: generateId(), label: 'Email', name: 'email', type: 'email', placeholder: 'your@email.com', required: true },
+                    { id: generateId(), label: 'Message', name: 'message', type: 'textarea', placeholder: 'How can we help?', required: true }
+                ],
+                content_type: '',
+                align: 'left'
+            };
         }
 
         setBlocks([...blocks, newBlock]);
@@ -1052,6 +1070,172 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                         )}
                     </div>
                 );
+            case 'form': {
+                const fields = Array.isArray(data.fields) ? data.fields : [];
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Form Mode</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['static', 'dynamic'].map(m => (
+                                    <button
+                                        key={m}
+                                        onClick={() => updateBlockData(block.id, 'mode', m)}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${data.mode === m || (!data.mode && m === 'static') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {m}
+                                    </button>
+                                ))}
+                            </div>
+                            <p className="text-[10px] text-gray-400 mt-2">
+                                {data.mode === 'dynamic' ? 'Fields are pulled from a Content Type.' : 'Manually define fields for this form.'}
+                            </p>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Title</label>
+                            <input type="text" value={data.title || ''} onChange={e => updateBlockData(block.id, 'title', e.target.value)} className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Description</label>
+                            <textarea value={data.description || ''} onChange={e => updateBlockData(block.id, 'description', e.target.value)} rows="2" className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" />
+                        </div>
+
+                        {data.mode === 'dynamic' ? (
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
+                                <select 
+                                    value={data.content_type || ''} 
+                                    onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
+                                    className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
+                                >
+                                    <option value="">Select Content Type...</option>
+                                    {contentTypes.map(ct => (
+                                        <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        ) : (
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Form Fields</label>
+                                    <button
+                                        onClick={() => {
+                                            const newFields = [...fields, { id: generateId(), label: 'New Field', name: 'field_' + generateId(), type: 'text', placeholder: '', required: false }];
+                                            updateBlockData(block.id, 'fields', newFields);
+                                        }}
+                                        className="text-[10px] text-indigo-600 font-bold hover:text-indigo-800"
+                                    >
+                                        + Add Field
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'fields', e)}>
+                                        <SortableContext items={fields.map((f, idx) => f.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
+                                            {fields.map((field, idx) => {
+                                                const fieldId = field.id || `item-${idx}`;
+                                                return (
+                                                <SortableNestedItem key={fieldId} id={fieldId}>
+                                                    <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newFields = fields.filter((_, i) => i !== idx);
+                                                                updateBlockData(block.id, 'fields', newFields);
+                                                            }}
+                                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                                            <input
+                                                                type="text"
+                                                                value={field.label || ''}
+                                                                onChange={(e) => {
+                                                                    const newFields = [...fields];
+                                                                    newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                                    updateBlockData(block.id, 'fields', newFields);
+                                                                }}
+                                                                placeholder="Label"
+                                                                className="text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                                            />
+                                                            <select
+                                                                value={field.type || 'text'}
+                                                                onChange={(e) => {
+                                                                    const newFields = [...fields];
+                                                                    newFields[idx] = { ...newFields[idx], type: e.target.value };
+                                                                    updateBlockData(block.id, 'fields', newFields);
+                                                                }}
+                                                                className="text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                                            >
+                                                                <option value="text">Text</option>
+                                                                <option value="email">Email</option>
+                                                                <option value="number">Number</option>
+                                                                <option value="textarea">Textarea</option>
+                                                            </select>
+                                                        </div>
+                                                        <input
+                                                            type="text"
+                                                            value={field.name || ''}
+                                                            onChange={(e) => {
+                                                                const newFields = [...fields];
+                                                                newFields[idx] = { ...newFields[idx], name: e.target.value };
+                                                                updateBlockData(block.id, 'fields', newFields);
+                                                            }}
+                                                            placeholder="Internal Name (slug)"
+                                                            className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 mb-2"
+                                                        />
+                                                        <label className="flex items-center gap-2 cursor-pointer">
+                                                            <input 
+                                                                type="checkbox" 
+                                                                checked={field.required} 
+                                                                onChange={e => {
+                                                                    const newFields = [...fields];
+                                                                    newFields[idx] = { ...newFields[idx], required: e.target.checked };
+                                                                    updateBlockData(block.id, 'fields', newFields);
+                                                                }} 
+                                                                className="rounded text-indigo-600 text-[10px]" 
+                                                            />
+                                                            <span className="text-[10px] font-bold text-gray-500 uppercase">Required</span>
+                                                        </label>
+                                                    </div>
+                                                </SortableNestedItem>
+                                                );
+                                            })}
+                                        </SortableContext>
+                                    </DndContext>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="pt-4 border-t border-gray-100 space-y-4">
+                            <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Button & Messages</h4>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Button Text</label>
+                                <input type="text" value={data.submit_button_text || 'Submit'} onChange={e => updateBlockData(block.id, 'submit_button_text', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Success Message</label>
+                                <textarea value={data.success_message || ''} onChange={e => updateBlockData(block.id, 'success_message', e.target.value)} rows="2" className="w-full text-xs border-gray-200 rounded-lg bg-gray-50" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Alignment</label>
+                                <div className="flex bg-gray-100 p-1 rounded-lg">
+                                    {['left', 'center'].map(a => (
+                                        <button
+                                            key={a}
+                                            onClick={() => updateBlockData(block.id, 'align', a)}
+                                            className={`flex-1 py-1 text-[10px] font-bold uppercase rounded transition-all ${data.align === a || (!data.align && a === 'left') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                        >
+                                            {a}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
             default:
                 return <p className="text-gray-500 text-sm">No configuration available for this block.</p>;
         }

@@ -19,5 +19,6 @@
     "AiAssistant": true,
     "OtpService": true,
     "JobManager": true,
-    "MediaLibrary": true
+    "MediaLibrary": true,
+    "FormBlock": true
 }

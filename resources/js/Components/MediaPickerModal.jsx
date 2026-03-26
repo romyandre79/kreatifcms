@@ -46,6 +46,7 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
             const response = await axios.get(route('media.index'), {
                 headers: { 'Accept': 'application/json' }
             });
+            console.log('Media API Response:', response.data);
             setMedia(response.data);
         } catch (error) {
             console.error('Failed to fetch media:', error);
