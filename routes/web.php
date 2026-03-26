@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/media/upload', [\Modules\MediaLibrary\Http\Controllers\MediaController::class, 'upload'])->name('media.upload');
     Route::resource('media', \Modules\MediaLibrary\Http\Controllers\MediaController::class)->except(['create', 'edit', 'update']);
     Route::resource('pages', App\Http\Controllers\PageController::class);
+    Route::post('/pages/{page}/set-home', [App\Http\Controllers\PageController::class, 'setHome'])->name('pages.set-home');
     
     // Module Routes
     Route::resource('blocks', \Modules\ReusableBlock\Http\Controllers\BlockController::class);

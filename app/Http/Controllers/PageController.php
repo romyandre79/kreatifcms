@@ -15,7 +15,8 @@ class PageController extends Controller
     {
         $pages = Page::latest()->get();
         return Inertia::render('Pages/Index', [
-            'pages' => $pages
+            'pages' => $pages,
+            'homePageSlug' => \App\Models\Setting::get('general', 'home_page_slug', 'welcome')
         ]);
     }
 
@@ -90,5 +91,16 @@ class PageController extends Controller
     {
         $page->delete();
         return redirect()->route('pages.index')->with('success', 'Page deleted successfully.');
+    }
+
+    public function setHome(Page $page)
+    {
+        if (!$page->is_published) {
+            return redirect()->back()->with('error', 'Page must be published to be set as home page.');
+        }
+
+        \App\Models\Setting::set('general', 'home_page_slug', $page->slug);
+        
+        return redirect()->back()->with('success', "Page '{$page->title}' set as home page.");
     }
 }

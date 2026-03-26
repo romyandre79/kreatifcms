@@ -1,9 +1,9 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, useForm } from '@inertiajs/react';
 import { useState } from 'react';
-import { FileText, Plus, Edit2, Trash2, X, Link as LinkIcon } from 'lucide-react';
+import { FileText, Plus, Edit2, Trash2, X, Link as LinkIcon, Home, Star } from 'lucide-react';
 
-export default function Index({ pages }) {
+export default function Index({ pages, homePageSlug }) {
     const [showCreateModal, setShowCreateModal] = useState(false);
 
     const { data, setData, post, processing, errors, reset } = useForm({
@@ -19,6 +19,10 @@ export default function Index({ pages }) {
                 reset();
             }
         });
+    };
+
+    const setAsHome = (pageId) => {
+        post(route('pages.set-home', pageId));
     };
 
     return (
@@ -68,7 +72,15 @@ export default function Index({ pages }) {
                                                         <FileText className="w-5 h-5" />
                                                     </div>
                                                     <div>
-                                                        <div className="font-semibold text-gray-900">{page.title}</div>
+                                                        <div className="flex items-center gap-2">
+                                                            <div className="font-semibold text-gray-900">{page.title}</div>
+                                                            {page.slug === homePageSlug && (
+                                                                <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-600 text-[10px] font-bold uppercase tracking-wider border border-amber-100">
+                                                                    <Home className="w-2.5 h-2.5 fill-current" />
+                                                                    Home
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                         <div className="text-sm text-gray-500 font-mono mt-0.5 flex items-center gap-1">
                                                             <LinkIcon className="w-3 h-3" />
                                                             /{page.slug}
@@ -88,6 +100,15 @@ export default function Index({ pages }) {
                                             </td>
                                             <td className="px-6 py-4 text-right">
                                                 <div className="flex items-center justify-end gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    {page.is_published && page.slug !== homePageSlug && (
+                                                        <button 
+                                                            onClick={() => setAsHome(page.id)}
+                                                            title="Set as Home Page"
+                                                            className="text-gray-400 hover:text-amber-500 transition-colors"
+                                                        >
+                                                            <Home className="w-4 h-4" />
+                                                        </button>
+                                                    )}
                                                     <a 
                                                         href={`/${page.slug}`} 
                                                         target="_blank" 
