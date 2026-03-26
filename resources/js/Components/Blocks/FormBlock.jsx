@@ -11,7 +11,8 @@ export default function FormBlock({ data, contentTypes = [] }) {
         description = '',
         success_message = 'Thank you for your submission!',
         submit_button_text = 'Submit',
-        align = 'left'
+        align = 'left',
+        onSuccessJs = ''
     } = data;
 
     const [submitted, setSubmitted] = useState(false);
@@ -21,17 +22,15 @@ export default function FormBlock({ data, contentTypes = [] }) {
 
     // Determine fields to render
     let fieldsToRender = [];
-    if (mode === 'dynamic' && contentTypeSlug) {
-        const contentType = contentTypes.find(ct => ct.slug === contentTypeSlug);
-        if (contentType && contentType.fields) {
-            fieldsToRender = contentType.fields.map(f => ({
-                name: f.name.toLowerCase().replace(/ /g, '_'),
-                label: f.name,
-                type: f.type === 'longtext' ? 'textarea' : (f.type === 'number' ? 'number' : 'text'),
-                placeholder: f.options?.placeholder || '',
-                required: f.required
-            }));
-        }
+    const contentType = (contentTypes || []).find(ct => ct.slug === contentTypeSlug);
+    if (mode === 'dynamic' && contentTypeSlug && contentType && contentType.fields) {
+        fieldsToRender = contentType.fields.map(f => ({
+            name: f.name.toLowerCase().replace(/ /g, '_'),
+            label: f.name,
+            type: f.type === 'longtext' ? 'textarea' : (f.type === 'number' ? 'number' : 'text'),
+            placeholder: f.options?.placeholder || '',
+            required: f.required
+        }));
     } else {
         fieldsToRender = fields;
     }
@@ -56,6 +55,15 @@ export default function FormBlock({ data, contentTypes = [] }) {
 
             if (response.data.success) {
                 setSubmitted(true);
+                // Execute custom success JS if provided
+                if (onSuccessJs) {
+                    try {
+                        const fn = new Function('response', 'formData', onSuccessJs);
+                        fn(response.data, formData);
+                    } catch (err) {
+                        console.error('[Form onSuccessJs] error:', err);
+                    }
+                }
             } else {
                 setError(response.data.message || 'Something went wrong.');
             }

@@ -128,7 +128,7 @@ export default React.memo(function DynamicPageRenderer({ blocks = [], reusableBl
                             )}
                             {/* Block component */}
                             <Suspense fallback={<div className="p-10 w-full flex items-center justify-center text-gray-400 bg-gray-50/50 animate-pulse border-y border-gray-100">Loading {actualType}...</div>}>
-                                <Component data={actualData} contentTypes={usePage().props.content_types || []} />
+                                <Component data={actualData} contentTypes={usePage().props.contentTypes || usePage().props.content_types || []} />
                             </Suspense>
                             {/* Per-block event handlers */}
                             {hasEvents && (

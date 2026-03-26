@@ -75,3 +75,68 @@ Every plugin upload is subjected to a real-time security audit:
 
 ---
 *Built with ❤️*
+
+## 📝 Recent Updates & Walkthrough
+
+### **1. Page Builder Stability & Fixes**
+The Page Builder has been stabilized after resolving several critical runtime and syntax errors.
+- **Fixed Builder Crash**: Resolved a syntax error in `Builder.jsx` related to navbar link mapping.
+- **Fixed FormBlock ReferenceError**: Corrected an undeclared `fieldsToRender` variable that caused a blank page.
+- **Improved Asset Compilation**: All changes are now correctly reflected in compiled assets via `npm run build`.
+
+### **2. Form Builder & Dynamic Forms**
+Significant improvements to the Form block and its submission logic.
+- **Audit Log Fix**: Made `user_id` nullable in the `audit_logs` table to allow anonymous submissions (e.g., Contact Us).
+- **Validation Feedback**: `FormController` now returns specific validation errors (422) instead of generic 500 errors.
+- **Form Hooks**:
+  - **JS Hook**: Added `On Success JS` to run custom client-side code after submission.
+  - **PHP Hook**: Added `onAfterInsert` hook in `ContentEntryController` for server-side actions like sending emails.
+- **Hydration**: Form blocks now automatically fetch content type fields from the backend for both builder and public views.
+
+### **4. Dynamic Plugin Permissions**
+- **Plugin Registry**: Added support for dynamic plugin discovery in the Role/Permission management UI.
+- **Granular Control**: All active plugins (e.g., FormBlock, NavBar, EmailTemplates) are now listed in the permissions tab, allowing for modular access control.
+
+### **5. Navbar Enhancements**
+- **Multi-Level Dropdowns**: Support for nested sub-links with mobile-optimized rendering.
+- **Custom Code Injection**: Per-block `Custom CSS` and `Custom JS` support for the Navbar.
+
+### **6. Home Page & Media Improvements**
+- **Configurable Home Page**: Any page can now be set as the site root via the Page Manager.
+- **Premium Start Page**: Replaced the default Laravel welcome page with a stunning Kreatif CMS dashboard.
+- **Media Uploads**: Newly uploaded files now appear in the picker immediately without a refresh.
+
+## ✅ Development Task List (Latest)
+
+- [x] Research existing block implementation
+- [x] Design FormBlock architecture
+- [x] Create FormBlock module structure
+- [x] Implement Static Form functionality
+- [x] Implement Dynamic Form functionality (Content-Type integration)
+- [x] Register FormBlock in the CMS
+- [x] Verify implementation
+- [x] Debug MediaPickerModal empty state
+- [x] Debug Slideshow dynamic content
+- [x] Implement configurable Home Page
+    - [x] Add `home_page_slug` setting logic
+    - [x] Add `setHome` action in Page Manager
+    - [x] Update frontend to show home indicator
+- [x] Redesign Welcome page into "Kreatif CMS" start page
+- [x] Fix Media Picker empty state for Background Image (robust JSON detection)
+- [x] Fix Builder Syntax Error (Links map)
+- [x] Fix FormBlock ReferenceError (fieldsToRender)
+- [x] Fix Audit Log Integrity Constraint (user_id nullable)
+- [x] Implement Form Submission Hooks (JS/PHP)
+    - [x] Add OnSuccess JS to FormBlock
+    - [x] Add OnAfterInsert PHP hook to ContentEntryController
+    - [x] Provide Email sending example
+- [x] Final Verification
+- [x] Fix Media Upload "not showing" immediately after upload
+- [x] Fix Form Builder fields disappearing when Content Type is selected
+- [x] Fix Page Builder blank page (syntax error in Builder.jsx)
+- [x] Implement Navbar multi-dropdown support
+- [x] Add Custom CSS and Custom JS support to Navbar block
+- [x] Fix Missing Plugins in Role Permissions
+    - [x] Update RoleController to pass dynamic plugins
+    - [x] Update Roles/Edit.jsx to display dynamic plugins
+    - [x] Verify persistence
