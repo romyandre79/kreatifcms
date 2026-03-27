@@ -55,7 +55,7 @@ class RoleController extends Controller
      */
     public function edit(Role $role)
     {
-        $role->load(['permissions', 'users']);
+        $role->load(['permissions'])->loadCount('users');
         $contentTypes = ContentType::all();
         
         $modules = Module::allEnabled();

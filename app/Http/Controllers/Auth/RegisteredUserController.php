@@ -56,6 +56,14 @@ class RegisteredUserController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
+        // Assign Super Admin role if it's the first user
+        if (User::count() === 1) {
+            $superAdmin = \App\Models\Role::where('slug', 'super-admin')->first();
+            if ($superAdmin) {
+                $user->update(['role_id' => $superAdmin->id]);
+            }
+        }
+
         event(new Registered($user));
 
         Auth::login($user);

@@ -5,16 +5,19 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\Controller;
 use App\Models\ContentType;
 use App\Services\SchemaService;
+use App\Services\PermissionService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
 class ContentTypeController extends Controller
 {
     protected $schemaService;
+    protected $permissionService;
 
-    public function __construct(SchemaService $schemaService)
+    public function __construct(SchemaService $schemaService, PermissionService $permissionService)
     {
         $this->schemaService = $schemaService;
+        $this->permissionService = $permissionService;
     }
 
     public function index(Request $request)
@@ -77,6 +80,10 @@ class ContentTypeController extends Controller
 
         // Dynamically create the table
         $this->schemaService->createTable($contentType);
+
+        // Grant permissions to Super Admin
+        $groupName = ($contentType->type === 'collection' || !$contentType->type) ? 'Collection Types' : 'Single Types';
+        $this->permissionService->grantSuperAdminPermissions($contentType->slug, $groupName);
 
         if ($request->routeIs('api.*')) {
             return response()->json($contentType->load('fields'), 201);

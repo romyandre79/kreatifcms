@@ -40,6 +40,8 @@ export default function Edit({ role, contentTypes, plugins = [] }) {
         { name: 'Permissions', slug: 'permissions' },
         { name: 'Roles', slug: 'roles' },
         { name: 'Users', slug: 'users' },
+        { name: 'Pages', slug: 'pages' },
+        { name: 'Media', slug: 'media' },
         ...plugins.map(p => ({ 
             name: p.name, 
             slug: p.alias 
