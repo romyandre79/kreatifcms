@@ -45,8 +45,11 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'auth' => [
                 'user' => $request->user(),
+                'permissions' => $request->user() ? $request->user()->allPermissions() : [],
             ],
-            'content_types' => \App\Models\ContentType::all(['id', 'name', 'slug']),
+            'content_types' => $request->user() 
+                ? \App\Models\ContentType::all(['id', 'name', 'slug'])->filter(fn($type) => $request->user()->hasPermission($type->slug, 'read'))->values()
+                : [],
             'ziggy' => fn () => [
                 ...(new \Tighten\Ziggy\Ziggy)->toArray(),
                 'location' => $request->url(),

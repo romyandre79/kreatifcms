@@ -28,35 +28,50 @@ import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
 export default function AuthenticatedLayout({ header, children }) {
     const { auth, flash, plugins = [] } = usePage().props;
     const user = auth.user;
+    const permissions = auth.permissions || [];
+
+    const hasPermission = (contentType, action = 'read') => {
+        if (!permissions || permissions.length === 0) return false;
+        return permissions.some(p => 
+            (p.content_type === '*' || p.content_type === contentType) && 
+            (p.action === '*' || p.action === action)
+        );
+    };
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const navItems = [
         { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
-        { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*') },
-        { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*') },
-        { name: 'Layout Editor', href: route('layouts.index'), icon: Layout, active: route().current('layouts.index') },
-        { name: 'Content Type', href: route('content-types.index'), icon: Database, active: route().current('content-types.*') && !route().current('content-types.data.*') },
-        { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*') },
-        { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*') },
-        { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*') },
+        { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*'), contentType: 'pages' },
+        { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'blocks' },
+        { name: 'Layout Editor', href: route('layouts.index'), icon: Layout, active: route().current('layouts.index'), contentType: 'layouts' },
+        { name: 'Content Type', href: route('content-types.index'), icon: Database, active: route().current('content-types.*') && !route().current('content-types.data.*'), contentType: 'content-types' },
+        { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
+        { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
+        { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
     ];
 
-    if (plugins.some(p => p.alias === 'medialibrary' && p.enabled !== false) && route().has('media.index')) {
-        navItems.splice(3, 0, { name: 'Media Library', href: route('media.index'), icon: ImageIcon, active: route().current('media.*') });
+    // Filter items based on permissions
+    const filteredNavItems = navItems.filter(item => {
+        if (item.name === 'Dashboard') return true;
+        return hasPermission(item.contentType, 'read');
+    });
+
+    if (hasPermission('media', 'read') && plugins.some(p => p.alias === 'medialibrary' && p.enabled !== false) && route().has('media.index')) {
+        filteredNavItems.splice(3, 0, { name: 'Media Library', href: route('media.index'), icon: ImageIcon, active: route().current('media.*') });
     }
 
-    if (plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
-        navItems.push({ name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') });
+    if (hasPermission('databasemanager', 'read') && plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
+        filteredNavItems.push({ name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') });
     }
 
-    if (plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
-        navItems.push({ name: 'Email Templates', href: route('email-templates.index'), icon: Mail, active: route().current('email-templates.*') });
+    if (hasPermission('email-templates', 'read') && plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
+        filteredNavItems.push({ name: 'Email Templates', href: route('email-templates.index'), icon: Mail, active: route().current('email-templates.*') });
     }
 
-    if (plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {
-        navItems.push({ name: 'Jobs', href: route('jobmanager.index'), icon: Activity, active: route().current('jobmanager.*') });
+    if (hasPermission('jobs', 'read') && plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {
+        filteredNavItems.push({ name: 'Jobs', href: route('jobmanager.index'), icon: Activity, active: route().current('jobmanager.*') });
     }
 
     return (
@@ -81,7 +96,7 @@ export default function AuthenticatedLayout({ header, children }) {
 
                 {/* Sidebar Nav */}
                 <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-1">
-                    {navItems.map((item) => (
+                    {filteredNavItems.map((item) => (
                         <Link
                             key={item.name}
                             href={item.href}
@@ -149,7 +164,7 @@ export default function AuthenticatedLayout({ header, children }) {
                         </button>
                     </div>
                     <nav className="flex-1 px-3 py-4 space-y-1">
-                        {navItems.map((item) => (
+                        {filteredNavItems.map((item) => (
                             <Link
                                 key={item.name}
                                 href={item.href}
@@ -212,7 +227,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </main>
             </div>
-            {plugins.some(p => p.alias === 'aiassistant' && p.enabled !== false) && <AiAssistantSidebar />}
+            {hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'aiassistant' && p.enabled !== false) && <AiAssistantSidebar />}
         </div>
     );
 }

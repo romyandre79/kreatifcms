@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Page;
 use App\Services\SchemaService;
+use App\Services\PermissionService;
 use Modules\ReusableBlock\Models\Block;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -31,7 +32,11 @@ class PageController extends Controller
         $validated['blocks'] = [];
         $validated['is_published'] = false;
 
-        Page::create($validated);
+        $page = Page::create($validated);
+
+        // Grant permissions to Super Admin
+        $permissionService = app(PermissionService::class);
+        $permissionService->grantSuperAdminPermissions($page->slug, 'Pages');
 
         return redirect()->route('pages.index')->with('success', 'Page created successfully.');
     }

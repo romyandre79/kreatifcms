@@ -85,4 +85,51 @@ class User extends Authenticatable implements JWTSubject
     {
         return [];
     }
+
+    /**
+     * Check if the user has a specific permission.
+     *
+     * @param string $contentType
+     * @param string $action
+     * @return bool
+     */
+    public function hasPermission($contentType, $action = 'read')
+    {
+        if (!$this->role) {
+            return false;
+        }
+
+        // Super Admin has all permissions
+        if ($this->role->slug === 'super-admin') {
+            return true;
+        }
+
+        return $this->role->permissions()
+            ->where('content_type', $contentType)
+            ->where('action', $action)
+            ->where('enabled', true)
+            ->exists();
+    }
+
+    /**
+     * Get all enabled permissions for the user.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    public function allPermissions()
+    {
+        if (!$this->role) {
+            return collect([]);
+        }
+
+        if ($this->role->slug === 'super-admin') {
+            // Return a special flag or all permissions if needed, 
+            // but for frontend filtering, 'all' is usually enough.
+            return collect([['content_type' => '*', 'action' => '*']]);
+        }
+
+        return $this->role->permissions()
+            ->where('enabled', true)
+            ->get(['content_type', 'action']);
+    }
 }
