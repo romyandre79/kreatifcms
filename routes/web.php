@@ -52,12 +52,6 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/seo/settings', [\Modules\Seo\Http\Controllers\SeoController::class, 'updateSettings'])->name('seo.settings.update')->middleware('permission:seo,update');
     });
     
-    // Layout Editor
-    Route::middleware(['permission:layouts,read'])->group(function () {
-        Route::get('/layouts', [App\Http\Controllers\LayoutController::class, 'index'])->name('layouts.index');
-        Route::post('/layouts', [App\Http\Controllers\LayoutController::class, 'update'])->name('layouts.update')->middleware('permission:layouts,update');
-    });
-
     // CMS Content Entry Routes
     Route::middleware(['permission:content-types,read'])->group(function () {
         Route::get('/builder/content-data', [App\Http\Controllers\ContentEntryController::class, 'dataManager'])->name('content-types.data.index');

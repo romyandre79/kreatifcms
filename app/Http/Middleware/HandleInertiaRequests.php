@@ -72,6 +72,35 @@ class HandleInertiaRequests extends Middleware
                 return $plugins;
             },
             'captcha_site_key' => $captchaConfigured ? (\App\Models\Setting::get('captcha', 'captcha_site_key') ?: (env('RECAPTCHA_SITE_KEY') ?: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI')) : null,
+            'layout' => function() {
+                $isLayoutEnabled = class_exists('\Nwidart\Modules\Facades\Module') && 
+                                  ($module = \Nwidart\Modules\Facades\Module::find('Layout')) && 
+                                  $module->isEnabled();
+                
+                if (!$isLayoutEnabled) {
+                    return [
+                        'header' => [],
+                        'footer' => [],
+                        'theme' => [
+                            'primaryColor' => '#4f46e5',
+                            'secondaryColor' => '#10b981',
+                            'fontFamily' => 'Inter',
+                            'fontSize' => '16'
+                        ]
+                    ];
+                }
+
+                return [
+                    'header' => \App\Models\Setting::where('module', 'layout')->where('key', 'header')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'header')->first()->value, true) : [],
+                    'footer' => \App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first()->value, true) : [],
+                    'theme' => \App\Models\Setting::where('module', 'layout')->where('key', 'theme')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'theme')->first()->value, true) : [
+                        'primaryColor' => '#4f46e5',
+                        'secondaryColor' => '#10b981',
+                        'fontFamily' => 'Inter',
+                        'fontSize' => '16'
+                    ],
+                ];
+            },
         ];
     }
 }

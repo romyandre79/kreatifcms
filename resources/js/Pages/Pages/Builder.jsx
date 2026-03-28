@@ -478,6 +478,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                     <option value="Twitter">X</option>
                                                     <option value="Linkedin">IN</option>
                                                     <option value="Youtube">YT</option>
+                                                    <option value="Tiktok">TK</option>
                                                     <option value="Github">GH</option>
                                                     <option value="Globe">WEB</option>
                                                 </select>

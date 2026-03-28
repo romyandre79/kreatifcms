@@ -15,12 +15,13 @@
     "EmailConfig": true,
     "EmailTemplates": true,
     "EditorSummernote": true,
-    "Captcha": true,
+    "Captcha": false,
     "AiAssistant": true,
     "OtpService": true,
     "JobManager": true,
     "MediaLibrary": true,
     "FormBlock": true,
     "SocialMediaBlock": true,
-    "TimelineBlock": true
+    "TimelineBlock": true,
+    "Layout": true
 }

@@ -44,8 +44,7 @@ export default function AuthenticatedLayout({ header, children }) {
     const navItems = [
         { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
         { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*'), contentType: 'pages' },
-        { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'blocks' },
-        { name: 'Layout Editor', href: route('layouts.index'), icon: Layout, active: route().current('layouts.index'), contentType: 'layouts' },
+        { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'reusableblock' },
         { name: 'Content Type', href: route('content-types.index'), icon: Database, active: route().current('content-types.*') && !route().current('content-types.data.*'), contentType: 'content-types' },
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
@@ -60,6 +59,10 @@ export default function AuthenticatedLayout({ header, children }) {
 
     if (hasPermission('media', 'read') && plugins.some(p => p.alias === 'medialibrary' && p.enabled !== false) && route().has('media.index')) {
         filteredNavItems.splice(3, 0, { name: 'Media Library', href: route('media.index'), icon: ImageIcon, active: route().current('media.*') });
+    }
+
+    if (hasPermission('layouts', 'read') && plugins.some(p => p.alias === 'layout' && p.enabled !== false) && route().has('layouts.index')) {
+        filteredNavItems.splice(4, 0, { name: 'Layout Editor', href: route('layouts.index'), icon: Layout, active: route().current('layouts.index') });
     }
 
     if (hasPermission('databasemanager', 'read') && plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {

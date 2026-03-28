@@ -1,7 +1,8 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Modules\Layout\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\SchemaService;
 use Modules\ReusableBlock\Models\Block;
@@ -15,13 +16,21 @@ class LayoutController extends Controller
         $schemaService = app(SchemaService::class);
         $header = Setting::where('module', 'layout')->where('key', 'header')->first();
         $footer = Setting::where('module', 'layout')->where('key', 'footer')->first();
+        $theme = Setting::where('module', 'layout')->where('key', 'theme')->first();
 
         $headerBlocks = $header ? json_decode($header->value, true) : [];
         $footerBlocks = $footer ? json_decode($footer->value, true) : [];
+        $themeData = $theme ? json_decode($theme->value, true) : [
+            'primaryColor' => '#4f46e5',
+            'secondaryColor' => '#10b981',
+            'fontFamily' => 'Inter',
+            'fontSize' => '16'
+        ];
 
         return Inertia::render('Layout/Editor', [
             'headerBlocks' => $schemaService->hydrateDynamicBlocks($headerBlocks),
             'footerBlocks' => $schemaService->hydrateDynamicBlocks($footerBlocks),
+            'themeData' => $themeData,
             'reusableBlocks' => Block::all()->map(function($rb) use ($schemaService) {
                 if (isset($rb->data) && is_array($rb->data)) {
                     $rb->data = $schemaService->hydrateDynamicBlocks($rb->data);
@@ -37,6 +46,7 @@ class LayoutController extends Controller
         $request->validate([
             'header' => 'nullable|array',
             'footer' => 'nullable|array',
+            'theme' => 'nullable|array',
         ]);
 
         if ($request->has('header')) {
@@ -53,6 +63,13 @@ class LayoutController extends Controller
             );
         }
 
-        return redirect()->back()->with('success', 'Global layout updated successfully.');
+        if ($request->has('theme')) {
+            Setting::updateOrCreate(
+                ['module' => 'layout', 'key' => 'theme'],
+                ['value' => json_encode($request->input('theme'))]
+            );
+        }
+
+        return redirect()->back()->with('success', 'Global layout and theme updated successfully.');
     }
 }
