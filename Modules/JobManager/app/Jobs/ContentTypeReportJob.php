@@ -2,7 +2,8 @@
 
 namespace Modules\JobManager\Jobs;
 
-use App\Models\ContentType;
+use Modules\ContentType\Models\ContentType;
+use Nwidart\Modules\Facades\Module;
 use App\Services\SchemaService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -29,6 +30,15 @@ class ContentTypeReportJob implements ShouldQueue
      */
     public function handle(SchemaService $schemaService): void
     {
+        $isContentEnabled = class_exists(ContentType::class) && 
+                           ($module = Module::find('ContentType')) && 
+                           $module->isEnabled();
+
+        if (!$isContentEnabled) {
+            Log::info("\n--- Content Type Entry Report skipped: Module disabled ---\n");
+            return;
+        }
+
         $contentTypes = ContentType::all();
         $report = "\n--- Content Type Entry Report (" . now()->toDateTimeString() . ") ---\n";
 

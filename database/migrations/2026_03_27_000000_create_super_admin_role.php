@@ -5,7 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use App\Models\Role;
 use App\Models\Permission;
-use App\Models\ContentType;
+use Modules\ContentType\Models\ContentType;
 use App\Models\Page;
 use Illuminate\Support\Str;
 
