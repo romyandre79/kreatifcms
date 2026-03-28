@@ -20,5 +20,7 @@
     "OtpService": true,
     "JobManager": true,
     "MediaLibrary": true,
-    "FormBlock": true
+    "FormBlock": true,
+    "SocialMediaBlock": true,
+    "TimelineBlock": true
 }

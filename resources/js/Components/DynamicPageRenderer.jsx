@@ -10,6 +10,9 @@ const FeatureGridBlock = lazy(() => import('./Blocks/FeatureGridBlock'));
 const SlideshowBlock = lazy(() => import('./Blocks/SlideshowBlock'));
 const ContentListBlock = lazy(() => import('./Blocks/ContentListBlock'));
 const FormBlock = lazy(() => import('./Blocks/FormBlock'));
+const SocialMediaBlock = lazy(() => import('./Blocks/SocialMediaBlock'));
+const TimelineBlock = lazy(() => import('./Blocks/TimelineBlock'));
+
 
 const BlockComponents = {
     navbar: NavBarBlock,
@@ -19,8 +22,11 @@ const BlockComponents = {
     feature_grid: FeatureGridBlock,
     slideshow: SlideshowBlock,
     content_list: ContentListBlock,
-    form: FormBlock
+    form: FormBlock,
+    social_media: SocialMediaBlock,
+    timeline: TimelineBlock
 };
+
 
 
 // Block Event Handler component - manages event bindings for a block

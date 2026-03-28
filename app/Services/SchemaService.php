@@ -162,8 +162,8 @@ class SchemaService
                 }
             }
 
-            if ($block['type'] === 'content_list' || $block['type'] === 'slideshow') {
-                $source = $block['data']['source'] ?? ($block['type'] === 'content_list' ? 'dynamic' : 'manual');
+            if ($block['type'] === 'content_list' || $block['type'] === 'slideshow' || $block['type'] === 'timeline') {
+                $source = $block['data']['source'] ?? ($block['type'] === 'content_list' || $block['type'] === 'timeline' ? 'dynamic' : 'manual');
                 
                 if ($source === 'dynamic' || $block['type'] === 'content_list') {
                     $ctSlug = $block['data']['content_type'] ?? null;
@@ -209,7 +209,24 @@ class SchemaService
                                     }
                                 }
                                     
-                                \Illuminate\Support\Facades\Log::info("Hydrated {$block['type']} from {$ctSlug}: " . $items->count() . " items");
+                                 \Illuminate\Support\Facades\Log::info("Hydrated {$block['type']} from {$ctSlug}: " . $items->count() . " items");
+                                
+                                // Transform for timeline if needed
+                                if ($block['type'] === 'timeline' && !empty($block['data']['mapping'])) {
+                                    $mapping = $block['data']['mapping'];
+                                    $items = $items->map(function($item) use ($mapping) {
+                                        return [
+                                            'id' => $item->id ?? uniqid(),
+                                            'title' => $item->{$mapping['title'] ?? 'title'} ?? ($item->title ?? ''),
+                                            'date' => $item->{$mapping['date'] ?? 'created_at'} ?? ($item->created_at ?? ''),
+                                            'content' => $item->{$mapping['content'] ?? 'content'} ?? ($item->content ?? ($item->description ?? '')),
+                                            'image' => $item->{$mapping['image'] ?? 'image'} ?? ($item->image ?? ($item->thumbnail ?? '')),
+                                            'icon' => $item->{$mapping['icon'] ?? ''} ?? ($item->icon ?? 'Clock'),
+                                            'color' => $item->{$mapping['color'] ?? ''} ?? ($item->color ?? '#4f46e5'),
+                                        ];
+                                    });
+                                }
+
                                 $block['data']['items'] = $items;
                             } else {
                                 \Illuminate\Support\Facades\Log::warning("Table not found for hydration: {$tableName}");
@@ -223,6 +240,16 @@ class SchemaService
                         $block['data']['items'] = [];
                     }
                 }
+            }
+
+            // Universal Custom PHP Hook support for all blocks
+            if (!empty($block['data']['customPhp'])) {
+                $context = [
+                    'block' => &$block,
+                    'data' => &$block['data']
+                ];
+                $this->executePhpHook($block['data']['customPhp'], $context);
+                \Illuminate\Support\Facades\Log::info("Executed custom PHP for block: {$block['id']} ({$block['type']})");
             }
         }
         return $blocks;
