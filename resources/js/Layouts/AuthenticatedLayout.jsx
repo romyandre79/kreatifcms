@@ -41,11 +41,36 @@ export default function AuthenticatedLayout({ header, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
+    /**
+     * Safe route helper to prevent Ziggy crashes when routes are missing 
+     * (e.g., when a module is deactivated).
+     */
+    const safeRoute = (routeName, params = {}) => {
+        try {
+            if (route().has(routeName)) {
+                return route(routeName, params);
+            }
+        } catch (e) {
+            console.warn(`Ziggy route error for '${routeName}':`, e.message);
+        }
+        return '#';
+    };
+
+    /**
+     * Safe check for active routes.
+     */
+    const isRouteActive = (pattern) => {
+        try {
+            return route().current(pattern);
+        } catch (e) {
+            return false;
+        }
+    };
+
     const navItems = [
         { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
         { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*'), contentType: 'pages' },
         { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'reusableblock' },
-        { name: 'Content Type', href: route('content-types.index'), icon: Database, active: route().current('content-types.*') && !route().current('content-types.data.*'), contentType: 'content-types' },
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
@@ -58,23 +83,35 @@ export default function AuthenticatedLayout({ header, children }) {
     });
 
     if (hasPermission('media', 'read') && plugins.some(p => p.alias === 'medialibrary' && p.enabled !== false) && route().has('media.index')) {
-        filteredNavItems.splice(3, 0, { name: 'Media Library', href: route('media.index'), icon: ImageIcon, active: route().current('media.*') });
+        filteredNavItems.splice(3, 0, { name: 'Media Library', href: safeRoute('media.index'), icon: ImageIcon, active: isRouteActive('media.*') });
+    }
+
+    if (hasPermission('content-types', 'read') && plugins.some(p => (p.alias === 'contenttype' || p.alias === 'contenttypes') && p.enabled !== false)) {
+        const routeName = 'content-types.index';
+        if (route().has(routeName)) {
+            filteredNavItems.splice(3, 0, { 
+                name: 'Content Type', 
+                href: safeRoute(routeName), 
+                icon: Database, 
+                active: isRouteActive('content-types.*') && !isRouteActive('content-types.data.*') 
+            });
+        }
     }
 
     if (hasPermission('layouts', 'read') && plugins.some(p => p.alias === 'layout' && p.enabled !== false) && route().has('layouts.index')) {
-        filteredNavItems.splice(4, 0, { name: 'Layout Editor', href: route('layouts.index'), icon: Layout, active: route().current('layouts.index') });
+        filteredNavItems.splice(4, 0, { name: 'Layout Editor', href: safeRoute('layouts.index'), icon: Layout, active: isRouteActive('layouts.index') });
     }
 
     if (hasPermission('databasemanager', 'read') && plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
-        filteredNavItems.push({ name: 'Database', href: route('settings.database.index'), icon: HardDrive, active: route().current('settings.database.*') });
+        filteredNavItems.push({ name: 'Database', href: safeRoute('settings.database.index'), icon: HardDrive, active: isRouteActive('settings.database.*') });
     }
 
     if (hasPermission('email-templates', 'read') && plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
-        filteredNavItems.push({ name: 'Email Templates', href: route('email-templates.index'), icon: Mail, active: route().current('email-templates.*') });
+        filteredNavItems.push({ name: 'Email Templates', href: safeRoute('email-templates.index'), icon: Mail, active: isRouteActive('email-templates.*') });
     }
 
     if (hasPermission('jobs', 'read') && plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {
-        filteredNavItems.push({ name: 'Jobs', href: route('jobmanager.index'), icon: Activity, active: route().current('jobmanager.*') });
+        filteredNavItems.push({ name: 'Jobs', href: safeRoute('jobmanager.index'), icon: Activity, active: isRouteActive('jobmanager.*') });
     }
 
     return (

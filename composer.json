@@ -59,7 +59,8 @@
             "Database\\Factories\\": "database/factories/",
             "Database\\Seeders\\": "database/seeders/",
             "Modules\\CorporateTheme\\": "Modules/CorporateTheme/app/",
-            "Modules\\Layout\\": "Modules/Layout/app/"
+            "Modules\\Layout\\": "Modules/Layout/app/",
+            "Modules\\ContentType\\": "Modules/ContentType/app/"
         }
     },
     "autoload-dev": {

@@ -1,8 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Modules\ContentType\Http\Controllers;
 
-use App\Models\ContentType;
+use Modules\ContentType\Models\ContentType;
+use App\Http\Controllers\Controller;
 use App\Services\SchemaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +27,7 @@ class ContentEntryController extends Controller
     {
         $contentTypes = ContentType::with('fields')->get();
 
-        return \Inertia\Inertia::render('ContentEntries/DataManager', [
+        return \Inertia\Inertia::render('ContentType::ContentEntries/DataManager', [
             'contentTypes' => $contentTypes,
         ]);
     }
@@ -52,7 +53,7 @@ class ContentEntryController extends Controller
             return response()->json($entries);
         }
 
-        return \Inertia\Inertia::render('ContentEntries/Index', [
+        return \Inertia\Inertia::render('ContentType::ContentEntries/Index', [
             'contentType' => $contentType,
             'entries' => $entries,
             'slug' => $contentTypeSlug
@@ -64,7 +65,7 @@ class ContentEntryController extends Controller
         $contentType = ContentType::with('fields')->where('slug', $contentTypeSlug)->firstOrFail();
         $availableRelationships = $this->getAvailableRelationships($contentType);
 
-        return \Inertia\Inertia::render('ContentEntries/Create', [
+        return \Inertia\Inertia::render('ContentType::ContentEntries/Create', [
             'contentType' => $contentType,
             'slug' => $contentTypeSlug,
             'availableRelationships' => $availableRelationships
@@ -143,7 +144,7 @@ class ContentEntryController extends Controller
 
         $entry = DB::connection($this->connection)->table($tableName)->where('id', $id)->first();
 
-        return \Inertia\Inertia::render('ContentEntries/Edit', [
+        return \Inertia\Inertia::render('ContentType::ContentEntries/Edit', [
             'contentType' => $contentType,
             'entry' => $entry,
             'slug' => $contentTypeSlug,
@@ -247,7 +248,7 @@ class ContentEntryController extends Controller
 
         // Check Relationship Restraints (Restrict)
         // Find other content types that have a relation field pointing to this one
-        $dependents = \App\Models\ContentField::where('type', 'relation')
+        $dependents = \Modules\ContentType\Models\ContentField::where('type', 'relation')
             ->whereJsonContains('options->target_id', (string)$contentType->id)
             ->get();
 
@@ -308,7 +309,7 @@ class ContentEntryController extends Controller
         $available = [];
         foreach ($contentType->fields as $field) {
             if ($field->type === 'relation' && isset($field->options['target_id'])) {
-                $targetCt = ContentType::with('fields')->find($field->options['target_id']);
+                $targetCt = \Modules\ContentType\Models\ContentType::with('fields')->find($field->options['target_id']);
                 if ($targetCt) {
                     $targetTable = $this->schemaService->getTableName($targetCt->slug);
                     

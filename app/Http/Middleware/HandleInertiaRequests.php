@@ -43,9 +43,18 @@ class HandleInertiaRequests extends Middleware
                 'user' => $request->user(),
                 'permissions' => $request->user() ? $request->user()->allPermissions() : [],
             ],
-            'content_types' => $request->user() 
-                ? \App\Models\ContentType::all(['id', 'name', 'slug'])->filter(fn($type) => $request->user()->hasPermission($type->slug, 'read'))->values()
-                : [],
+            'content_types' => function() use ($request) {
+                $isContentEnabled = class_exists('Modules\ContentType\Models\ContentType') && 
+                                   ($module = \Nwidart\Modules\Facades\Module::find('ContentType')) && 
+                                   $module->isEnabled();
+                
+                if (!$isContentEnabled) {
+                    return [];
+                }
+                return $request->user() 
+                    ? \Modules\ContentType\Models\ContentType::all(['id', 'name', 'slug'])->filter(fn($type) => $request->user()->hasPermission($type->slug, 'read'))->values()
+                    : [];
+            },
             'ziggy' => fn () => [
                 ...(new \Tighten\Ziggy\Ziggy)->toArray(),
                 'location' => $request->url(),

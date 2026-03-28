@@ -1,0 +1,11 @@
+{
+    "name": "ContentType",
+    "alias": "contenttype",
+    "description": "Kreatif CMS Content Type Modules, that provide table, view, and data management",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\ContentType\\Providers\\ContentTypeServiceProvider"
+    ],
+    "files": []
+}

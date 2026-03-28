@@ -32,7 +32,11 @@ import { CSS } from '@dnd-kit/utilities';
 
 export default function Builder({ page, reusableBlocks = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
-    const blockPlugins = plugins.filter(p => p.type === 'block');
+    const isContentTypeEnabled = plugins.some(p => p.alias === 'contenttype' && p.enabled !== false);
+    
+    // Filter out block options that require ContentType if it's disabled.
+    // E.g., if 'content_list' is an option anywhere, we can hide it.
+    
     const BLOCK_TYPES = [
         ...blockPlugins.map(p => {
             const IconComponent = p.meta?.icon ? LucideIcons[p.meta.icon] || LucideIcons.LayoutGrid : LucideIcons.LayoutGrid;
@@ -42,9 +46,15 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 icon: IconComponent,
                 desc: p.meta?.desc || p.description || ''
             };
-        }),
+        }).filter(p => isContentTypeEnabled || (p.id !== 'content_list' && p.id !== 'form' && p.id !== 'slideshow' && p.id !== 'timeline' && p.id !== 'feature_grid')),
         { id: 'reusable_block', name: 'Saved Block', icon: LucideIcons.Box || LucideIcons.Layers, desc: 'Import a saved block' }
     ];
+    
+    // But since `content_list`, `form`, `timeline`, `slideshow` are already block plugins, 
+    // maybe we just disable their 'dynamic' part instead of hiding the whole block.
+    // Let's redefine BLOCK_TYPES without full exclusion, but remove `content_list` block
+    // which relies entirely on content type.
+    const DISPLAY_BLOCK_TYPES = BLOCK_TYPES.filter(p => isContentTypeEnabled || p.id !== 'content_list');
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
     
@@ -1065,12 +1075,14 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 >
                                     Manual
                                 </button>
-                                <button
-                                    onClick={() => updateBlockData(block.id, 'source', 'dynamic')}
-                                    className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${data.source === 'dynamic' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
-                                >
-                                    Dynamic
-                                </button>
+                                {isContentTypeEnabled && (
+                                    <button
+                                        onClick={() => updateBlockData(block.id, 'source', 'dynamic')}
+                                        className={`flex-1 py-1.5 rounded-md text-xs font-bold transition-all ${data.source === 'dynamic' ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        Dynamic
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -1300,7 +1312,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
-                                {['manual', 'dynamic'].map(s => (
+                                {['manual'].concat(isContentTypeEnabled ? ['dynamic'] : []).map(s => (
                                     <button
                                         key={s}
                                         onClick={() => updateBlockData(block.id, 'source', s)}
@@ -1593,7 +1605,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Form Mode</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
-                                {['static', 'dynamic'].map(m => (
+                                {['static'].concat(isContentTypeEnabled ? ['dynamic'] : []).map(m => (
                                     <button
                                         key={m}
                                         onClick={() => updateBlockData(block.id, 'mode', m)}
@@ -2040,7 +2052,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 isOpen={showBlockMenu}
                 onClose={() => setShowBlockMenu(false)}
                 onSelect={(type) => addBlock(type)}
-                blockTypes={BLOCK_TYPES}
+                blockTypes={DISPLAY_BLOCK_TYPES}
             />
 
             <MediaPickerModal

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Role;
 use App\Models\Permission;
-use App\Models\ContentType;
+use Modules\ContentType\Models\ContentType;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -56,7 +56,10 @@ class RoleController extends Controller
     public function edit(Role $role)
     {
         $role->load(['permissions'])->loadCount('users');
-        $contentTypes = ContentType::all();
+        $contentTypes = [];
+        if (class_exists('Modules\ContentType\Models\ContentType') && Module::isEnabled('ContentType')) {
+            $contentTypes = ContentType::all();
+        }
         
         $modules = Module::allEnabled();
         $plugins = [];

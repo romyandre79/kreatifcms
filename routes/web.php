@@ -8,8 +8,16 @@ use Inertia\Inertia;
 Route::get('/', [App\Http\Controllers\Frontend\PageRendererController::class, 'home'])->name('home');
 
 Route::get('/dashboard', function () {
+    $contentTypes = [];
+    $isContentEnabled = class_exists('Modules\ContentType\Models\ContentType') && 
+                       ($module = \Nwidart\Modules\Facades\Module::find('ContentType')) && 
+                       $module->isEnabled();
+
+    if ($isContentEnabled) {
+        $contentTypes = \Modules\ContentType\Models\ContentType::with('fields')->get();
+    }
     return Inertia::render('Dashboard', [
-        'contentTypes' => \App\Models\ContentType::with('fields')->get()
+        'contentTypes' => $contentTypes
     ]);
 })->middleware(['auth', 'verified'])->name('dashboard');
 
@@ -18,16 +26,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // CMS Builder Routes
-    Route::middleware(['permission:content-types,read'])->group(function () {
-        Route::get('/builder/content-types', [App\Http\Controllers\ContentTypeController::class, 'index'])->name('content-types.index');
-        Route::get('/builder/content-types/create', [App\Http\Controllers\ContentTypeController::class, 'create'])->name('content-types.create')->middleware('permission:content-types,create');
-        Route::post('/builder/content-types', [App\Http\Controllers\ContentTypeController::class, 'store'])->name('content-types.store')->middleware('permission:content-types,create');
-        Route::get('/builder/content-types/{contentType}/edit', [App\Http\Controllers\ContentTypeController::class, 'edit'])->name('content-types.edit')->middleware('permission:content-types,update');
-        Route::put('/builder/content-types/{contentType}', [App\Http\Controllers\ContentTypeController::class, 'update'])->name('content-types.update')->middleware('permission:content-types,update');
-        Route::delete('/builder/content-types/{contentType}', [App\Http\Controllers\ContentTypeController::class, 'destroy'])->name('content-types.destroy')->middleware('permission:content-types,delete');
-        Route::post('/builder/content-types/{contentType}/push', [App\Http\Controllers\SchemaSyncController::class, 'push'])->name('content-types.push')->middleware('permission:content-types,publish');
-    });
+    // CMS Builder Routes moved to ContentType module
 
     // Page Builder
     Route::middleware(['permission:media,read'])->group(function () {
@@ -52,20 +51,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/seo/settings', [\Modules\Seo\Http\Controllers\SeoController::class, 'updateSettings'])->name('seo.settings.update')->middleware('permission:seo,update');
     });
     
-    // CMS Content Entry Routes
-    Route::middleware(['permission:content-types,read'])->group(function () {
-        Route::get('/builder/content-data', [App\Http\Controllers\ContentEntryController::class, 'dataManager'])->name('content-types.data.index');
-    });
-    
-    // Dynamic permissions for content entries
-    Route::group(['prefix' => 'content', 'as' => 'content-entries.'], function () {
-        Route::get('/{slug}', [App\Http\Controllers\ContentEntryController::class, 'index'])->name('index');
-        Route::get('/{slug}/create', [App\Http\Controllers\ContentEntryController::class, 'create'])->name('create');
-        Route::post('/{slug}', [App\Http\Controllers\ContentEntryController::class, 'store'])->name('store');
-        Route::get('/{slug}/{id}/edit', [App\Http\Controllers\ContentEntryController::class, 'edit'])->name('edit');
-        Route::put('/{slug}/{id}', [App\Http\Controllers\ContentEntryController::class, 'update'])->name('update');
-        Route::get('/{slug}/{id}/history', [App\Http\Controllers\ContentEntryController::class, 'history'])->name('history');
-    });
+    // CMS Content Entry Routes moved to ContentType module
 
     // Plugin Management Routes
     Route::middleware(['permission:plugins,read'])->group(function () {
