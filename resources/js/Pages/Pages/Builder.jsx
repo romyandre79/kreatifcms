@@ -4,7 +4,7 @@ import { useState } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
     Layout, Type, Image as ImageIcon, Grid, Layers,
-    Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronDown, ChevronRight, X,
+    Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronUp, ChevronDown, ChevronRight, X,
     Monitor, LayoutTemplate, Bold, Italic, Link as LinkIcon, List, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette,
     Menu, Globe
 } from 'lucide-react';
@@ -14,10 +14,12 @@ import MarkdownToolbar from '@/Components/MarkdownToolbar';
 import {
     DndContext,
     closestCenter,
+    closestCorners,
     KeyboardSensor,
     PointerSensor,
     useSensor,
     useSensors,
+    DragOverlay,
 } from '@dnd-kit/core';
 import {
     arrayMove,
@@ -66,13 +68,14 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
     const [sidebarTab, setSidebarTab] = useState('structure'); // 'structure' or 'settings'
 
     const [activeBlockId, setActiveBlockId] = useState(null);
+    const [activeDragId, setActiveDragId] = useState(null);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
     const [saving, setSaving] = useState(false);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
-                distance: 8,
+                distance: 5,
             },
         }),
         useSensor(KeyboardSensor, {
@@ -112,16 +115,16 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
         } else if (type === 'navbar') {
             newBlock.data = { 
                 logo: '', 
-                links: [{ id: generateId(), label: 'Home', url: '/' }, { id: generateId(), label: 'Features', url: '/#features' }],
+                links: [{ id: generateId(), label: 'Home', url: '/' }], 
                 buttons: [
-                    { id: generateId(), label: 'Login', url: '/login', style: 'ghost' },
+                    { id: generateId(), label: 'Login', url: '/login', style: 'ghost', visibility: 'guest' },
                     { id: generateId(), label: 'Get Started', url: '#', style: 'primary' }
                 ],
-                sticky: true,
+                social_links: [],
+                composition: ['links', 'buttons', 'social_links'],
+                sticky: true, 
                 glass: true,
-                align: 'center',
-                customCss: '',
-                customJs: ''
+                align: 'center'
             };
         } else if (type === 'content_list') {
             newBlock.data = {
@@ -224,10 +227,16 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
         if (active && over && active.id !== over.id) {
             setBlocks((prevBlocks) => prevBlocks.map(block => {
                 if (block.id === blockId) {
+                    // Check if it's a direct field drag (like composition) or a sub-item drag
+                    // We look for the field in block.data
                     const items = [...(block.data[field] || [])];
-                    const getItemId = (item, idx) => item.id || `item-${idx}`;
+                    const getItemId = (item, idx) => {
+                        if (typeof item === 'string') return item;
+                        return item.id || `item-${idx}`;
+                    };
                     const oldIndex = items.findIndex((item, idx) => getItemId(item, idx) === active.id);
                     const newIndex = items.findIndex((item, idx) => getItemId(item, idx) === over.id);
+                    
                     if (oldIndex !== -1 && newIndex !== -1) {
                         return {
                             ...block,
@@ -306,7 +315,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
             
             if (blockId === 'seo') {
                 if (fieldName === 'og_image') setOgImage(url);
-            } else if (index !== null) {
+            } else if (index !== null && index !== undefined) {
                 // Handle nested items (e.g., timeline events, gallery images)
                 const block = blocks.find(b => b.id === blockId);
                 if (block && Array.isArray(block.data[fieldName])) {
@@ -338,274 +347,257 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
         switch (block.type) {
             case 'navbar': {
                 const links = Array.isArray(data.links) ? data.links : [];
-                const buttons = data.buttons !== undefined ? (Array.isArray(data.buttons) ? data.buttons : []) : [ { id: 'btn-1', label: 'Login', url: '/login', style: 'ghost' }, { id: 'btn-2', label: 'Get Started', url: '#', style: 'primary' } ];
-                return (
-                    <div className="space-y-6">
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Logo</label>
-                            <div className="flex gap-2">
-                                <input type="text" value={data.logo || ''} readOnly placeholder="Select logo..." className="flex-1 text-sm border-gray-200 rounded-lg bg-gray-100 text-gray-500" />
-                                <button onClick={() => openMediaPicker(block.id, 'logo')} className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-100 border border-indigo-200">Select</button>
-                            </div>
-                        </div>
+                const buttons = Array.isArray(data.buttons) ? data.buttons : [];
+                const social_links = Array.isArray(data.social_links) ? data.social_links : [];
+                const composition = Array.isArray(data.composition) ? data.composition : ['logo', 'links', 'buttons', 'social_links'];
 
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Menu Links</label>
-                                <button
-                                    onClick={() => {
+                const moveItem = (arr, index, direction, fieldName) => {
+                    const newArr = [...arr];
+                    const targetIndex = index + direction;
+                    if (targetIndex < 0 || targetIndex >= arr.length) return;
+                    [newArr[index], newArr[targetIndex]] = [newArr[targetIndex], newArr[index]];
+                    updateBlockData(block.id, fieldName, newArr);
+                };
+
+                const renderSection = (key, idx) => {
+                    const isFirst = idx === 0;
+                    const isLast = idx === composition.length - 1;
+
+                    const sectionHeader = (title, onAdd, addLabel) => (
+                        <div className="flex items-center justify-between mb-2">
+                            <div className="flex items-center gap-2">
+                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">{title}</label>
+                                <div className="flex gap-1">
+                                    <button disabled={isFirst} onClick={() => moveItem(composition, idx, -1, 'composition')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-gray-400"><ChevronUp className="w-3 h-3" /></button>
+                                    <button disabled={isLast} onClick={() => moveItem(composition, idx, 1, 'composition')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30 disabled:hover:text-gray-400"><ChevronDown className="w-3 h-3" /></button>
+                                </div>
+                            </div>
+                            {onAdd && <button onClick={onAdd} className="text-[10px] text-indigo-600 font-bold hover:underline">{addLabel}</button>}
+                        </div>
+                    );
+
+                    const cssInput = (key) => (
+                        <div className="mt-2 pt-2 border-t border-gray-50">
+                            <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Section Style CSS</label>
+                            <input 
+                                type="text" 
+                                value={data[`${key}_css`] || ''} 
+                                onChange={(e) => updateBlockData(block.id, `${key}_css`, e.target.value)}
+                                placeholder="e.g. flex: 1; justify-content: center;"
+                                className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 h-7 px-1"
+                            />
+                        </div>
+                    );
+
+                    switch (key) {
+                        case 'logo':
+                            return (
+                                <div key="logo" className="space-y-3 pb-4 border-b border-gray-100">
+                                    {sectionHeader('Navbar Logo', null, '')}
+                                    <div className="flex gap-2">
+                                        <input type="text" value={data.logo || ''} readOnly placeholder="Select logo..." className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-100 text-gray-500" />
+                                        <button onClick={() => openMediaPicker(block.id, 'logo')} className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-sm font-semibold hover:bg-indigo-100 border border-indigo-200">Select</button>
+                                    </div>
+                                    {cssInput('logo')}
+                                </div>
+                            );
+                        case 'links':
+                            return (
+                                <div key="links" className="space-y-3 pb-4 border-b border-gray-100">
+                                    {sectionHeader('Menu Links', () => {
                                         const newLinks = [...links, { id: generateId(), label: 'New Link', url: '#' }];
                                         updateBlockData(block.id, 'links', newLinks);
-                                    }}
-                                    className="text-xs text-indigo-600 font-semibold hover:text-indigo-800"
-                                >
-                                    + Add Link
-                                </button>
-                            </div>
-                            <div className="space-y-3">
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'links', e)}>
-                                    <SortableContext items={links.map((l, idx) => l.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
-                                        {links.map((link, idx) => {
-                                            const linkId = link.id || `item-${idx}`;
-                                            const children = Array.isArray(link.children) ? link.children : [];
-                                            return (
-                                            <SortableNestedItem key={linkId} id={linkId}>
-                                                <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
-                                                    <button
-                                                        onClick={() => {
-                                                            const newLinks = links.filter((_, i) => i !== idx);
-                                                            updateBlockData(block.id, 'links', newLinks);
-                                                        }}
-                                                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                    <div className="grid grid-cols-2 gap-2 mb-3">
-                                                        <input
-                                                            type="text"
-                                                            value={link.label || ''}
-                                                            onChange={(e) => {
-                                                                const newLinks = [...links];
-                                                                newLinks[idx] = { ...newLinks[idx], label: e.target.value };
-                                                                updateBlockData(block.id, 'links', newLinks);
-                                                            }}
-                                                            placeholder="Label"
-                                                            className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
-                                                        />
-                                                        <input
-                                                            type="text"
-                                                            value={link.url || ''}
-                                                            onChange={(e) => {
-                                                                const newLinks = [...links];
-                                                                newLinks[idx] = { ...newLinks[idx], url: e.target.value };
-                                                                updateBlockData(block.id, 'links', newLinks);
-                                                            }}
-                                                            placeholder="URL"
-                                                            className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
-                                                        />
-                                                    </div>
-
-                                                    {/* Sub Links (Dropdown) */}
-                                                    <div className="pl-4 border-l-2 border-indigo-50 space-y-2 mt-2">
-                                                        <div className="flex items-center justify-between mb-1">
-                                                            <label className="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Sub-links (Dropdown)</label>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    const newLinks = [...links];
-                                                                    const children = Array.isArray(link.children) ? link.children : [];
-                                                                    newLinks[idx] = { ...newLinks[idx], children: [...children, { id: generateId(), label: 'New Sub-link', url: '#' }] };
-                                                                    updateBlockData(block.id, 'links', newLinks);
-                                                                }}
-                                                                className="text-[10px] text-indigo-500 hover:text-indigo-700 font-bold"
-                                                            >
-                                                                + Add
-                                                            </button>
-                                                        </div>
-                                                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleDeepNestedDragEnd(block.id, 'links', idx, 'children', e)}>
-                                                            <SortableContext items={(link.children || []).map((c, ci) => c.id || `sub-${ci}`)} strategy={verticalListSortingStrategy}>
-                                                                {(link.children || []).map((child, childIdx) => {
-                                                                    const subId = child.id || `sub-${childIdx}`;
-                                                                    return (
-                                                                        <SortableNestedItem key={subId} id={subId}>
-                                                                            <div className="flex gap-1 group/child relative flex-1 bg-white p-1 rounded border border-gray-50 shadow-sm">
-                                                                                <input 
-                                                                                    type="text" 
-                                                                                    value={child.label || ''} 
-                                                                                    onChange={(e) => {
-                                                                                        const newLinks = [...links];
-                                                                                        const newChildren = [...(link.children || [])];
-                                                                                        newChildren[childIdx] = { ...newChildren[childIdx], label: e.target.value };
-                                                                                        newLinks[idx] = { ...newLinks[idx], children: newChildren };
-                                                                                        updateBlockData(block.id, 'links', newLinks);
-                                                                                    }}
-                                                                                    placeholder="Sub-label"
-                                                                                    className="flex-1 text-[10px] p-1 border-gray-100 rounded focus:ring-indigo-200"
-                                                                                />
-                                                                                <input 
-                                                                                    type="text" 
-                                                                                    value={child.url || ''} 
-                                                                                    onChange={(e) => {
-                                                                                        const newLinks = [...links];
-                                                                                        const newChildren = [...(link.children || [])];
-                                                                                        newChildren[childIdx] = { ...newChildren[childIdx], url: e.target.value };
-                                                                                        newLinks[idx] = { ...newLinks[idx], children: newChildren };
-                                                                                        updateBlockData(block.id, 'links', newLinks);
-                                                                                    }}
-                                                                                    placeholder="Sub-URL"
-                                                                                    className="flex-1 text-[10px] p-1 border-gray-100 rounded focus:ring-indigo-200"
-                                                                                />
-                                                                                <button 
-                                                                                    onClick={() => {
-                                                                                        const newLinks = [...links];
-                                                                                        newLinks[idx] = { ...newLinks[idx], children: link.children.filter((_, ci) => ci !== childIdx) };
-                                                                                        updateBlockData(block.id, 'links', newLinks);
-                                                                                    }}
-                                                                                    className="text-gray-300 hover:text-red-400 opacity-0 group-hover/child:opacity-100 transition-opacity"
-                                                                                >
-                                                                                    <X className="w-3 h-3" />
-                                                                                </button>
-                                                                            </div>
-                                                                        </SortableNestedItem>
-                                                                    );
-                                                                })}
-                                                            </SortableContext>
-                                                        </DndContext>
-                                                    </div>
+                                    }, '+ ADD LINK')}
+                                    <div className="space-y-3">
+                                        {links.map((link, lIdx) => (
+                                            <div key={link.id || `l-${lIdx}`} className="p-3 border border-gray-200 rounded-lg bg-white relative group">
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <button disabled={lIdx === 0} onClick={() => moveItem(links, lIdx, -1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+                                                    <button disabled={lIdx === links.length - 1} onClick={() => moveItem(links, lIdx, 1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+                                                    <button onClick={() => updateBlockData(block.id, 'links', links.filter((_, i) => i !== lIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                                                 </div>
-                                            </SortableNestedItem>
-                                            );
-                                        })}
-                                    </SortableContext>
-                                </DndContext>
-                            </div>
-                        </div>
-
-                        {/* CTA Buttons Config */}
-                        <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">CTA Buttons</label>
-                                <button
-                                    onClick={() => {
-                                        const newButtons = [...buttons, { id: generateId(), label: 'New Button', url: '#', style: 'primary' }];
+                                                <div className="grid grid-cols-2 gap-2 mt-1">
+                                                    <input type="text" value={link.label || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="Label" className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 px-1" />
+                                                    <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="URL" className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 px-1" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {cssInput('links')}
+                                </div>
+                            );
+                        case 'buttons':
+                            return (
+                                <div key="buttons" className="space-y-3 pb-4 border-b border-gray-100">
+                                    {sectionHeader('CTA Buttons', () => {
+                                        const newButtons = [...buttons, { id: generateId(), label: 'New Button', url: '#', style: 'primary', visibility: 'always' }];
                                         updateBlockData(block.id, 'buttons', newButtons);
-                                    }}
-                                    className="text-xs text-indigo-600 font-semibold hover:text-indigo-800"
-                                >
-                                    + Add Button
-                                </button>
-                            </div>
-                            <div className="space-y-3">
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'buttons', e)}>
-                                    <SortableContext items={buttons.map((b, idx) => b.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
-                                        {buttons.map((btn, idx) => {
-                                            const btnId = btn.id || `item-${idx}`;
-                                            return (
-                                            <SortableNestedItem key={btnId} id={btnId}>
-                                                <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
-                                                    <button
-                                                        onClick={() => {
-                                                            const newButtons = buttons.filter((_, i) => i !== idx);
-                                                            updateBlockData(block.id, 'buttons', newButtons);
-                                                        }}
-                                                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                    <div className="flex gap-2 mb-2">
-                                                        <input
-                                                            type="text"
-                                                            value={btn.label || ''}
-                                                            onChange={(e) => {
-                                                                const newButtons = [...buttons];
-                                                                newButtons[idx] = { ...newButtons[idx], label: e.target.value };
-                                                                updateBlockData(block.id, 'buttons', newButtons);
-                                                            }}
-                                                            placeholder="Label"
-                                                            className="flex-1 text-xs border-gray-200 rounded focus:ring-indigo-500"
-                                                        />
-                                                        <select
-                                                            value={btn.style || 'primary'}
-                                                            onChange={(e) => {
-                                                                const newButtons = [...buttons];
-                                                                newButtons[idx] = { ...newButtons[idx], style: e.target.value };
-                                                                updateBlockData(block.id, 'buttons', newButtons);
-                                                            }}
-                                                            className="w-24 text-xs font-semibold uppercase text-gray-600 border-gray-200 rounded focus:ring-indigo-500"
-                                                        >
-                                                            <option value="primary">Primary</option>
-                                                            <option value="ghost">Ghost</option>
-                                                        </select>
-                                                    </div>
-                                                    <input
-                                                        type="text"
-                                                        value={btn.url || ''}
-                                                        onChange={(e) => {
-                                                            const newButtons = [...buttons];
-                                                            newButtons[idx] = { ...newButtons[idx], url: e.target.value };
-                                                            updateBlockData(block.id, 'buttons', newButtons);
-                                                        }}
-                                                        placeholder="URL"
-                                                        className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 mb-2"
-                                                    />
-                                                    <div>
-                                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5">Visibility</label>
-                                                        <select
-                                                            value={btn.visibility || 'always'}
-                                                            onChange={(e) => {
-                                                                const newButtons = [...buttons];
-                                                                newButtons[idx] = { ...newButtons[idx], visibility: e.target.value };
-                                                                updateBlockData(block.id, 'buttons', newButtons);
-                                                            }}
-                                                            className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 mb-2"
-                                                        >
-                                                            <option value="always">Always</option>
-                                                            <option value="guest">Guest Only</option>
-                                                            <option value="auth">Logged In</option>
-                                                        </select>
-                                                    </div>
-                                                    <div className="mb-2">
-                                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-0.5 mt-2">Custom CSS</label>
-                                                        <textarea
-                                                            value={btn.custom_css || ''}
-                                                            onChange={(e) => {
-                                                                const newButtons = [...buttons];
-                                                                newButtons[idx] = { ...newButtons[idx], custom_css: e.target.value };
-                                                                updateBlockData(block.id, 'buttons', newButtons);
-                                                            }}
-                                                            placeholder="e.g. background-color: #ff0000; border-radius: 20px;"
-                                                            rows="2"
-                                                            className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500"
-                                                        />
-                                                    </div>
-                                                    <div className="mt-2 pt-2 border-t border-dashed border-gray-100">
-                                                        <label className="block text-[9px] font-bold text-gray-400 uppercase tracking-wider mb-1">Events</label>
-                                                        <div className="space-y-2">
-                                                            <div>
-                                                                <label className="block text-[9px] text-gray-400 mb-0.5">onClick</label>
-                                                                <textarea
-                                                                    value={btn.events?.onClick || ''}
-                                                                    onChange={(e) => {
-                                                                        const newButtons = [...buttons];
-                                                                        newButtons[idx] = { ...newButtons[idx], events: { ...(newButtons[idx].events || {}), onClick: e.target.value } };
-                                                                        updateBlockData(block.id, 'buttons', newButtons);
-                                                                    }}
-                                                                    placeholder="e.g. router.post('/logout')"
-                                                                    rows="2"
-                                                                    className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500"
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                    }, '+ ADD BUTTON')}
+                                    <div className="space-y-3">
+                                        {buttons.map((btn, bIdx) => (
+                                            <div key={btn.id || `b-${bIdx}`} className="p-3 border border-gray-200 rounded-lg bg-white relative group">
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                    <button disabled={bIdx === 0} onClick={() => moveItem(buttons, bIdx, -1, 'buttons')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+                                                    <button disabled={bIdx === buttons.length - 1} onClick={() => moveItem(buttons, bIdx, 1, 'buttons')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+                                                    <button onClick={() => updateBlockData(block.id, 'buttons', buttons.filter((_, i) => i !== bIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                                                 </div>
-                                            </SortableNestedItem>
-                                            );
-                                        })}
-                                    </SortableContext>
-                                </DndContext>
+                                                <div className="flex gap-2 mb-2 mt-1">
+                                                    <input type="text" value={btn.label || ''} onChange={(e) => { const newButtons = [...buttons]; newButtons[bIdx] = { ...newButtons[bIdx], label: e.target.value }; updateBlockData(block.id, 'buttons', newButtons); }} placeholder="Label" className="flex-1 text-xs border-gray-200 rounded focus:ring-indigo-500 px-1" />
+                                                    <select value={btn.style || 'primary'} onChange={(e) => { const newButtons = [...buttons]; newButtons[bIdx] = { ...newButtons[bIdx], style: e.target.value }; updateBlockData(block.id, 'buttons', newButtons); }} className="w-20 text-[10px] font-bold border-gray-200 rounded">
+                                                        <option value="primary">PRIMARY</option>
+                                                        <option value="ghost">GHOST</option>
+                                                    </select>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                    <input type="text" value={btn.url || ''} onChange={(e) => { const newButtons = [...buttons]; newButtons[bIdx] = { ...newButtons[bIdx], url: e.target.value }; updateBlockData(block.id, 'buttons', newButtons); }} placeholder="URL" className="flex-1 text-xs border-gray-200 rounded focus:ring-indigo-500 px-1" />
+                                                    <select value={btn.visibility || 'always'} onChange={(e) => { const newButtons = [...buttons]; newButtons[bIdx] = { ...newButtons[bIdx], visibility: e.target.value }; updateBlockData(block.id, 'buttons', newButtons); }} className="w-20 text-[10px] border-gray-200 rounded">
+                                                        <option value="always">ALWAYS</option>
+                                                        <option value="guest">GUEST</option>
+                                                        <option value="auth">AUTH</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {cssInput('buttons')}
+                                </div>
+                            );
+                        case 'social_links':
+                            return (
+                                <div key="social_links" className="space-y-3 pb-4 border-b border-gray-100">
+                                    {sectionHeader('Social Links', () => {
+                                        const newSocial = [...social_links, { id: generateId(), icon: 'Facebook', url: '#' }];
+                                        updateBlockData(block.id, 'social_links', newSocial);
+                                    }, '+ ADD SOCIAL')}
+                                    <div className="space-y-2">
+                                        {social_links.map((link, sIdx) => (
+                                            <div key={link.id || `s-${sIdx}`} className="flex gap-2 items-center group bg-white p-2 rounded-lg border border-gray-100 shadow-sm relative">
+                                                <select value={link.icon || 'Facebook'} onChange={(e) => { const newLinks = [...social_links]; newLinks[sIdx] = { ...newLinks[sIdx], icon: e.target.value }; updateBlockData(block.id, 'social_links', newLinks); }} className="text-[10px] border-gray-200 rounded bg-gray-50 px-1">
+                                                    <option value="Facebook">FB</option>
+                                                    <option value="Instagram">IG</option>
+                                                    <option value="Twitter">X</option>
+                                                    <option value="Linkedin">IN</option>
+                                                    <option value="Youtube">YT</option>
+                                                    <option value="Github">GH</option>
+                                                    <option value="Globe">WEB</option>
+                                                </select>
+                                                <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...social_links]; newLinks[sIdx] = { ...newLinks[sIdx], url: e.target.value }; updateBlockData(block.id, 'social_links', newLinks); }} placeholder="URL" className="flex-1 text-[10px] border-gray-200 rounded px-1" />
+                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button disabled={sIdx === 0} onClick={() => moveItem(social_links, sIdx, -1, 'social_links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+                                                    <button disabled={sIdx === social_links.length - 1} onClick={() => moveItem(social_links, sIdx, 1, 'social_links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+                                                    <button onClick={() => updateBlockData(block.id, 'social_links', social_links.filter((_, i) => i !== sIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {cssInput('social_links')}
+                                </div>
+                            );
+                        case 'search':
+                            return (
+                                <div key="search" className="space-y-3 pb-4 border-b border-gray-100">
+                                    {sectionHeader('Search Bar', null, '')}
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Placeholder Text</label>
+                                        <input 
+                                            type="text" 
+                                            value={data.search_placeholder || ''} 
+                                            onChange={(e) => updateBlockData(block.id, 'search_placeholder', e.target.value)}
+                                            placeholder="e.g. Cari produk..."
+                                            className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500 h-8 px-2"
+                                        />
+                                    </div>
+                                    {cssInput('search')}
+                                </div>
+                            );
+                        case 'cart':
+                            return (
+                                <div key="cart" className="space-y-3 pb-4 border-b border-gray-100">
+                                    {sectionHeader('Shopping Cart', null, '')}
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Cart URL</label>
+                                        <input 
+                                            type="text" 
+                                            value={data.cart_url || ''} 
+                                            onChange={(e) => updateBlockData(block.id, 'cart_url', e.target.value)}
+                                            placeholder="/cart"
+                                            className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500 h-8 px-2"
+                                        />
+                                    </div>
+                                    {cssInput('cart')}
+                                </div>
+                            );
+                        default:
+                            return null;
+                    }
+                };
+
+                const availableSections = [
+                    { id: 'logo', label: 'Navbar Logo' },
+                    { id: 'links', label: 'Menu Links' },
+                    { id: 'buttons', label: 'CTA Buttons' },
+                    { id: 'social_links', label: 'Social Icons' },
+                    { id: 'search', label: 'Search Bar' },
+                    { id: 'cart', label: 'Shopping Cart' }
+                ];
+
+                const toggleSection = (id) => {
+                    if (composition.includes(id)) {
+                        updateBlockData(block.id, 'composition', composition.filter(k => k !== id));
+                    } else {
+                        updateBlockData(block.id, 'composition', [...composition, id]);
+                    }
+                };
+
+                return (
+                    <div className="space-y-6">
+                        {/* Section Manager */}
+                        <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                            <label className="block text-[10px] font-bold text-indigo-900 uppercase tracking-widest mb-3">Navbar Setup</label>
+                            <div className="grid grid-cols-2 gap-2 text-indigo-900">
+                                {availableSections.map(sec => (
+                                    <label key={sec.id} className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative">
+                                            <input 
+                                                type="checkbox" 
+                                                checked={composition.includes(sec.id)} 
+                                                onChange={() => toggleSection(sec.id)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-4 h-4 rounded border ${composition.includes(sec.id) ? 'bg-indigo-600 border-indigo-600' : 'bg-white border-gray-300'} transition-all flex items-center justify-center`}>
+                                                {composition.includes(sec.id) && <LucideIcons.Check className="w-3 h-3 text-white" strokeWidth={4} />}
+                                            </div>
+                                        </div>
+                                        <span className={`text-[10px] font-bold ${composition.includes(sec.id) ? 'text-indigo-900' : 'text-gray-500'} group-hover:text-indigo-600 transition-colors uppercase tracking-tight`}>{sec.label}</span>
+                                    </label>
+                                ))}
                             </div>
                         </div>
 
-                        <div className="grid grid-cols-2 gap-4">
+                        {/* Color Manager */}
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Colors & Theme</label>
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between gap-4">
+                                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">Background</span>
+                                    <input type="color" value={data.bg_color || '#ffffff'} onChange={e => updateBlockData(block.id, 'bg_color', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0 overflow-hidden" />
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">Text & Icons</span>
+                                    <input type="color" value={data.text_color || '#111827'} onChange={e => updateBlockData(block.id, 'text_color', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0 overflow-hidden" />
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">Accent Icon</span>
+                                    <input type="color" value={data.accent_color || '#4f46e5'} onChange={e => updateBlockData(block.id, 'accent_color', e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0 overflow-hidden" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6">
+                            {composition.map((key, idx) => renderSection(key, idx))}
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-100">
                             <label className="flex items-center gap-2 cursor-pointer">
                                 <input type="checkbox" checked={data.sticky !== false} onChange={e => updateBlockData(block.id, 'sticky', e.target.checked)} className="rounded text-indigo-600" />
                                 <span className="text-xs font-semibold text-gray-700">Sticky Top</span>
@@ -614,102 +606,6 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 <input type="checkbox" checked={data.glass !== false} onChange={e => updateBlockData(block.id, 'glass', e.target.checked)} className="rounded text-indigo-600" />
                                 <span className="text-xs font-semibold text-gray-700">Glassmorphism</span>
                             </label>
-                        </div>
-
-                        {/* Social Links Config for Navbar */}
-
-                        <div className="pt-4 border-t border-gray-100">
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Social Links</label>
-                                <button
-                                    onClick={() => {
-                                        const socialLinks = Array.isArray(data.social_links) ? data.social_links : [];
-                                        const newLinks = [...socialLinks, { id: generateId(), icon: 'Facebook', url: '#' }];
-                                        updateBlockData(block.id, 'social_links', newLinks);
-                                    }}
-                                    className="text-xs text-indigo-600 font-semibold hover:text-indigo-800"
-                                >
-                                    + Add Social Link
-                                </button>
-                            </div>
-                             <div className="space-y-2">
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'social_links', e)}>
-                                    <SortableContext items={(data.social_links || []).map((l, i) => l.id || `social-${i}`)} strategy={verticalListSortingStrategy}>
-                                        {(Array.isArray(data.social_links) ? data.social_links : []).map((link, idx) => {
-                                            const socialId = link.id || `social-${idx}`;
-                                            return (
-                                                <SortableNestedItem key={socialId} id={socialId}>
-                                                    <div className="flex gap-2 items-center group flex-1 bg-white p-2 rounded-lg border border-gray-100 shadow-sm relative">
-                                                        <select
-                                                            value={link.icon || 'Facebook'}
-                                                            onChange={(e) => {
-                                                                const newLinks = [...data.social_links];
-                                                                newLinks[idx] = { ...newLinks[idx], icon: e.target.value };
-                                                                updateBlockData(block.id, 'social_links', newLinks);
-                                                            }}
-                                                            className="text-[10px] border-gray-200 rounded focus:ring-indigo-500 bg-gray-50"
-                                                        >
-                                                            <option value="Facebook">FB</option>
-                                                            <option value="Instagram">IG</option>
-                                                            <option value="Twitter">X</option>
-                                                            <option value="Linkedin">IN</option>
-                                                            <option value="Youtube">YT</option>
-                                                            <option value="Github">GH</option>
-                                                            <option value="Tiktok">TK</option>
-                                                            <option value="Globe">Web</option>
-                                                            <option value="Mail">Mail</option>
-                                                        </select>
-                                                        <input
-                                                            type="text"
-                                                            value={link.url || ''}
-                                                            onChange={(e) => {
-                                                                const newLinks = [...data.social_links];
-                                                                newLinks[idx] = { ...newLinks[idx], url: e.target.value };
-                                                                updateBlockData(block.id, 'social_links', newLinks);
-                                                            }}
-                                                            placeholder="URL"
-                                                            className="flex-1 text-[10px] border-gray-200 rounded focus:ring-indigo-500"
-                                                        />
-                                                        <button
-                                                            onClick={() => {
-                                                                const newLinks = data.social_links.filter((_, i) => i !== idx);
-                                                                updateBlockData(block.id, 'social_links', newLinks);
-                                                            }}
-                                                            className="text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <X className="w-3 h-3" />
-                                                        </button>
-                                                    </div>
-                                                </SortableNestedItem>
-                                            );
-                                        })}
-                                    </SortableContext>
-                                </DndContext>
-                            </div>
-                        </div>
-
-                        <div className="space-y-4 pt-4 border-t border-gray-100">
-
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Custom CSS</label>
-                                <textarea
-                                    value={data.customCss || ''}
-                                    onChange={e => updateBlockData(block.id, 'customCss', e.target.value)}
-                                    rows="3"
-                                    placeholder=".nav-link { color: red; }"
-                                    className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Custom JS</label>
-                                <textarea
-                                    value={data.customJs || ''}
-                                    onChange={e => updateBlockData(block.id, 'customJs', e.target.value)}
-                                    rows="3"
-                                    placeholder="console.log('Navbar loaded');"
-                                    className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
-                                />
-                            </div>
                         </div>
                     </div>
                 );
@@ -2261,17 +2157,24 @@ function SortableNestedItem({ id, children }) {
     const style = {
         transform: CSS.Transform.toString(transform),
         transition,
-        zIndex: isDragging ? 40 : 1,
+        zIndex: isDragging ? 50 : 1,
         position: 'relative',
-        opacity: isDragging ? 0.3 : 1
+        opacity: isDragging ? 0.4 : 1,
     };
 
     return (
-        <div ref={setNodeRef} style={style} className="flex items-center gap-2">
-            <div {...attributes} {...listeners} className="p-1 cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-500">
+        <div ref={setNodeRef} style={style} className={`flex items-center gap-3 group/nested ${isDragging ? 'ring-2 ring-indigo-500 ring-offset-2 rounded-xl' : ''}`}>
+            <div 
+                {...attributes} 
+                {...listeners} 
+                className="p-2 -ml-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
+                title="Drag to reorder"
+            >
                 <GripVertical className="w-4 h-4" />
             </div>
-            {children}
+            <div className="flex-1">
+                {children}
+            </div>
         </div>
     );
 }
