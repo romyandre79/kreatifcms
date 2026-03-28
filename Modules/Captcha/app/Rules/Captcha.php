@@ -19,7 +19,7 @@ class Captcha implements ValidationRule
             return;
         }
 
-        $secretKey = Setting::get('captcha', 'captcha_secret_key');
+        $secretKey = Setting::get('captcha', 'captcha_secret_key') ?: (env('RECAPTCHA_SECRET_KEY') ?: '6LeIxAcTAAAAAGG-vFI1TnRWxMZNFuojJ4WifJBy');
 
         if (empty($secretKey)) {
             return;
@@ -31,7 +31,9 @@ class Captcha implements ValidationRule
             'remoteip' => request()->ip(),
         ]);
 
-        if (!$response->json('success')) {
+        $responseBody = $response->json();
+
+        if (!isset($responseBody['success']) || !$responseBody['success']) {
             $fail('The captcha verification failed. Please try again.');
         }
     }

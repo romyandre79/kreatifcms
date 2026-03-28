@@ -4,67 +4,16 @@ import InputLabel from '@/Components/InputLabel';
 import PrimaryButton from '@/Components/PrimaryButton';
 import TextInput from '@/Components/TextInput';
 import GuestLayout from '@/Layouts/GuestLayout';
-import { Head, Link, useForm, usePage } from '@inertiajs/react';
-import { useEffect, useRef } from 'react';
+import { Head, Link, useForm } from '@inertiajs/react';
+import CaptchaWidget from '@/Components/CaptchaWidget';
 
 export default function Login({ status, canResetPassword }) {
-    const { captcha_site_key } = usePage().props;
-    const recaptchaRef = useRef(null);
-
     const { data, setData, post, processing, errors, reset } = useForm({
         email: '',
         password: '',
         remember: false,
         captcha_token: '',
     });
-
-    useEffect(() => {
-        if (!captcha_site_key) return;
-
-        const renderRecaptcha = () => {
-            if (window.grecaptcha && window.grecaptcha.render && recaptchaRef.current) {
-                try {
-                    window.grecaptcha.render(recaptchaRef.current, {
-                        sitekey: captcha_site_key,
-                        callback: (token) => {
-                            setData('captcha_token', token);
-                        },
-                        'expired-callback': () => {
-                            setData('captcha_token', '');
-                        },
-                    });
-                } catch (error) {
-                    console.error('ReCaptcha render error:', error);
-                }
-            } else if (window.grecaptcha) {
-                // If grecaptcha exists but render doesn't, wait and try again
-                setTimeout(renderRecaptcha, 500);
-            }
-        };
-
-        // Load ReCaptcha script if not already loaded or if render is missing
-        if (!window.grecaptcha || !window.grecaptcha.render) {
-            // Check if script already exists to avoid duplicates
-            if (!document.querySelector('script[src*="recaptcha/api.js"]')) {
-                const script = document.createElement('script');
-                script.src = `https://www.google.com/recaptcha/api.js?render=explicit`;
-                script.async = true;
-                script.defer = true;
-                document.head.appendChild(script);
-                script.onload = renderRecaptcha;
-            } else {
-                // Script exists but grecaptcha not ready, wait for it
-                const interval = setInterval(() => {
-                    if (window.grecaptcha && window.grecaptcha.render) {
-                        clearInterval(interval);
-                        renderRecaptcha();
-                    }
-                }, 500);
-            }
-        } else {
-            renderRecaptcha();
-        }
-    }, [captcha_site_key]);
 
     const submit = (e) => {
         e.preventDefault();
@@ -132,12 +81,13 @@ export default function Login({ status, canResetPassword }) {
                         </span>
                     </label>
                 </div>
-                {captcha_site_key && (
-                    <div className="mt-4">
-                        <div ref={recaptchaRef}></div>
-                        <InputError message={errors.captcha_token} className="mt-2" />
-                    </div>
-                )}
+
+                <div className="mt-4">
+                    <CaptchaWidget 
+                        onToken={(token) => setData('captcha_token', token)} 
+                        error={errors.captcha_token} 
+                    />
+                </div>
 
                 <div className="mt-4 flex items-center justify-end">
                     {canResetPassword && (

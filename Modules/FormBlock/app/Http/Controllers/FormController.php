@@ -9,6 +9,8 @@ use App\Services\SchemaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Modules\Captcha\Rules\Captcha;
+use Illuminate\Support\Facades\Validator;
 
 class FormController extends Controller
 {
@@ -35,6 +37,29 @@ class FormController extends Controller
         $fields = $request->input('fields', []);
         $data = $request->input('data', []);
         
+        // Check if captcha is required
+        $hasCaptcha = false;
+        foreach ($fields as $field) {
+            if (isset($field['type']) && $field['type'] === 'captcha') {
+                $hasCaptcha = true;
+                break;
+            }
+        }
+
+        if ($hasCaptcha) {
+            $validator = Validator::make($data, [
+                'captcha_token' => ['required', new Captcha],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Captcha validation failed.',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+        }
+
         // Log submission for now
         Log::info('Static Form Submission', [
             'form_name' => $request->input('form_name'),
@@ -52,6 +77,32 @@ class FormController extends Controller
         $contentTypeSlug = $request->input('content_type');
         if (!$contentTypeSlug) {
             return response()->json(['success' => false, 'message' => 'No content type specified.'], 422);
+        }
+
+        $fields = $request->input('fields', []);
+        $dynamicData = $request->input('data', []);
+
+        // Check if captcha is required
+        $hasCaptcha = false;
+        foreach ($fields as $field) {
+            if (isset($field['type']) && $field['type'] === 'captcha') {
+                $hasCaptcha = true;
+                break;
+            }
+        }
+
+        if ($hasCaptcha) {
+            $validator = Validator::make($dynamicData, [
+                'captcha_token' => ['required', new Captcha],
+            ]);
+
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Captcha validation failed.',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
         }
 
         // Bridge to ContentEntryController@store logic
