@@ -32,7 +32,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 
 
-export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reusableBlocks = [], contentTypes = [] }) {
+export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], themeData = {}, reusableBlocks = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
     const blockPlugins = plugins.filter(p => p.type === 'block');
     const BLOCK_TYPES = blockPlugins.map(p => {
@@ -61,6 +61,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
     
     const [headerData, setHeaderData] = useState(initialHeader);
     const [footerData, setFooterData] = useState(initialFooter);
+    const [theme, setTheme] = useState(themeData);
 
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
@@ -83,10 +84,13 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
     const switchTab = (tab) => {
         // Save current blocks to the respective temporary state
         if (activeTab === 'header') setHeaderData(blocks);
-        else setFooterData(blocks);
+        else if (activeTab === 'footer') setFooterData(blocks);
 
         setActiveTab(tab);
-        setBlocks(tab === 'header' ? headerData : footerData);
+        if (tab === 'header') setBlocks(headerData);
+        else if (tab === 'footer') setBlocks(footerData);
+        else setBlocks([]); // Clear blocks for theme tab
+        
         setActiveBlockId(null);
     };
 
@@ -262,7 +266,8 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
 
         router.post(route('layouts.update'), {
             header: finalHeader,
-            footer: finalFooter
+            footer: finalFooter,
+            theme: theme
         }, {
             preserveScroll: true,
             onSuccess: () => setSaving(false),
@@ -1318,6 +1323,12 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                             >
                                 Footer
                             </button>
+                            <button 
+                                onClick={() => switchTab('theme')}
+                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'theme' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Theme
+                            </button>
                         </div>
                     </div>
 
@@ -1326,44 +1337,105 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], reu
                             Structure: {activeTab.toUpperCase()}
                         </div>
 
-                        <div className="space-y-2">
-                            <DndContext
-                                sensors={sensors}
-                                collisionDetection={closestCenter}
-                                onDragEnd={handleDragEnd}
-                            >
-                                <SortableContext
-                                    items={blocks.map(b => b.id)}
-                                    strategy={verticalListSortingStrategy}
-                                >
-                                    {blocks.map((block, index) => (
-                                        <SortableBlockItem
-                                            key={block.id}
-                                            block={block}
-                                            index={index}
-                                            isActive={activeBlockId === block.id}
-                                            onClick={() => setActiveBlockId(block.id)}
-                                            onRemove={() => removeBlock(block.id)}
-                                            blockTypes={BLOCK_TYPES}
-                                        />
-                                    ))}
-                                </SortableContext>
-                            </DndContext>
-
-                            {blocks.length === 0 && (
-                                <div className="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-sm">
-                                    No blocks added to global {activeTab}.
+                        {activeTab === 'theme' ? (
+                            <div className="space-y-6">
+                                <div className="space-y-4">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Brand Colors</label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1.5">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Primary</span>
+                                            <div className="flex gap-2 items-center bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+                                                <input type="color" value={theme.primaryColor || '#4f46e5'} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} className="w-6 h-6 rounded border-0 p-0 overflow-hidden cursor-pointer" />
+                                                <input type="text" value={theme.primaryColor || '#4f46e5'} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} className="flex-1 bg-transparent border-0 p-0 text-[10px] font-mono uppercase focus:ring-0" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Secondary</span>
+                                            <div className="flex gap-2 items-center bg-gray-50 p-1.5 rounded-lg border border-gray-100">
+                                                <input type="color" value={theme.secondaryColor || '#10b981'} onChange={e => setTheme({ ...theme, secondaryColor: e.target.value })} className="w-6 h-6 rounded border-0 p-0 overflow-hidden cursor-pointer" />
+                                                <input type="text" value={theme.secondaryColor || '#10b981'} onChange={e => setTheme({ ...theme, secondaryColor: e.target.value })} className="flex-1 bg-transparent border-0 p-0 text-[10px] font-mono uppercase focus:ring-0" />
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            )}
-                        </div>
 
-                        <button
-                            onClick={() => setShowBlockMenu(true)}
-                            className="w-full mt-4 py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-white flex items-center justify-center gap-2 font-bold text-sm transition-all shadow-sm"
-                        >
-                            <Plus className="w-4 h-4" />
-                            Add to {activeTab}
-                        </button>
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Typography</label>
+                                    <div className="space-y-3">
+                                        <div>
+                                            <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Font Family</span>
+                                            <select 
+                                                value={theme.fontFamily || 'Inter'} 
+                                                onChange={e => setTheme({ ...theme, fontFamily: e.target.value })}
+                                                className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
+                                            >
+                                                <option value="Inter">Inter (Sans-serif)</option>
+                                                <option value="Roboto">Roboto (Clean Sans)</option>
+                                                <option value="Outfit">Outfit (Geometric)</option>
+                                                <option value="Playfair Display">Playfair Display (Serif)</option>
+                                                <option value="Montserrat">Montserrat (Classic)</option>
+                                                <option value="System">System Default</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Base Font Size (px)</span>
+                                            <div className="flex items-center gap-3">
+                                                <input 
+                                                    type="range" 
+                                                    min="12" 
+                                                    max="20" 
+                                                    value={theme.fontSize || 16} 
+                                                    onChange={e => setTheme({ ...theme, fontSize: e.target.value })}
+                                                    className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                />
+                                                <span className="text-xs font-bold text-gray-600 w-8">{theme.fontSize || 16}px</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-2">
+                                <DndContext
+                                    sensors={sensors}
+                                    collisionDetection={closestCenter}
+                                    onDragEnd={handleDragEnd}
+                                >
+                                    <SortableContext
+                                        items={blocks.map(b => b.id)}
+                                        strategy={verticalListSortingStrategy}
+                                    >
+                                        {blocks.map((block, index) => (
+                                            <SortableBlockItem
+                                                key={block.id}
+                                                block={block}
+                                                index={index}
+                                                isActive={activeBlockId === block.id}
+                                                onClick={() => setActiveBlockId(block.id)}
+                                                onRemove={() => removeBlock(block.id)}
+                                                blockTypes={BLOCK_TYPES}
+                                            />
+                                        ))}
+                                    </SortableContext>
+                                </DndContext>
+
+                                {blocks.length === 0 && (
+                                    <div className="text-center p-6 border-2 border-dashed border-gray-200 rounded-xl text-gray-400 text-sm">
+                                        No blocks added to global {activeTab}.
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {activeTab !== 'theme' && (
+                            <button
+                                onClick={() => setShowBlockMenu(true)}
+                                className="w-full mt-4 py-3 border-2 border-dashed border-gray-300 rounded-2xl text-gray-500 hover:text-indigo-600 hover:border-indigo-300 hover:bg-white flex items-center justify-center gap-2 font-bold text-sm transition-all shadow-sm"
+                            >
+                                <Plus className="w-4 h-4" />
+                                Add to {activeTab}
+                            </button>
+                        )}
                     </div>
 
                     <div className="p-4 border-t border-gray-100 bg-gray-50/50">

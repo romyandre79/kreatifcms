@@ -1,0 +1,12 @@
+{
+    "name": "Layout",
+    "alias": "layouts",
+    "description": "Global layout and theme editor for your website.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Layout\\Providers\\LayoutServiceProvider"
+    ],
+    "files": [],
+    "requires": []
+}

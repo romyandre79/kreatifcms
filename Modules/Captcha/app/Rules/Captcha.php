@@ -25,11 +25,13 @@ class Captcha implements ValidationRule
             return;
         }
 
-        $response = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-            'secret' => $secretKey,
-            'response' => $value,
-            'remoteip' => request()->ip(),
-        ]);
+        $response = Http::withoutVerifying()
+            ->asForm()
+            ->post('https://www.google.com/recaptcha/api/siteverify', [
+                'secret' => $secretKey,
+                'response' => $value,
+                'remoteip' => request()->ip(),
+            ]);
 
         $responseBody = $response->json();
 
