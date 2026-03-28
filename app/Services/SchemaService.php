@@ -2,8 +2,8 @@
 
 namespace App\Services;
 
-use App\Models\ContentType;
-use App\Models\ContentField;
+use Modules\ContentType\Models\ContentType;
+use Modules\ContentType\Models\ContentField;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Str;
@@ -135,113 +135,117 @@ class SchemaService
     {
         if (!is_array($blocks)) return $blocks ?? [];
         
-        foreach ($blocks as &$block) {
-            if (!isset($block['type'])) continue;
+        if (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType')) {
+            foreach ($blocks as &$block) {
+                if (!isset($block['type'])) continue;
 
-            if ($block['type'] === 'form') {
-                $mode = $block['data']['mode'] ?? 'static';
-                $ctSlug = $block['data']['content_type'] ?? null;
-                
-                if ($mode === 'dynamic' && $ctSlug) {
-                    $contentType = ContentType::with('fields')->where('slug', $ctSlug)->first();
-                    if ($contentType) {
-                        $fields = $contentType->fields ?? collect();
-                        $block['data']['fields'] = $fields->map(function($f) {
-                            $options = $f->options ?: [];
-                            return [
-                                'id' => $f->id,
-                                'name' => \Illuminate\Support\Str::snake($f->name),
-                                'label' => $f->name,
-                                'type' => $f->type === 'longtext' ? 'textarea' : ($f->type === 'number' ? 'number' : 'text'),
-                                'placeholder' => $options['placeholder'] ?? '',
-                                'required' => (bool)$f->required
-                            ];
-                        })->toArray();
-                        \Illuminate\Support\Facades\Log::info("Hydrated form fields from content type: {$ctSlug}");
+                if ($block['type'] === 'form') {
+                    $mode = $block['data']['mode'] ?? 'static';
+                    $ctSlug = $block['data']['content_type'] ?? null;
+                    
+                    if ($mode === 'dynamic' && $ctSlug) {
+                        $contentType = ContentType::with('fields')->where('slug', $ctSlug)->first();
+                        if ($contentType) {
+                            $fields = $contentType->fields ?? collect();
+                            $block['data']['fields'] = $fields->map(function($f) {
+                                $options = $f->options ?: [];
+                                return [
+                                    'id' => $f->id,
+                                    'name' => \Illuminate\Support\Str::snake($f->name),
+                                    'label' => $f->name,
+                                    'type' => $f->type === 'longtext' ? 'textarea' : ($f->type === 'number' ? 'number' : 'text'),
+                                    'placeholder' => $options['placeholder'] ?? '',
+                                    'required' => (bool)$f->required
+                                ];
+                            })->toArray();
+                            \Illuminate\Support\Facades\Log::info("Hydrated form fields from content type: {$ctSlug}");
+                        }
                     }
                 }
-            }
 
-            if ($block['type'] === 'content_list' || $block['type'] === 'slideshow' || $block['type'] === 'timeline') {
-                $source = $block['data']['source'] ?? ($block['type'] === 'content_list' || $block['type'] === 'timeline' ? 'dynamic' : 'manual');
-                
-                if ($source === 'dynamic' || $block['type'] === 'content_list') {
-                    $ctSlug = $block['data']['content_type'] ?? null;
-                    $limit = $block['data']['limit'] ?? 6;
-                    $sortBy = $block['data']['sort_by'] ?? 'created_at';
-                    $sortDir = $block['data']['sort_dir'] ?? 'desc';
+                if ($block['type'] === 'content_list' || $block['type'] === 'slideshow' || $block['type'] === 'timeline') {
+                    $source = $block['data']['source'] ?? ($block['type'] === 'content_list' || $block['type'] === 'timeline' ? 'dynamic' : 'manual');
                     
-                    if ($ctSlug) {
-                        $tableName = $this->getTableName($ctSlug);
+                    if ($source === 'dynamic' || $block['type'] === 'content_list') {
+                        $ctSlug = $block['data']['content_type'] ?? null;
+                        $limit = $block['data']['limit'] ?? 6;
+                        $sortBy = $block['data']['sort_by'] ?? 'created_at';
+                        $sortDir = $block['data']['sort_dir'] ?? 'desc';
                         
-                        try {
-                            if (Schema::connection($this->connection)->hasTable($tableName)) {
-                                $cacheKey = "query_{$tableName}_" . md5(json_encode([$sortBy, $sortDir, $limit]));
-                                
-                                $queryClosure = function () use ($tableName, $sortBy, $sortDir, $limit) {
-                                    return \Illuminate\Support\Facades\DB::connection($this->connection)
-                                        ->table($tableName)
-                                        ->orderBy($sortBy, $sortDir)
-                                        ->limit($limit)
-                                        ->get();
-                                };
+                        if ($ctSlug) {
+                            $tableName = $this->getTableName($ctSlug);
+                            
+                            try {
+                                if (Schema::connection($this->connection)->hasTable($tableName)) {
+                                    $cacheKey = "query_{$tableName}_" . md5(json_encode([$sortBy, $sortDir, $limit]));
+                                    
+                                    $queryClosure = function () use ($tableName, $sortBy, $sortDir, $limit) {
+                                        return \Illuminate\Support\Facades\DB::connection($this->connection)
+                                            ->table($tableName)
+                                            ->orderBy($sortBy, $sortDir)
+                                            ->limit($limit)
+                                            ->get();
+                                    };
 
-                                if (config('cache.stores.rediscache') && class_exists('\Nwidart\Modules\Facades\Module') && \Nwidart\Modules\Facades\Module::isEnabled('RedisCache')) {
-                                    try {
-                                        $ttl = (int)\App\Models\Setting::get('rediscache', 'ttl', 3600);
-                                        $items = \Illuminate\Support\Facades\Cache::store('rediscache')
-                                            ->tags(['content', $ctSlug])
-                                            ->remember($cacheKey, $ttl, $queryClosure);
-                                    } catch (\Exception $e) {
-                                        \Illuminate\Support\Facades\Log::warning("RedisCache failed, falling back to direct query: " . $e->getMessage());
+                                    if (config('cache.stores.rediscache') && class_exists('\Nwidart\Modules\Facades\Module') && \Nwidart\Modules\Facades\Module::isEnabled('RedisCache')) {
+                                        try {
+                                            $ttl = (int)\App\Models\Setting::get('rediscache', 'ttl', 3600);
+                                            $items = \Illuminate\Support\Facades\Cache::store('rediscache')
+                                                ->tags(['content', $ctSlug])
+                                                ->remember($cacheKey, $ttl, $queryClosure);
+                                        } catch (\Exception $e) {
+                                            \Illuminate\Support\Facades\Log::warning("RedisCache failed, falling back to direct query: " . $e->getMessage());
+                                            $items = $queryClosure();
+                                        }
+                                    } else {
                                         $items = $queryClosure();
                                     }
-                                } else {
-                                    $items = $queryClosure();
-                                }
 
-                                // Process onSelect hook if available
-                                $contentTypeDoc = ContentType::where('slug', $ctSlug)->first();
-                                if ($contentTypeDoc && !empty($contentTypeDoc->events['onSelect'])) {
-                                    foreach ($items as $item) {
-                                        $context = ['entry' => $item];
-                                        $this->executePhpHook($contentTypeDoc->events['onSelect'], $context);
+                                    // Process onSelect hook if available
+                                    $contentTypeDoc = ContentType::where('slug', $ctSlug)->first();
+                                    if ($contentTypeDoc && !empty($contentTypeDoc->events['onSelect'])) {
+                                        foreach ($items as $item) {
+                                            $context = ['entry' => $item];
+                                            $this->executePhpHook($contentTypeDoc->events['onSelect'], $context);
+                                        }
                                     }
-                                }
+                                        
+                                     \Illuminate\Support\Facades\Log::info("Hydrated {$block['type']} from {$ctSlug}: " . $items->count() . " items");
                                     
-                                 \Illuminate\Support\Facades\Log::info("Hydrated {$block['type']} from {$ctSlug}: " . $items->count() . " items");
-                                
-                                // Transform for timeline if needed
-                                if ($block['type'] === 'timeline' && !empty($block['data']['mapping'])) {
-                                    $mapping = $block['data']['mapping'];
-                                    $items = $items->map(function($item) use ($mapping) {
-                                        return [
-                                            'id' => $item->id ?? uniqid(),
-                                            'title' => $item->{$mapping['title'] ?? 'title'} ?? ($item->title ?? ''),
-                                            'date' => $item->{$mapping['date'] ?? 'created_at'} ?? ($item->created_at ?? ''),
-                                            'content' => $item->{$mapping['content'] ?? 'content'} ?? ($item->content ?? ($item->description ?? '')),
-                                            'image' => $item->{$mapping['image'] ?? 'image'} ?? ($item->image ?? ($item->thumbnail ?? '')),
-                                            'icon' => $item->{$mapping['icon'] ?? ''} ?? ($item->icon ?? 'Clock'),
-                                            'color' => $item->{$mapping['color'] ?? ''} ?? ($item->color ?? '#4f46e5'),
-                                        ];
-                                    });
-                                }
+                                    // Transform for timeline if needed
+                                    if ($block['type'] === 'timeline' && !empty($block['data']['mapping'])) {
+                                        $mapping = $block['data']['mapping'];
+                                        $items = $items->map(function($item) use ($mapping) {
+                                            return [
+                                                'id' => $item->id ?? uniqid(),
+                                                'title' => $item->{$mapping['title'] ?? 'title'} ?? ($item->title ?? ''),
+                                                'date' => $item->{$mapping['date'] ?? 'created_at'} ?? ($item->created_at ?? ''),
+                                                'content' => $item->{$mapping['content'] ?? 'content'} ?? ($item->content ?? ($item->description ?? '')),
+                                                'image' => $item->{$mapping['image'] ?? 'image'} ?? ($item->image ?? ($item->thumbnail ?? '')),
+                                                'icon' => $item->{$mapping['icon'] ?? ''} ?? ($item->icon ?? 'Clock'),
+                                                'color' => $item->{$mapping['color'] ?? ''} ?? ($item->color ?? '#4f46e5'),
+                                            ];
+                                        });
+                                    }
 
-                                $block['data']['items'] = $items;
-                            } else {
-                                \Illuminate\Support\Facades\Log::warning("Table not found for hydration: {$tableName}");
+                                    $block['data']['items'] = $items;
+                                } else {
+                                    \Illuminate\Support\Facades\Log::warning("Table not found for hydration: {$tableName}");
+                                    $block['data']['items'] = [];
+                                }
+                            } catch (\Exception $e) {
+                                \Illuminate\Support\Facades\Log::error("Hydration error for {$block['type']}: " . $e->getMessage());
                                 $block['data']['items'] = [];
                             }
-                        } catch (\Exception $e) {
-                            \Illuminate\Support\Facades\Log::error("Hydration error for {$block['type']}: " . $e->getMessage());
+                        } else {
                             $block['data']['items'] = [];
                         }
-                    } else {
-                        $block['data']['items'] = [];
                     }
                 }
             }
+        }
 
+        foreach ($blocks as &$block) {
             // Universal Custom PHP Hook support for all blocks
             if (!empty($block['data']['customPhp'])) {
                 $context = [

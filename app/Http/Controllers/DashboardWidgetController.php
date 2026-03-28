@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\DashboardWidget;
-use App\Models\ContentType;
+use Modules\ContentType\Models\ContentType;
 use App\Services\SchemaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -87,7 +87,11 @@ class DashboardWidgetController extends Controller
     {
         $data = null;
 
-        if ($widget->content_type_id) {
+        $isContentEnabled = class_exists('Modules\ContentType\Models\ContentType') && 
+                           ($module = \Nwidart\Modules\Facades\Module::find('ContentType')) && 
+                           $module->isEnabled();
+
+        if ($widget->content_type_id && $isContentEnabled) {
             $contentType = ContentType::find($widget->content_type_id);
             if ($contentType) {
                 $tableName = $this->schemaService->getTableName($contentType->slug);

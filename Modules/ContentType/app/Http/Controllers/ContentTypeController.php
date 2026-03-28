@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Modules\ContentType\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\ContentType;
+use Modules\ContentType\Models\ContentType;
 use App\Services\SchemaService;
 use App\Services\PermissionService;
 use Illuminate\Http\Request;
@@ -28,14 +28,14 @@ class ContentTypeController extends Controller
             return response()->json($contentTypes);
         }
 
-        return \Inertia\Inertia::render('ContentTypes/Index', [
+        return \Inertia\Inertia::render('ContentType::ContentTypes/Index', [
             'contentTypes' => $contentTypes
         ]);
     }
 
     public function create()
     {
-        return \Inertia\Inertia::render('ContentTypes/Create', [
+        return \Inertia\Inertia::render('ContentType::ContentTypes/Create', [
             'allContentTypes' => ContentType::with('fields')->get()
         ]);
     }
@@ -94,7 +94,7 @@ class ContentTypeController extends Controller
 
     public function edit(ContentType $contentType)
     {
-        return \Inertia\Inertia::render('ContentTypes/Edit', [
+        return \Inertia\Inertia::render('ContentType::ContentTypes/Edit', [
             'contentType' => $contentType->load('fields'),
             'allContentTypes' => ContentType::with('fields')->get()
         ]);
@@ -140,7 +140,9 @@ class ContentTypeController extends Controller
             } else {
                 // Allow updating 'required' and 'description'
                 // Also allow 'type' update specifically for text -> longtext
-                $field = $contentType->fields()->find($fieldData['id']);
+                $field = \Modules\ContentType\Models\ContentField::where('id', $fieldData['id'])
+                    ->where('content_type_id', $contentType->id)
+                    ->first();
                 if ($field) {
                     $newType = $fieldData['type'];
                     $canUpdateType = ($field->type === 'text' && $newType === 'longtext');

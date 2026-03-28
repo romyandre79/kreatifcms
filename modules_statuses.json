@@ -23,5 +23,6 @@
     "FormBlock": true,
     "SocialMediaBlock": true,
     "TimelineBlock": true,
-    "Layout": true
+    "Layout": true,
+    "ContentType": true
 }

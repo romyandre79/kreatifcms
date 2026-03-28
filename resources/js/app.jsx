@@ -12,11 +12,19 @@ import NetworkErrorBanner from '@/Components/NetworkErrorBanner';
 
 createInertiaApp({
     title: (title) => `${title} - ${appName}`,
-    resolve: (name) =>
-        resolvePageComponent(
+    resolve: (name) => {
+        if (name.includes('::')) {
+            const [module, modulePage] = name.split('::');
+            return resolvePageComponent(
+                `../../Modules/${module}/resources/js/Pages/${modulePage}.jsx`,
+                import.meta.glob('../../Modules/*/resources/js/Pages/**/*.jsx')
+            );
+        }
+        return resolvePageComponent(
             `./Pages/${name}.jsx`,
-            import.meta.glob('./Pages/**/*.jsx'),
-        ),
+            import.meta.glob('./Pages/**/*.jsx')
+        );
+    },
     setup({ el, App, props }) {
         const root = createRoot(el);
 

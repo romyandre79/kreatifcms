@@ -29,6 +29,6 @@ class DashboardWidget extends Model
 
     public function contentType()
     {
-        return $this->belongsTo(ContentType::class);
+        return $this->belongsTo(\Modules\ContentType\Models\ContentType::class);
     }
 }

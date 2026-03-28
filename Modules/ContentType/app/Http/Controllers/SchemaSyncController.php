@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Modules\ContentType\Http\Controllers;
 
-use App\Models\ContentType;
+use Modules\ContentType\Models\ContentType;
 use App\Services\SchemaService;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;

@@ -54,7 +54,9 @@ class PageController extends Controller
                 }
                 return $rb;
             }),
-            'contentTypes' => \App\Models\ContentType::with('fields')->get()
+            'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
+                ? \Modules\ContentType\Models\ContentType::with('fields')->get()
+                : []
         ]);
     }
 
