@@ -33,11 +33,7 @@ class HandleInertiaRequests extends Middleware
         if (class_exists('\Nwidart\Modules\Facades\Module')) {
             $module = \Nwidart\Modules\Facades\Module::find('Captcha');
             if ($module && $module->isEnabled()) {
-                $siteKey = \App\Models\Setting::get('captcha', 'captcha_site_key');
-                $secretKey = \App\Models\Setting::get('captcha', 'captcha_secret_key');
-                if ($siteKey && $secretKey) {
-                    $captchaConfigured = true;
-                }
+                $captchaConfigured = true;
             }
         }
 
@@ -75,7 +71,7 @@ class HandleInertiaRequests extends Middleware
                 }
                 return $plugins;
             },
-            'captcha_site_key' => $captchaConfigured ? \App\Models\Setting::get('captcha', 'captcha_site_key') : null,
+            'captcha_site_key' => $captchaConfigured ? (\App\Models\Setting::get('captcha', 'captcha_site_key') ?: (env('RECAPTCHA_SITE_KEY') ?: '6LeIxAcTAAAAAJcZVRqyHh71UMIEGNQ_MXjiZKhI')) : null,
         ];
     }
 }

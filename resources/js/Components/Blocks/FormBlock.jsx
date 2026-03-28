@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
+import CaptchaWidget from '@/Components/CaptchaWidget';
 
 export default function FormBlock({ data, contentTypes = [] }) {
     const { 
@@ -48,6 +49,7 @@ export default function FormBlock({ data, contentTypes = [] }) {
             const response = await axios.post('/api/form/submit', {
                 mode,
                 content_type: contentTypeSlug,
+                fields: fieldsToRender, // Send fields definition for validation
                 data: formData,
                 success_message,
                 form_name: title || 'Website Form'
@@ -119,6 +121,11 @@ export default function FormBlock({ data, contentTypes = [] }) {
                                 required={field.required}
                                 rows="4"
                                 className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all"
+                            />
+                        ) : field.type === 'captcha' ? (
+                            <CaptchaWidget 
+                                onToken={(token) => handleChange('captcha_token', token)} 
+                                // error={errors?.captcha_token} // axios doesn't use inertia errors directly here, but we can pass it if we have it
                             />
                         ) : (
                             <input

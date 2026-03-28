@@ -1258,6 +1258,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                                 <option value="email">Email</option>
                                                                 <option value="number">Number</option>
                                                                 <option value="textarea">Textarea</option>
+                                                                <option value="captcha">Captcha</option>
                                                             </select>
                                                         </div>
                                                         <input
