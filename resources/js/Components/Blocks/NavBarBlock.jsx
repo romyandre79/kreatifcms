@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
 import { Globe, ChevronDown, Menu, X } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 
 const NavBarBlock = ({ data = {} }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -122,7 +123,29 @@ const NavBarBlock = ({ data = {} }) => {
                                 ))}
                             </div>
                         )}
+
+                        {/* Social Links Desktop */}
+                        {Array.isArray(data.social_links) && data.social_links.length > 0 && (
+                            <div className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">
+                                {data.social_links.map((link, i) => {
+                                    const IconComponent = LucideIcons[link.icon] || LucideIcons.Globe;
+                                    return (
+                                        <a 
+                                            key={link.id || i} 
+                                            href={link.url} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className="text-gray-400 hover:text-indigo-600 transition-all hover:scale-110"
+                                            title={link.icon}
+                                        >
+                                            <IconComponent className="w-4 h-4" />
+                                        </a>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
+
 
                     {/* Mobile menu button */}
                     <div className="md:hidden flex items-center">
@@ -185,8 +208,29 @@ const NavBarBlock = ({ data = {} }) => {
                             ))}
                         </div>
                     )}
+
+                    {/* Social Links Mobile */}
+                    {Array.isArray(data.social_links) && data.social_links.length > 0 && (
+                        <div className="pt-4 border-t border-gray-100 mt-2 flex justify-center gap-6 pb-4">
+                            {data.social_links.map((link, i) => {
+                                const IconComponent = LucideIcons[link.icon] || LucideIcons.Globe;
+                                return (
+                                    <a 
+                                        key={link.id || i} 
+                                        href={link.url} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className="text-gray-400 hover:text-indigo-600 transition-colors"
+                                    >
+                                        <IconComponent className="w-6 h-6" />
+                                    </a>
+                                );
+                            })}
+                        </div>
+                    )}
                 </div>
             </div>
+
         </nav>
     );
 };

@@ -34,6 +34,8 @@
             "Modules\\ReusableBlock\\": "Modules/ReusableBlock/app/",
             "Modules\\Seo\\": "Modules/Seo/app/",
             "Modules\\Slideshow\\": "Modules/Slideshow/app/",
+            "Modules\\SocialMediaBlock\\": "Modules/SocialMediaBlock/app/",
+            "Modules\\TimelineBlock\\": "Modules/TimelineBlock/app/",
             "Modules\\Navbar\\": "Modules/Navbar/app/",
             "Modules\\Hero\\": "Modules/Hero/app/",
             "Modules\\TextBlock\\": "Modules/TextBlock/app/",
