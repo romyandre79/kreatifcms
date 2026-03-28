@@ -1,5 +1,5 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import { Plus, Trash2, GripVertical, Save, Type, Type as TypeIcon, Hash, Calendar, CheckSquare, Code, FileText, Image as ImageIcon } from 'lucide-react';
 import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
@@ -170,7 +170,10 @@ function SortableField({ field, onRemove, onUpdate, allContentTypes }) {
     );
 }
 
-export default function Create({ allContentTypes }) {
+export default function Create({ allContentTypes, isPhpEventHooksEnabled }) {
+    const { plugins = [] } = usePage().props;
+    const isPhpHooksActive = isPhpEventHooksEnabled && plugins.some(p => p.alias === 'phpeventhooks' && p.enabled);
+
     const { data, setData, post, processing, errors } = useForm({
         name: '',
         description: '',
@@ -348,65 +351,67 @@ export default function Create({ allContentTypes }) {
                         </div>
 
                         {/* PHP Hooks Section */}
-                        <div className="bg-white p-6 shadow sm:rounded-lg border-l-4 border-yellow-400">
-                            <div className="mb-6">
-                                <h3 className="text-lg font-medium text-gray-900 font-premium flex items-center gap-2">
-                                    <Code className="w-5 h-5 text-yellow-500" />
-                                    PHP Event Hooks (Advanced)
-                                </h3>
-                                <p className="text-sm text-gray-500 mt-1">
-                                    Execute custom PHP code during the content entry lifecycle.
-                                    <strong> Use with extreme caution.</strong> Available variables: <code className="bg-gray-100 px-1 rounded text-pink-600">$data</code> (for writing hooks) and <code className="bg-gray-100 px-1 rounded text-pink-600">$entry</code> (for reading/updating existing).
-                                </p>
-                            </div>
+                        {isPhpHooksActive && (
+                            <div className="bg-white p-6 shadow sm:rounded-lg border-l-4 border-yellow-400">
+                                <div className="mb-6">
+                                    <h3 className="text-lg font-medium text-gray-900 font-premium flex items-center gap-2">
+                                        <Code className="w-5 h-5 text-yellow-500" />
+                                        PHP Event Hooks (Advanced)
+                                    </h3>
+                                    <p className="text-sm text-gray-500 mt-1">
+                                        Execute custom PHP code during the content entry lifecycle.
+                                        <strong> Use with extreme caution.</strong> Available variables: <code className="bg-gray-100 px-1 rounded text-pink-600">$data</code> (for writing hooks) and <code className="bg-gray-100 px-1 rounded text-pink-600">$entry</code> (for reading/updating existing).
+                                    </p>
+                                </div>
 
-                            <div className="space-y-6">
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Select</label>
-                                    <p className="text-xs text-gray-500 mb-2">Runs after an entry is retrieved. Modify <code className="bg-gray-50 px-1 rounded">$entry</code> attributes.</p>
-                                    <textarea
-                                        value={data.events?.onSelect || ''}
-                                        onChange={e => setData('events', { ...data.events, onSelect: e.target.value })}
-                                        placeholder="// e.g. $entry->title = strtoupper($entry->title);"
-                                        rows="3"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Insert</label>
-                                    <p className="text-xs text-gray-500 mb-2">Runs before a new entry is saved. Modify the <code className="bg-gray-50 px-1 rounded">$data</code> array.</p>
-                                    <textarea
-                                        value={data.events?.onInsert || ''}
-                                        onChange={e => setData('events', { ...data.events, onInsert: e.target.value })}
-                                        placeholder="// e.g. $data['slug'] = Str::slug($data['title']);"
-                                        rows="3"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Update</label>
-                                    <p className="text-xs text-gray-500 mb-2">Runs before an existing entry is updated. Access <code className="bg-gray-50 px-1 rounded">$data</code> array and <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
-                                    <textarea
-                                        value={data.events?.onUpdate || ''}
-                                        onChange={e => setData('events', { ...data.events, onUpdate: e.target.value })}
-                                        placeholder="// e.g. if (!isset($data['updated_by'])) $data['updated_by'] = auth()->id();"
-                                        rows="3"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Delete</label>
-                                    <p className="text-xs text-gray-500 mb-2">Runs before an entry is deleted. Access <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
-                                    <textarea
-                                        value={data.events?.onDelete || ''}
-                                        onChange={e => setData('events', { ...data.events, onDelete: e.target.value })}
-                                        placeholder="// e.g. Log::info('Deleting entry ' . $entry->id);"
-                                        rows="3"
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                    />
+                                <div className="space-y-6">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Select</label>
+                                        <p className="text-xs text-gray-500 mb-2">Runs after an entry is retrieved. Modify <code className="bg-gray-50 px-1 rounded">$entry</code> attributes.</p>
+                                        <textarea
+                                            value={data.events?.onSelect || ''}
+                                            onChange={e => setData('events', { ...data.events, onSelect: e.target.value })}
+                                            placeholder="// e.g. $entry->title = strtoupper($entry->title);"
+                                            rows="3"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Insert</label>
+                                        <p className="text-xs text-gray-500 mb-2">Runs before a new entry is saved. Modify the <code className="bg-gray-50 px-1 rounded">$data</code> array.</p>
+                                        <textarea
+                                            value={data.events?.onInsert || ''}
+                                            onChange={e => setData('events', { ...data.events, onInsert: e.target.value })}
+                                            placeholder="// e.g. $data['slug'] = Str::slug($data['title']);"
+                                            rows="3"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Update</label>
+                                        <p className="text-xs text-gray-500 mb-2">Runs before an existing entry is updated. Access <code className="bg-gray-50 px-1 rounded">$data</code> array and <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
+                                        <textarea
+                                            value={data.events?.onUpdate || ''}
+                                            onChange={e => setData('events', { ...data.events, onUpdate: e.target.value })}
+                                            placeholder="// e.g. if (!isset($data['updated_by'])) $data['updated_by'] = auth()->id();"
+                                            rows="3"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Delete</label>
+                                        <p className="text-xs text-gray-500 mb-2">Runs before an entry is deleted. Access <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
+                                        <textarea
+                                            value={data.events?.onDelete || ''}
+                                            onChange={e => setData('events', { ...data.events, onDelete: e.target.value })}
+                                            placeholder="// e.g. Log::info('Deleting entry ' . $entry->id);"
+                                            rows="3"
+                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                        />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        )}
 
                         <div className="flex justify-end">
                             <button

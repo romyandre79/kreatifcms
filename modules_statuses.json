@@ -24,5 +24,6 @@
     "SocialMediaBlock": true,
     "TimelineBlock": true,
     "Layout": true,
-    "ContentType": true
+    "ContentType": true,
+    "PhpEventHooks": false
 }

@@ -36,7 +36,8 @@ class ContentTypeController extends Controller
     public function create()
     {
         return \Inertia\Inertia::render('ContentType::ContentTypes/Create', [
-            'allContentTypes' => ContentType::with('fields')->get()
+            'allContentTypes' => ContentType::with('fields')->get(),
+            'isPhpEventHooksEnabled' => class_exists('\Nwidart\Modules\Facades\Module') && (\Nwidart\Modules\Facades\Module::find('PhpEventHooks')?->isEnabled() ?? false)
         ]);
     }
 
@@ -96,7 +97,8 @@ class ContentTypeController extends Controller
     {
         return \Inertia\Inertia::render('ContentType::ContentTypes/Edit', [
             'contentType' => $contentType->load('fields'),
-            'allContentTypes' => ContentType::with('fields')->get()
+            'allContentTypes' => ContentType::with('fields')->get(),
+            'isPhpEventHooksEnabled' => class_exists('\Nwidart\Modules\Facades\Module') && (\Nwidart\Modules\Facades\Module::find('PhpEventHooks')?->isEnabled() ?? false)
         ]);
     }
 

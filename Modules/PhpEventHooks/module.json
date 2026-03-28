@@ -1,0 +1,11 @@
+{
+    "name": "PhpEventHooks",
+    "alias": "phpeventhooks",
+    "description": "Allows custom PHP code to be executed during the Content-Type lifecycle events.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\PhpEventHooks\\Providers\\PhpEventHooksServiceProvider"
+    ],
+    "files": []
+}

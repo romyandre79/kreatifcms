@@ -60,7 +60,8 @@
             "Database\\Seeders\\": "database/seeders/",
             "Modules\\CorporateTheme\\": "Modules/CorporateTheme/app/",
             "Modules\\Layout\\": "Modules/Layout/app/",
-            "Modules\\ContentType\\": "Modules/ContentType/app/"
+            "Modules\\ContentType\\": "Modules/ContentType/app/",
+            "Modules\\PhpEventHooks\\": "Modules/PhpEventHooks/app/"
         }
     },
     "autoload-dev": {

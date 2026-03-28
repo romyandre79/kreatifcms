@@ -355,6 +355,11 @@ class ContentEntryController extends Controller
     {
         if (empty(trim($code))) return;
 
+        // Check if the PhpEventHooks plugin is active
+        if (class_exists('\Nwidart\Modules\Facades\Module') && !\Nwidart\Modules\Facades\Module::isEnabled('PhpEventHooks')) {
+            return;
+        }
+
         try {
             $executor = function(&$context, $code) {
                 extract($context, EXTR_REFS);
