@@ -25,5 +25,6 @@
     "TimelineBlock": true,
     "Layout": true,
     "ContentType": true,
-    "PhpEventHooks": true
+    "PhpEventHooks": true,
+    "MegaMenu": true
 }
