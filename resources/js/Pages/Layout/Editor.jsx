@@ -170,6 +170,49 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
             };
         } else if (type === 'reusable_block') {
             newBlock.data = { block_id: '' };
+        } else if (type === 'megamenu') {
+            newBlock.data = {
+                source: 'static',
+                menus: [
+                    {
+                        id: generateId(),
+                        label: 'Products',
+                        icon: 'Package',
+                        url: '#',
+                        columns: [
+                            {
+                                id: generateId(),
+                                title: 'Category',
+                                links: [
+                                    { id: generateId(), label: 'Item 1', url: '#', description: '' },
+                                    { id: generateId(), label: 'Item 2', url: '#', description: '' }
+                                ],
+                                image: ''
+                            }
+                        ],
+                        featured_image: '',
+                        cta_label: '',
+                        cta_url: '',
+                        cta_description: ''
+                    }
+                ],
+                content_type: '',
+                limit: 12,
+                sort_by: 'created_at',
+                sort_dir: 'desc',
+                columns_count: 4,
+                mapping: { title: '', description: '', image: '', link_prefix: '/content/' },
+                sticky: false,
+                glass: false,
+                logo: '',
+                bg_color: '#ffffff',
+                text_color: '#111827',
+                accent_color: '#4f46e5',
+                hover_color: '#eef2ff',
+                panel_bg: '#ffffff',
+                cta_label: '',
+                cta_url: ''
+            };
         }
 
         const updatedBlocks = [...blocks, newBlock];
@@ -312,7 +355,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                 const links = Array.isArray(data.links) ? data.links : [];
                 const buttons = Array.isArray(data.buttons) ? data.buttons : [];
                 const social_links = Array.isArray(data.social_links) ? data.social_links : [];
+                const mega_menus = Array.isArray(data.mega_menus) ? data.mega_menus : [];
                 const composition = Array.isArray(data.composition) ? data.composition : ['logo', 'links', 'buttons', 'social_links'];
+                const isMegaMenuPluginActive = plugins.some(p => p.alias === 'megamenu' && p.enabled !== false);
 
                 const moveItem = (arr, index, direction, fieldName) => {
                     const newArr = [...arr];
@@ -490,6 +535,159 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     {cssInput('cart')}
                                 </div>
                             );
+                        case 'megamenu': {
+                            const mmSource = data.megamenu_source || 'static';
+                            const selectedType = contentTypes.find(ct => ct.slug === data.megamenu_content_type);
+                            const fields = selectedType ? selectedType.fields : [];
+
+                            return (
+                                <div key="megamenu" className="space-y-4 pb-4 border-b border-gray-100">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Mega Menu Source</label>
+                                        <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                                            {['static', 'dynamic'].map(s => (
+                                                <button
+                                                    key={s}
+                                                    onClick={() => updateBlockData(block.id, 'megamenu_source', s)}
+                                                    className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${mmSource === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                >
+                                                    {s}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {mmSource === 'static' ? (
+                                        <>
+                                            {sectionHeader('Mega Menu Items', () => {
+                                                const newMega = [...mega_menus, {
+                                                    id: generateId(),
+                                                    label: 'Menu',
+                                                    icon: '',
+                                                    columns: [{ id: generateId(), title: 'Column', links: [{ id: generateId(), label: 'Link', url: '#', description: '' }], image: '' }]
+                                                }];
+                                                updateBlockData(block.id, 'mega_menus', newMega);
+                                            }, '+ ADD MEGA')}
+                                            <div className="space-y-3">
+                                                {mega_menus.map((menu, mIdx) => (
+                                                    <div key={menu.id} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
+                                                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                                            <button disabled={mIdx === 0} onClick={() => moveItem(mega_menus, mIdx, -1, 'mega_menus')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+                                                            <button disabled={mIdx === mega_menus.length - 1} onClick={() => moveItem(mega_menus, mIdx, 1, 'mega_menus')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+                                                            <button onClick={() => updateBlockData(block.id, 'mega_menus', mega_menus.filter((_, i) => i !== mIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                                        </div>
+                                                        <div className="grid grid-cols-3 gap-2 mb-2">
+                                                            <input type="text" value={menu.label || ''} onChange={(e) => { const arr = [...mega_menus]; arr[mIdx] = { ...arr[mIdx], label: e.target.value }; updateBlockData(block.id, 'mega_menus', arr); }} placeholder="Label" className="col-span-2 text-xs border-transparent bg-transparent focus:ring-0 font-bold text-gray-900 p-0" />
+                                                            <input type="text" value={menu.icon || ''} onChange={(e) => { const arr = [...mega_menus]; arr[mIdx] = { ...arr[mIdx], icon: e.target.value }; updateBlockData(block.id, 'mega_menus', arr); }} placeholder="Icon" className="text-[10px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400" />
+                                                        </div>
+                                                        <div className="space-y-2 pl-2 border-l-2 border-indigo-100">
+                                                            {(menu.columns || []).map((col, cIdx) => (
+                                                                <div key={col.id} className="relative group/col">
+                                                                    <div className="flex items-center justify-between">
+                                                                        <input type="text" value={col.title || ''} onChange={(e) => {
+                                                                            const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; cols[cIdx] = { ...cols[cIdx], title: e.target.value }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                        }} placeholder="Col Title" className="text-[9px] font-bold uppercase text-gray-500 border-transparent bg-transparent focus:ring-0 p-0" />
+                                                                        <button onClick={() => {
+                                                                            const arr = [...mega_menus]; const cols = (arr[mIdx].columns || []).filter((_, i) => i !== cIdx); arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                        }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/col:opacity-100"><X className="w-2.5 h-2.5" /></button>
+                                                                    </div>
+                                                                    {(col.links || []).map((link, lIdx) => (
+                                                                        <div key={link.id} className="flex items-center gap-1 group/link">
+                                                                            <input type="text" value={link.label || ''} onChange={(e) => {
+                                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = [...(cols[cIdx].links || [])]; links[lIdx] = { ...links[lIdx], label: e.target.value }; cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                            }} placeholder="Label" className="flex-1 text-[10px] border-transparent bg-transparent focus:ring-0 p-0" />
+                                                                            <input type="text" value={link.url || ''} onChange={(e) => {
+                                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = [...(cols[cIdx].links || [])]; links[lIdx] = { ...links[lIdx], url: e.target.value }; cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                            }} placeholder="URL" className="w-16 text-[9px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400" />
+                                                                            <button onClick={() => {
+                                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = (cols[cIdx].links || []).filter((_, i) => i !== lIdx); cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                            }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/link:opacity-100"><X className="w-2.5 h-2.5" /></button>
+                                                                        </div>
+                                                                    ))}
+                                                                    <button onClick={() => {
+                                                                        const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = [...(cols[cIdx].links || []), { id: generateId(), label: 'Link', url: '#', description: '' }]; cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                    }} className="text-[8px] text-indigo-500 font-bold hover:underline">+ link</button>
+                                                                </div>
+                                                            ))}
+                                                            <button onClick={() => {
+                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || []), { id: generateId(), title: 'Column', links: [{ id: generateId(), label: 'Link', url: '#', description: '' }], image: '' }]; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                            }} className="text-[8px] text-indigo-600 font-bold hover:underline">+ column</button>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Content Type</label>
+                                                <select
+                                                    value={data.megamenu_content_type || ''}
+                                                    onChange={e => updateBlockData(block.id, 'megamenu_content_type', e.target.value)}
+                                                    className="w-full text-xs border-gray-200 rounded-lg bg-white"
+                                                >
+                                                    <option value="">Select...</option>
+                                                    {contentTypes.map(ct => <option key={ct.id} value={ct.slug}>{ct.name}</option>)}
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Label</label>
+                                                <input
+                                                    type="text"
+                                                    value={data.megamenu_label || 'Browse'}
+                                                    onChange={e => updateBlockData(block.id, 'megamenu_label', e.target.value)}
+                                                    className="w-full text-xs border-gray-200 rounded-lg bg-white h-8"
+                                                />
+                                            </div>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Limit</label>
+                                                    <input
+                                                        type="number"
+                                                        value={data.megamenu_limit || 12}
+                                                        onChange={e => updateBlockData(block.id, 'megamenu_limit', parseInt(e.target.value))}
+                                                        className="w-full text-xs border-gray-200 rounded-lg bg-white h-8"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-gray-400 uppercase mb-1">Columns</label>
+                                                    <select
+                                                        value={data.megamenu_columns || 4}
+                                                        onChange={e => updateBlockData(block.id, 'megamenu_columns', parseInt(e.target.value))}
+                                                        className="w-full text-xs border-gray-200 rounded-lg bg-white"
+                                                    >
+                                                        {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} columns</option>)}
+                                                    </select>
+                                                </div>
+                                            </div>
+                                            <div className="space-y-2 pt-2 border-t">
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase">Field Mapping</p>
+                                                {['title', 'description', 'image'].map(slot => (
+                                                    <div key={slot} className="flex items-center gap-2">
+                                                        <span className="w-16 text-[9px] font-bold text-gray-500">{slot}</span>
+                                                        <select
+                                                            value={(data.megamenu_mapping || {})[slot] || ''}
+                                                            onChange={e => {
+                                                                const mapping = { ...(data.megamenu_mapping || {}), [slot]: e.target.value };
+                                                                updateBlockData(block.id, 'megamenu_mapping', mapping);
+                                                            }}
+                                                            className="flex-1 text-[10px] border-gray-100 rounded bg-white p-1"
+                                                        >
+                                                            <option value="">-- None --</option>
+                                                            {fields.map(f => {
+                                                                const fn = f.name.toLowerCase().replace(/ /g, '_');
+                                                                return <option key={f.id} value={fn}>{f.name}</option>;
+                                                            })}
+                                                        </select>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {cssInput('megamenu')}
+                                </div>
+                            );
+                        }
                         default:
                             return null;
                     }
@@ -498,6 +696,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                 const availableSections = [
                     { id: 'logo', label: 'Navbar Logo' },
                     { id: 'links', label: 'Menu Links' },
+                    ...(isMegaMenuPluginActive ? [{ id: 'megamenu', label: 'Mega Menu' }] : []),
                     { id: 'buttons', label: 'CTA Buttons' },
                     { id: 'social_links', label: 'Social Icons' },
                     { id: 'search', label: 'Search Bar' },
@@ -1292,6 +1491,267 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Custom PHP</label>
                                 <textarea value={data.customPhp || ''} onChange={e => updateBlockData(block.id, 'customPhp', e.target.value)} rows="3" className="w-full text-[10px] font-mono border-gray-100 rounded bg-gray-50 p-2" placeholder="// Server logic" />
                             </div>
+                        </div>
+                    </div>
+                );
+            }
+            case 'megamenu': {
+                const source = data.source || 'static';
+                const menus = Array.isArray(data.menus) ? data.menus : [];
+                const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedType ? selectedType.fields : [];
+
+                const moveItem = (arr, index, direction, fieldName) => {
+                    const newArr = [...arr];
+                    const targetIndex = index + direction;
+                    if (targetIndex < 0 || targetIndex >= arr.length) return;
+                    [newArr[index], newArr[targetIndex]] = [newArr[targetIndex], newArr[index]];
+                    updateBlockData(block.id, fieldName, newArr);
+                };
+
+                return (
+                    <div className="space-y-6">
+                        {/* Source Toggle */}
+                        <div>
+                            <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Content Source</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['static', 'dynamic'].map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => updateBlockData(block.id, 'source', s)}
+                                        className={`flex-1 py-2 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${source === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {s === 'static' ? '✏️ Static' : '⚡ Dynamic'}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Static mode: Menu items with columns */}
+                        {source === 'static' && (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest">Menu Items</label>
+                                    <button
+                                        onClick={() => {
+                                            const newMenus = [...menus, {
+                                                id: generateId(), label: 'New Menu', icon: '', url: '#',
+                                                columns: [{ id: generateId(), title: 'Column', links: [{ id: generateId(), label: 'Link', url: '#', description: '' }], image: '' }],
+                                                featured_image: '', cta_label: '', cta_url: '', cta_description: ''
+                                            }];
+                                            updateBlockData(block.id, 'menus', newMenus);
+                                        }}
+                                        className="text-[10px] text-indigo-600 font-bold hover:underline"
+                                    >+ ADD MENU</button>
+                                </div>
+                                {menus.map((menu, mIdx) => (
+                                    <div key={menu.id} className="p-4 border border-gray-200 rounded-xl bg-white relative group">
+                                        <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                                            <button disabled={mIdx === 0} onClick={() => moveItem(menus, mIdx, -1, 'menus')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
+                                            <button disabled={mIdx === menus.length - 1} onClick={() => moveItem(menus, mIdx, 1, 'menus')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
+                                            <button onClick={() => updateBlockData(block.id, 'menus', menus.filter((_, i) => i !== mIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                        </div>
+                                        <div className="grid grid-cols-3 gap-2 mb-3">
+                                            <input type="text" value={menu.label || ''} onChange={(e) => { const newMenus = [...menus]; newMenus[mIdx] = { ...newMenus[mIdx], label: e.target.value }; updateBlockData(block.id, 'menus', newMenus); }} placeholder="Label" className="col-span-2 text-xs border-gray-200 rounded focus:ring-indigo-500" />
+                                            <input type="text" value={menu.icon || ''} onChange={(e) => { const newMenus = [...menus]; newMenus[mIdx] = { ...newMenus[mIdx], icon: e.target.value }; updateBlockData(block.id, 'menus', newMenus); }} placeholder="Icon" className="text-xs border-gray-200 rounded focus:ring-indigo-500" />
+                                        </div>
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase tracking-widest">Columns</span>
+                                                <button onClick={() => {
+                                                    const newMenus = [...menus];
+                                                    const cols = [...(newMenus[mIdx].columns || [])];
+                                                    cols.push({ id: generateId(), title: 'Column', links: [{ id: generateId(), label: 'Link', url: '#', description: '' }], image: '' });
+                                                    newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                                    updateBlockData(block.id, 'menus', newMenus);
+                                                }} className="text-[9px] text-indigo-600 font-bold hover:underline">+ COLUMN</button>
+                                            </div>
+                                            {(menu.columns || []).map((col, cIdx) => (
+                                                <div key={col.id} className="p-3 border border-gray-100 rounded-lg bg-gray-50/50 relative group/col">
+                                                    <div className="absolute top-1 right-1 opacity-0 group-hover/col:opacity-100 transition-opacity z-10">
+                                                        <button onClick={() => {
+                                                            const newMenus = [...menus];
+                                                            const cols = (newMenus[mIdx].columns || []).filter((_, i) => i !== cIdx);
+                                                            newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                                            updateBlockData(block.id, 'menus', newMenus);
+                                                        }} className="p-0.5 text-gray-400 hover:text-red-500"><X className="w-3 h-3" /></button>
+                                                    </div>
+                                                    <input type="text" value={col.title || ''} onChange={(e) => {
+                                                        const newMenus = [...menus];
+                                                        const cols = [...(newMenus[mIdx].columns || [])];
+                                                        cols[cIdx] = { ...cols[cIdx], title: e.target.value };
+                                                        newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                                        updateBlockData(block.id, 'menus', newMenus);
+                                                    }} placeholder="Column Title" className="w-full text-[10px] font-bold border-transparent bg-transparent focus:ring-0 p-0 mb-2" />
+                                                    <div className="space-y-1">
+                                                        {(col.links || []).map((link, lIdx) => (
+                                                            <div key={link.id} className="flex items-center gap-1 group/link">
+                                                                <input type="text" value={link.label || ''} onChange={(e) => {
+                                                                    const newMenus = [...menus]; const cols = [...(newMenus[mIdx].columns || [])]; const links = [...(cols[cIdx].links || [])];
+                                                                    links[lIdx] = { ...links[lIdx], label: e.target.value }; cols[cIdx] = { ...cols[cIdx], links }; newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                                                    updateBlockData(block.id, 'menus', newMenus);
+                                                                }} placeholder="Label" className="flex-1 text-[10px] border-transparent bg-transparent focus:ring-0 p-0" />
+                                                                <input type="text" value={link.url || ''} onChange={(e) => {
+                                                                    const newMenus = [...menus]; const cols = [...(newMenus[mIdx].columns || [])]; const links = [...(cols[cIdx].links || [])];
+                                                                    links[lIdx] = { ...links[lIdx], url: e.target.value }; cols[cIdx] = { ...cols[cIdx], links }; newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                                                    updateBlockData(block.id, 'menus', newMenus);
+                                                                }} placeholder="URL" className="w-20 text-[9px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400" />
+                                                                <button onClick={() => {
+                                                                    const newMenus = [...menus]; const cols = [...(newMenus[mIdx].columns || [])]; const links = (cols[cIdx].links || []).filter((_, i) => i !== lIdx);
+                                                                    cols[cIdx] = { ...cols[cIdx], links }; newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                                                    updateBlockData(block.id, 'menus', newMenus);
+                                                                }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/link:opacity-100"><X className="w-3 h-3" /></button>
+                                                            </div>
+                                                        ))}
+                                                        <button onClick={() => {
+                                                            const newMenus = [...menus]; const cols = [...(newMenus[mIdx].columns || [])];
+                                                            const links = [...(cols[cIdx].links || []), { id: generateId(), label: 'New Link', url: '#', description: '' }];
+                                                            cols[cIdx] = { ...cols[cIdx], links }; newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                                            updateBlockData(block.id, 'menus', newMenus);
+                                                        }} className="text-[9px] text-indigo-500 font-bold hover:underline mt-1">+ link</button>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {/* Dynamic mode */}
+                        {source === 'dynamic' && (
+                            <div className="space-y-4">
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Content Type</label>
+                                        <select value={data.content_type || ''} onChange={e => updateBlockData(block.id, 'content_type', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                            <option value="">Select Content Type...</option>
+                                            {contentTypes.map(ct => <option key={ct.id} value={ct.slug}>{ct.name}</option>)}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Columns</label>
+                                        <select value={data.columns_count || 4} onChange={e => updateBlockData(block.id, 'columns_count', parseInt(e.target.value))} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                            {[2, 3, 4, 5, 6].map(n => <option key={n} value={n}>{n} columns</option>)}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-3 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Max Items</label>
+                                        <input type="number" min="1" max="50" value={data.limit || 12} onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value))} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Sort By</label>
+                                        <select value={data.sort_by || 'created_at'} onChange={e => updateBlockData(block.id, 'sort_by', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                            <option value="created_at">Created</option>
+                                            <option value="updated_at">Updated</option>
+                                            <option value="id">ID</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Direction</label>
+                                        <select value={data.sort_dir || 'desc'} onChange={e => updateBlockData(block.id, 'sort_dir', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500">
+                                            <option value="desc">Latest First</option>
+                                            <option value="asc">Oldest First</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                {data.content_type && (
+                                    <div className="p-3 bg-gray-50/50 rounded-xl border border-gray-100">
+                                        <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Field Mapping</h4>
+                                        <div className="space-y-3">
+                                            {['title', 'description', 'image'].map(slot => (
+                                                <div key={slot} className="flex items-center gap-3">
+                                                    <label className="w-1/3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{slot}</label>
+                                                    <select value={data.mapping?.[slot] || ''} onChange={e => { const mapping = { ...(data.mapping || {}), [slot]: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500">
+                                                        <option value="">-- None --</option>
+                                                        {(slot === 'image' ? fields : fields.filter(f => ['text','longtext','string'].includes(f.type))).map(f => {
+                                                            const fn = f.name.toLowerCase().replace(/ /g, '_');
+                                                            return <option key={`m_${slot}_${f.id}`} value={fn}>{f.name}</option>;
+                                                        })}
+                                                    </select>
+                                                </div>
+                                            ))}
+                                            <div className="flex items-center gap-3">
+                                                <label className="w-1/3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">Link Prefix</label>
+                                                <input type="text" value={data.mapping?.link_prefix || '/content/'} onChange={e => { const mapping = { ...(data.mapping || {}), link_prefix: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500" placeholder="/content/slug/" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Menu Labels</label>
+                                        <button onClick={() => { const newMenus = [...menus, { id: generateId(), label: 'Menu', icon: '' }]; updateBlockData(block.id, 'menus', newMenus); }} className="text-[10px] text-indigo-600 font-bold hover:underline">+ ADD</button>
+                                    </div>
+                                    {menus.map((menu, mIdx) => (
+                                        <div key={menu.id} className="flex items-center gap-2 group">
+                                            <input type="text" value={menu.label || ''} onChange={(e) => { const newMenus = [...menus]; newMenus[mIdx] = { ...newMenus[mIdx], label: e.target.value }; updateBlockData(block.id, 'menus', newMenus); }} placeholder="Label" className="flex-1 text-xs border-gray-200 rounded focus:ring-indigo-500" />
+                                            <input type="text" value={menu.icon || ''} onChange={(e) => { const newMenus = [...menus]; newMenus[mIdx] = { ...newMenus[mIdx], icon: e.target.value }; updateBlockData(block.id, 'menus', newMenus); }} placeholder="Icon" className="w-20 text-xs border-gray-200 rounded focus:ring-indigo-500" />
+                                            <button onClick={() => updateBlockData(block.id, 'menus', menus.filter((_, i) => i !== mIdx))} className="p-1 text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><X className="w-3.5 h-3.5" /></button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Colors */}
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">Colors & Theme</label>
+                            <div className="space-y-3">
+                                {[
+                                    { key: 'bg_color', label: 'Background', def: '#ffffff' },
+                                    { key: 'text_color', label: 'Text', def: '#111827' },
+                                    { key: 'accent_color', label: 'Accent', def: '#4f46e5' },
+                                    { key: 'hover_color', label: 'Hover BG', def: '#eef2ff' },
+                                    { key: 'panel_bg', label: 'Panel BG', def: '#ffffff' }
+                                ].map(c => (
+                                    <div key={c.key} className="flex items-center justify-between gap-4">
+                                        <span className="text-[10px] font-bold text-gray-600 uppercase tracking-tight">{c.label}</span>
+                                        <input type="color" value={data[c.key] || c.def} onChange={e => updateBlockData(block.id, c.key, e.target.value)} className="w-8 h-8 rounded-lg cursor-pointer border-0 p-0 overflow-hidden" />
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Logo & CTA */}
+                        <div className="space-y-3">
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Logo (Optional)</label>
+                                <div className="flex gap-2">
+                                    <input type="text" value={data.logo || ''} readOnly placeholder="Select logo..." className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-100 text-gray-500" />
+                                    <button onClick={() => { setMediaPickerTarget({ blockId: block.id, fieldName: 'logo' }); setMediaPickerOpen(true); }} className="px-3 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100">Browse</button>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">CTA Label</label>
+                                    <input type="text" value={data.cta_label || ''} onChange={e => updateBlockData(block.id, 'cta_label', e.target.value)} placeholder="e.g. Contact Us" className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500" />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">CTA URL</label>
+                                    <input type="text" value={data.cta_url || ''} onChange={e => updateBlockData(block.id, 'cta_url', e.target.value)} placeholder="/contact" className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500" />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Toggles */}
+                        <div className="grid grid-cols-2 gap-4 pt-2">
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${data.sticky ? 'bg-indigo-600' : 'bg-gray-200'}`}>
+                                    <div className={`w-3 h-3 bg-white rounded-full transition-transform ${data.sticky ? 'translate-x-4' : ''}`} />
+                                </div>
+                                <input type="checkbox" className="hidden" checked={!!data.sticky} onChange={e => updateBlockData(block.id, 'sticky', e.target.checked)} />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Sticky Top</span>
+                            </label>
+                            <label className="flex items-center gap-2 cursor-pointer group">
+                                <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${data.glass ? 'bg-indigo-600' : 'bg-gray-200'}`}>
+                                    <div className={`w-3 h-3 bg-white rounded-full transition-transform ${data.glass ? 'translate-x-4' : ''}`} />
+                                </div>
+                                <input type="checkbox" className="hidden" checked={!!data.glass} onChange={e => updateBlockData(block.id, 'glass', e.target.checked)} />
+                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Glass Effect</span>
+                            </label>
                         </div>
                     </div>
                 );
