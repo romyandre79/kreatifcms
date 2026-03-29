@@ -25,5 +25,5 @@
     "TimelineBlock": true,
     "Layout": true,
     "ContentType": true,
-    "PhpEventHooks": false
+    "PhpEventHooks": true
 }

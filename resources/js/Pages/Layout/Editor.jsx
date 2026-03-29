@@ -6,7 +6,7 @@ import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronUp, ChevronDown, ChevronRight, X,
     Monitor, LayoutTemplate, Bold, Italic, Link as LinkIcon, List, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette,
-    Menu, Globe
+    Menu, Globe, Code
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
@@ -1338,36 +1338,19 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                         </div>
 
                         {activeTab === 'theme' ? (
-                            <div className="space-y-6">
+                            <div className="space-y-6 pb-20">
+                                {/* Global Typography */}
                                 <div className="space-y-4">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Brand Colors</label>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <div className="space-y-1.5">
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Primary</span>
-                                            <div className="flex gap-2 items-center bg-gray-50 p-1.5 rounded-lg border border-gray-100">
-                                                <input type="color" value={theme.primaryColor || '#4f46e5'} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} className="w-6 h-6 rounded border-0 p-0 overflow-hidden cursor-pointer" />
-                                                <input type="text" value={theme.primaryColor || '#4f46e5'} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} className="flex-1 bg-transparent border-0 p-0 text-[10px] font-mono uppercase focus:ring-0" />
-                                            </div>
-                                        </div>
-                                        <div className="space-y-1.5">
-                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Secondary</span>
-                                            <div className="flex gap-2 items-center bg-gray-50 p-1.5 rounded-lg border border-gray-100">
-                                                <input type="color" value={theme.secondaryColor || '#10b981'} onChange={e => setTheme({ ...theme, secondaryColor: e.target.value })} className="w-6 h-6 rounded border-0 p-0 overflow-hidden cursor-pointer" />
-                                                <input type="text" value={theme.secondaryColor || '#10b981'} onChange={e => setTheme({ ...theme, secondaryColor: e.target.value })} className="flex-1 bg-transparent border-0 p-0 text-[10px] font-mono uppercase focus:ring-0" />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 pt-4 border-t border-gray-100">
-                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Typography</label>
-                                    <div className="space-y-3">
+                                    <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                                        <Type className="w-3.5 h-3.5" /> Global Typography
+                                    </label>
+                                    <div className="space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100 shadow-sm">
                                         <div>
-                                            <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Font Family</span>
+                                            <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Default Font Family</span>
                                             <select 
                                                 value={theme.fontFamily || 'Inter'} 
                                                 onChange={e => setTheme({ ...theme, fontFamily: e.target.value })}
-                                                className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
+                                                className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                             >
                                                 <option value="Inter">Inter (Sans-serif)</option>
                                                 <option value="Roboto">Roboto (Clean Sans)</option>
@@ -1379,18 +1362,190 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                         </div>
                                         <div>
                                             <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Base Font Size (px)</span>
-                                            <div className="flex items-center gap-3">
+                                            <div className="flex items-center gap-2">
                                                 <input 
-                                                    type="range" 
-                                                    min="12" 
-                                                    max="20" 
+                                                    type="number" 
                                                     value={theme.fontSize || 16} 
                                                     onChange={e => setTheme({ ...theme, fontSize: e.target.value })}
-                                                    className="flex-1 h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                                    className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                                 />
-                                                <span className="text-xs font-bold text-gray-600 w-8">{theme.fontSize || 16}px</span>
+                                                <span className="text-[10px] font-bold text-gray-400 uppercase">PX</span>
                                             </div>
                                         </div>
+                                    </div>
+                                </div>
+
+                                {/* Branding Colors */}
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                                        <Layers className="w-3.5 h-3.5" /> Brand Colors
+                                    </label>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div className="space-y-1.5">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Primary</span>
+                                            <div className="flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-100 shadow-sm">
+                                                <input type="color" value={theme.primaryColor || '#4f46e5'} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} className="w-6 h-6 rounded border-0 p-0 overflow-hidden cursor-pointer" />
+                                                <input type="text" value={theme.primaryColor || '#4f46e5'} onChange={e => setTheme({ ...theme, primaryColor: e.target.value })} className="flex-1 bg-transparent border-0 p-0 text-[10px] font-mono uppercase focus:ring-0 w-full" />
+                                            </div>
+                                        </div>
+                                        <div className="space-y-1.5">
+                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Secondary</span>
+                                            <div className="flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-100 shadow-sm">
+                                                <input type="color" value={theme.secondaryColor || '#10b981'} onChange={e => setTheme({ ...theme, secondaryColor: e.target.value })} className="w-6 h-6 rounded border-0 p-0 overflow-hidden cursor-pointer" />
+                                                <input type="text" value={theme.secondaryColor || '#10b981'} onChange={e => setTheme({ ...theme, secondaryColor: e.target.value })} className="flex-1 bg-transparent border-0 p-0 text-[10px] font-mono uppercase focus:ring-0 w-full" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Dynamic Custom Styles */}
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                                            <Palette className="w-3.5 h-3.5" /> Additional Styles
+                                        </label>
+                                        <button 
+                                            onClick={() => {
+                                                const newStyles = [...(theme.customStyles || []), {
+                                                    id: generateId(),
+                                                    name: 'New Style',
+                                                    selector: '.custom-selector',
+                                                    fontFamily: '',
+                                                    fontSize: '',
+                                                    textColor: '#111827',
+                                                    bgColor: 'transparent'
+                                                }];
+                                                setTheme({ ...theme, customStyles: newStyles });
+                                            }}
+                                            className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-full hover:bg-indigo-100 transition-colors"
+                                        >
+                                            + ADD STYLE
+                                        </button>
+                                    </div>
+
+                                    <div className="space-y-6">
+                                        {(theme.customStyles || []).map((style, idx) => (
+                                            <div key={style.id || idx} className="relative p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4 group">
+                                                <button 
+                                                    onClick={() => {
+                                                        const newStyles = theme.customStyles.filter((_, i) => i !== idx);
+                                                        setTheme({ ...theme, customStyles: newStyles });
+                                                    }}
+                                                    className="absolute -top-2 -right-2 p-1.5 bg-white border border-gray-100 rounded-full text-gray-400 hover:text-red-500 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5" />
+                                                </button>
+
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <div>
+                                                        <span className="block text-[9px] text-gray-400 font-bold uppercase mb-1">Style Name</span>
+                                                        <input 
+                                                            type="text" 
+                                                            value={style.name} 
+                                                            onChange={e => {
+                                                                const newStyles = [...theme.customStyles];
+                                                                newStyles[idx].name = e.target.value;
+                                                                setTheme({ ...theme, customStyles: newStyles });
+                                                            }}
+                                                            className="w-full text-[11px] font-bold border-gray-200 rounded-lg bg-white focus:ring-indigo-500 py-1"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[9px] text-gray-400 font-bold uppercase mb-1">CSS Selector</span>
+                                                        <input 
+                                                            type="text" 
+                                                            value={style.selector} 
+                                                            onChange={e => {
+                                                                const newStyles = [...theme.customStyles];
+                                                                newStyles[idx].selector = e.target.value;
+                                                                setTheme({ ...theme, customStyles: newStyles });
+                                                            }}
+                                                            className="w-full text-[11px] font-mono border-gray-200 rounded-lg bg-white focus:ring-indigo-500 py-1"
+                                                            placeholder=".custom-class"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                <div className="space-y-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                                                    <div>
+                                                        <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Font Family</span>
+                                                        <select 
+                                                            value={style.fontFamily} 
+                                                            onChange={e => {
+                                                                const newStyles = [...theme.customStyles];
+                                                                newStyles[idx].fontFamily = e.target.value;
+                                                                setTheme({ ...theme, customStyles: newStyles });
+                                                            }}
+                                                            className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
+                                                        >
+                                                            <option value="">Global Default</option>
+                                                            <option value="Inter">Inter</option>
+                                                            <option value="Roboto">Roboto</option>
+                                                            <option value="Outfit">Outfit</option>
+                                                            <option value="Playfair Display">Playfair Display</option>
+                                                            <option value="Montserrat">Montserrat</option>
+                                                        </select>
+                                                    </div>
+                                                    <div>
+                                                        <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Font Size (px)</span>
+                                                        <div className="flex items-center gap-2">
+                                                            <input 
+                                                                type="number" 
+                                                                value={style.fontSize} 
+                                                                onChange={e => {
+                                                                    const newStyles = [...theme.customStyles];
+                                                                    newStyles[idx].fontSize = e.target.value;
+                                                                    setTheme({ ...theme, customStyles: newStyles });
+                                                                }}
+                                                                className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
+                                                            />
+                                                            <span className="text-[10px] font-bold text-gray-400 uppercase">PX</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-3 pt-1">
+                                                        <div className="space-y-1.5">
+                                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Color</span>
+                                                            <div className="flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-100">
+                                                                <input type="color" value={style.textColor || '#111827'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].textColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="w-5 h-5 rounded border-0 p-0 cursor-pointer" />
+                                                                <input type="text" value={style.textColor || '#111827'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].textColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="flex-1 bg-transparent border-0 p-0 text-[9px] font-mono focus:ring-0 uppercase" />
+                                                            </div>
+                                                        </div>
+                                                        <div className="space-y-1.5">
+                                                            <span className="text-[10px] text-gray-400 font-bold uppercase">Bg Color</span>
+                                                            <div className="flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-100">
+                                                                <input type="color" value={style.bgColor || 'transparent'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].bgColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="w-5 h-5 rounded border-0 p-0 cursor-pointer" />
+                                                                <input type="text" value={style.bgColor || 'transparent'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].bgColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="flex-1 bg-transparent border-0 p-0 text-[9px] font-mono focus:ring-0 uppercase" />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+
+                                        {(!theme.customStyles || theme.customStyles.length === 0) && (
+                                            <div className="text-center py-10 border-2 border-dashed border-gray-100 rounded-2xl text-gray-400 text-xs italic">
+                                                No additional styles found. Click "+ ADD STYLE" TO START.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Advanced Section */}
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
+                                         Advanced
+                                    </label>
+                                    <div>
+                                        <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5 flex items-center gap-1">
+                                            <Code className="w-3 h-3" /> Custom Global CSS
+                                        </span>
+                                        <textarea 
+                                            value={theme.customCss || ''} 
+                                            onChange={e => setTheme({ ...theme, customCss: e.target.value })}
+                                            placeholder="/* Write your custom CSS here... */"
+                                            rows="8"
+                                            className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 p-3 resize-none shadow-inner"
+                                        />
                                     </div>
                                 </div>
                             </div>

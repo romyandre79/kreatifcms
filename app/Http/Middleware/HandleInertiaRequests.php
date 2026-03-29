@@ -94,7 +94,9 @@ class HandleInertiaRequests extends Middleware
                             'primaryColor' => '#4f46e5',
                             'secondaryColor' => '#10b981',
                             'fontFamily' => 'Inter',
-                            'fontSize' => '16'
+                            'fontSize' => '16',
+                            'customStyles' => [],
+                            'customCss' => '',
                         ]
                     ];
                 }
@@ -102,12 +104,49 @@ class HandleInertiaRequests extends Middleware
                 return [
                     'header' => \App\Models\Setting::where('module', 'layout')->where('key', 'header')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'header')->first()->value, true) : [],
                     'footer' => \App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first()->value, true) : [],
-                    'theme' => \App\Models\Setting::where('module', 'layout')->where('key', 'theme')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'theme')->first()->value, true) : [
-                        'primaryColor' => '#4f46e5',
-                        'secondaryColor' => '#10b981',
-                        'fontFamily' => 'Inter',
-                        'fontSize' => '16'
-                    ],
+                    'theme' => (() => {
+                        $existing = \App\Models\Setting::where('module', 'layout')->where('key', 'theme')->first()?->value;
+                        $settings = $existing ? json_decode($existing, true) : [];
+                        
+                        $defaults = [
+                            'primaryColor' => '#4f46e5',
+                            'secondaryColor' => '#10b981',
+                            'fontFamily' => 'Inter',
+                            'fontSize' => '16',
+                            'customStyles' => [
+                                [
+                                    'id' => 'style_body',
+                                    'name' => 'Body Style',
+                                    'selector' => 'body',
+                                    'fontFamily' => 'Inter',
+                                    'fontSize' => '16',
+                                    'textColor' => '#111827',
+                                    'bgColor' => '#ffffff',
+                                ],
+                                [
+                                    'id' => 'style_h1',
+                                    'name' => 'Heading 1',
+                                    'selector' => 'h1',
+                                    'fontFamily' => 'Inter',
+                                    'fontSize' => '40',
+                                    'textColor' => '#111827',
+                                    'bgColor' => 'transparent',
+                                ]
+                            ],
+                            'customCss' => '',
+                        ];
+
+                        // If customStyles is missing but old body/h1 settings exist, migrate them
+                        if (!isset($settings['customStyles'])) {
+                            $settings['customStyles'] = $defaults['customStyles'];
+                            if (isset($settings['bodyTextColor'])) $settings['customStyles'][0]['textColor'] = $settings['bodyTextColor'];
+                            if (isset($settings['bodyBgColor'])) $settings['customStyles'][0]['bgColor'] = $settings['bodyBgColor'];
+                            if (isset($settings['h1FontSize'])) $settings['customStyles'][1]['fontSize'] = $settings['h1FontSize'];
+                            if (isset($settings['h1TextColor'])) $settings['customStyles'][1]['textColor'] = $settings['h1TextColor'];
+                        }
+
+                        return array_merge($defaults, $settings);
+                    })(),
                 ];
             },
         ];
