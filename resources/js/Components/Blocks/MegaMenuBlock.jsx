@@ -57,6 +57,51 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
     };
 
     // Render a static column in the dropdown
+    const RecursiveLinks = ({ links, isMobile = false, depth = 0 }) => {
+        if (!Array.isArray(links) || links.length === 0) return null;
+
+        return (
+            <ul className={`${isMobile ? 'pl-4 space-y-1' : (depth === 0 ? 'space-y-1' : 'absolute left-full top-0 ml-px w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover/recursive:opacity-100 group-hover/recursive:visible transition-all duration-200 z-[110]')}`}>
+                {links.map((link, i) => {
+                    const hasChildren = Array.isArray(link.children) && link.children.length > 0;
+                    
+                    if (isMobile) {
+                        return (
+                            <li key={link.id || i}>
+                                <div className="flex items-center justify-between py-2 px-3 text-sm font-medium transition-colors rounded-lg" style={{ color: textColor }}>
+                                    <a href={link.url || '#'} className="flex-1">{link.label}</a>
+                                    {hasChildren && <ChevronDown className="w-3.5 h-3.5 opacity-50" />}
+                                </div>
+                                {hasChildren && <RecursiveLinks links={link.children} isMobile={true} depth={depth + 1} />}
+                            </li>
+                        );
+                    }
+
+                    return (
+                        <li key={link.id || i} className="relative group/recursive">
+                            <a
+                                href={link.url || '#'}
+                                className="group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all"
+                                style={{ color: textColor }}
+                                onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = hoverColor; e.currentTarget.style.color = accentColor; }}
+                                onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = textColor; }}
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <span className="font-semibold block">{link.label}</span>
+                                    {depth === 0 && link.description && (
+                                        <span className="text-xs opacity-60 block mt-0.5 line-clamp-2">{link.description}</span>
+                                    )}
+                                </div>
+                                {hasChildren && <ChevronRight className="w-3.5 h-3.5 opacity-50 ml-2" />}
+                            </a>
+                            {hasChildren && <RecursiveLinks links={link.children} isMobile={false} depth={depth + 1} />}
+                        </li>
+                    );
+                })}
+            </ul>
+        );
+    };
+
     const renderStaticColumn = (col) => (
         <div key={col.id} className="flex-1 min-w-0">
             {col.title && (
@@ -72,27 +117,7 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
                     <img src={col.image} alt={col.title || ''} className="w-full h-32 object-cover hover:scale-105 transition-transform duration-500" />
                 </div>
             )}
-            <ul className="space-y-1">
-                {(col.links || []).map((link) => (
-                    <li key={link.id}>
-                        <a
-                            href={link.url || '#'}
-                            className="group flex items-start gap-2 px-3 py-2 rounded-lg text-sm transition-all"
-                            style={{ color: textColor }}
-                            onMouseEnter={(e) => { e.currentTarget.style.backgroundColor = hoverColor; e.currentTarget.style.color = accentColor; }}
-                            onMouseLeave={(e) => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = textColor; }}
-                        >
-                            <div className="flex-1 min-w-0">
-                                <span className="font-semibold block">{link.label}</span>
-                                {link.description && (
-                                    <span className="text-xs opacity-60 block mt-0.5 line-clamp-2">{link.description}</span>
-                                )}
-                            </div>
-                            <ArrowRight className="w-3.5 h-3.5 mt-1 opacity-0 group-hover:opacity-100 -translate-x-1 group-hover:translate-x-0 transition-all flex-shrink-0" />
-                        </a>
-                    </li>
-                ))}
-            </ul>
+            <RecursiveLinks links={col.links} isMobile={false} depth={0} />
         </div>
     );
 
@@ -250,22 +275,7 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
                                                 {col.title}
                                             </h4>
                                         )}
-                                        <ul className="space-y-1 pl-1">
-                                            {(col.links || []).map(link => (
-                                                <li key={link.id}>
-                                                    <a
-                                                        href={link.url || '#'}
-                                                        className="block py-2 px-3 text-sm rounded-lg transition-colors"
-                                                        style={{ color: textColor }}
-                                                    >
-                                                        {link.label}
-                                                        {link.description && (
-                                                            <span className="block text-xs opacity-50 mt-0.5">{link.description}</span>
-                                                        )}
-                                                    </a>
-                                                </li>
-                                            ))}
-                                        </ul>
+                                        <RecursiveLinks links={col.links} isMobile={true} depth={0} />
                                     </div>
                                 ))}
                             </div>

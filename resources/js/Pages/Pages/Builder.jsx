@@ -58,6 +58,68 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
     const DISPLAY_BLOCK_TYPES = BLOCK_TYPES.filter(p => isContentTypeEnabled || p.id !== 'content_list');
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const renderLinks = (links, path, updateFn, depth = 0) => {
+        return (
+            <div className={`space-y-1 ${depth > 0 ? 'ml-4 mt-2 border-l-2 border-indigo-50/50 pl-2' : ''}`}>
+                {(links || []).map((link, lIdx) => (
+                    <div key={link.id} className="group/link">
+                        <div className="flex items-center gap-1 group/item">
+                            <input
+                                type="text"
+                                value={link.label || ''}
+                                onChange={(e) => {
+                                    const newLinks = [...links];
+                                    newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value };
+                                    updateFn(newLinks, path);
+                                }}
+                                placeholder="Label"
+                                className="flex-1 text-[10px] border-transparent bg-transparent focus:ring-0 p-0 font-medium"
+                            />
+                            <input
+                                type="text"
+                                value={link.url || ''}
+                                onChange={(e) => {
+                                    const newLinks = [...links];
+                                    newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value };
+                                    updateFn(newLinks, path);
+                                }}
+                                placeholder="URL"
+                                className="w-16 text-[9px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400"
+                            />
+                            <div className="flex items-center opacity-0 group-hover/link:opacity-100 transition-opacity">
+                                <button
+                                    onClick={() => {
+                                        const newLinks = [...links];
+                                        const childId = generateId();
+                                        newLinks[lIdx] = {
+                                            ...newLinks[lIdx],
+                                            children: [...(newLinks[lIdx].children || []), { id: childId, label: 'Sub-link', url: '#', description: '' }]
+                                        };
+                                        updateFn(newLinks, path);
+                                    }}
+                                    className="p-0.5 text-indigo-400 hover:text-indigo-600"
+                                    title="Add Sub-link"
+                                >
+                                    <Plus className="w-2.5 h-2.5" />
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        const newLinks = links.filter((_, i) => i !== lIdx);
+                                        updateFn(newLinks, path);
+                                    }}
+                                    className="p-0.5 text-gray-300 hover:text-red-500"
+                                >
+                                    <X className="w-2.5 h-2.5" />
+                                </button>
+                            </div>
+                        </div>
+                        {link.children && link.children.length > 0 && renderLinks(link.children, [...path, lIdx, 'children'], updateFn, depth + 1)}
+                    </div>
+                ))}
+            </div>
+        );
+    };
     
     // Ensure all blocks have an ID (for backward compatibility)
     const ensureIds = (blockArr) => {
@@ -675,34 +737,36 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                             <input type="text" value={menu.icon || ''} onChange={(e) => { const arr = [...mega_menus]; arr[mIdx] = { ...arr[mIdx], icon: e.target.value }; updateBlockData(block.id, 'mega_menus', arr); }} placeholder="Icon" className="text-[10px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400" />
                                                         </div>
                                                         <div className="space-y-2 pl-2 border-l-2 border-indigo-100">
-                                                            {(menu.columns || []).map((col, cIdx) => (
-                                                                <div key={col.id} className="relative group/col">
-                                                                    <div className="flex items-center justify-between">
-                                                                        <input type="text" value={col.title || ''} onChange={(e) => {
-                                                                            const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; cols[cIdx] = { ...cols[cIdx], title: e.target.value }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
-                                                                        }} placeholder="Col Title" className="text-[9px] font-bold uppercase text-gray-500 border-transparent bg-transparent focus:ring-0 p-0" />
-                                                                        <button onClick={() => {
-                                                                            const arr = [...mega_menus]; const cols = (arr[mIdx].columns || []).filter((_, i) => i !== cIdx); arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
-                                                                        }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/col:opacity-100"><X className="w-2.5 h-2.5" /></button>
-                                                                    </div>
-                                                                    {(col.links || []).map((link, lIdx) => (
-                                                                        <div key={link.id} className="flex items-center gap-1 group/link">
-                                                                            <input type="text" value={link.label || ''} onChange={(e) => {
-                                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = [...(cols[cIdx].links || [])]; links[lIdx] = { ...links[lIdx], label: e.target.value }; cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
-                                                                            }} placeholder="Label" className="flex-1 text-[10px] border-transparent bg-transparent focus:ring-0 p-0" />
-                                                                            <input type="text" value={link.url || ''} onChange={(e) => {
-                                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = [...(cols[cIdx].links || [])]; links[lIdx] = { ...links[lIdx], url: e.target.value }; cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
-                                                                            }} placeholder="URL" className="w-16 text-[9px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400" />
+                                                            {(menu.columns || []).map((col, cIdx) => {
+                                                                const updateLinks = (newLinks, path) => {
+                                                                    const arr = [...mega_menus];
+                                                                    // The path approach is tricky here since we're using a simple updateBlockData
+                                                                    // Let's simplify: recursive update for the specific column's links
+                                                                    const cols = [...(arr[mIdx].columns || [])];
+                                                                    cols[cIdx] = { ...cols[cIdx], links: newLinks };
+                                                                    arr[mIdx] = { ...arr[mIdx], columns: cols };
+                                                                    updateBlockData(block.id, 'mega_menus', arr);
+                                                                };
+
+                                                                return (
+                                                                    <div key={col.id} className="relative group/col">
+                                                                        <div className="flex items-center justify-between">
+                                                                            <input type="text" value={col.title || ''} onChange={(e) => {
+                                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; cols[cIdx] = { ...cols[cIdx], title: e.target.value }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                            }} placeholder="Col Title" className="text-[9px] font-bold uppercase text-gray-500 border-transparent bg-transparent focus:ring-0 p-0" />
                                                                             <button onClick={() => {
-                                                                                const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = (cols[cIdx].links || []).filter((_, i) => i !== lIdx); cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
-                                                                            }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/link:opacity-100"><X className="w-2.5 h-2.5" /></button>
+                                                                                const arr = [...mega_menus]; const cols = (arr[mIdx].columns || []).filter((_, i) => i !== cIdx); arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                            }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/col:opacity-100"><X className="w-2.5 h-2.5" /></button>
                                                                         </div>
-                                                                    ))}
-                                                                    <button onClick={() => {
-                                                                        const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = [...(cols[cIdx].links || []), { id: generateId(), label: 'Link', url: '#', description: '' }]; cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
-                                                                    }} className="text-[8px] text-indigo-500 font-bold hover:underline">+ link</button>
-                                                                </div>
-                                                            ))}
+                                                                        
+                                                                        {renderLinks(col.links, [], updateLinks)}
+
+                                                                        <button onClick={() => {
+                                                                            const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || [])]; const links = [...(cols[cIdx].links || []), { id: generateId(), label: 'Link', url: '#', description: '' }]; cols[cIdx] = { ...cols[cIdx], links }; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
+                                                                        }} className="text-[8px] text-indigo-500 font-bold hover:underline mt-1">+ link</button>
+                                                                    </div>
+                                                                );
+                                                            })}
                                                             <button onClick={() => {
                                                                 const arr = [...mega_menus]; const cols = [...(arr[mIdx].columns || []), { id: generateId(), title: 'Column', links: [{ id: generateId(), label: 'Link', url: '#', description: '' }], image: '' }]; arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
                                                             }} className="text-[8px] text-indigo-600 font-bold hover:underline">+ column</button>

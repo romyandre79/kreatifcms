@@ -99,6 +99,46 @@ const NavBarBlock = ({ data = {} }) => {
         </Link>
     );
 
+    const RecursiveLinks = ({ links, isMobile = false, depth = 0 }) => {
+        if (!Array.isArray(links) || links.length === 0) return null;
+
+        return (
+            <ul className={`${isMobile ? 'pl-4 space-y-1' : (depth === 0 ? 'space-y-1' : 'absolute left-full top-0 ml-px w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover/recursive:opacity-100 group-hover/recursive:visible transition-all duration-200 z-[110]')}`}>
+                {links.map((link, i) => {
+                    const hasChildren = Array.isArray(link.children) && link.children.length > 0;
+                    
+                    if (isMobile) {
+                        return (
+                            <li key={link.id || i}>
+                                <div className="flex items-center justify-between py-2 px-3 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-lg">
+                                    <a href={link.url || '#'} className="flex-1">{link.label}</a>
+                                    {hasChildren && <ChevronDown className="w-3.5 h-3.5 opacity-50" />}
+                                </div>
+                                {hasChildren && <RecursiveLinks links={link.children} isMobile={true} depth={depth + 1} />}
+                            </li>
+                        );
+                    }
+
+                    return (
+                        <li key={link.id || i} className="relative group/recursive">
+                            <a
+                                href={link.url || '#'}
+                                className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all hover:bg-indigo-50 ${depth === 0 ? 'text-gray-800' : 'text-gray-700'}`}
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <span className="font-semibold block group-hover:text-indigo-600">{link.label}</span>
+                                    {depth === 0 && link.description && <span className="text-xs text-gray-400 block mt-0.5 line-clamp-2">{link.description}</span>}
+                                </div>
+                                {hasChildren && <ChevronRight className="w-3.5 h-3.5 opacity-50 ml-2" />}
+                            </a>
+                            {hasChildren && <RecursiveLinks links={link.children} isMobile={false} depth={depth + 1} />}
+                        </li>
+                    );
+                })}
+            </ul>
+        );
+    };
+
     const renderDesktopSection = (key) => {
         const sectionId = `nav-section-${data.id || 'current'}-${key}`;
 
@@ -350,17 +390,10 @@ const NavBarBlock = ({ data = {} }) => {
                                         </button>
                                         {isExpanded && hasContent && (
                                             <div className="pl-6 pb-2 space-y-3 border-l-2 border-indigo-50 ml-3">
-                                                {(menu.columns || []).map(col => (
-                                                    <div key={col.id}>
-                                                        {col.title && <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{col.title}</h4>}
-                                                        {(col.links || []).map(link => (
-                                                            <a key={link.id} href={link.url || '#'} className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-lg">
-                                                                {link.label}
-                                                                {link.description && <span className="block text-xs text-gray-400 mt-0.5">{link.description}</span>}
-                                                            </a>
-                                                        ))}
-                                                    </div>
-                                                ))}
+                                                        <div key={col.id}>
+                                                            {col.title && <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{col.title}</h4>}
+                                                            <RecursiveLinks links={col.links} isMobile={true} depth={0} />
+                                                        </div>
                                             </div>
                                         )}
                                     </div>
@@ -475,21 +508,7 @@ const NavBarBlock = ({ data = {} }) => {
                                                         <img src={col.image} alt={col.title || ''} className="w-full h-32 object-cover hover:scale-105 transition-transform duration-500" />
                                                     </div>
                                                 )}
-                                                <ul className="space-y-1">
-                                                    {(col.links || []).map(link => (
-                                                        <li key={link.id}>
-                                                            <a
-                                                                href={link.url || '#'}
-                                                                className="group flex items-start gap-2 px-3 py-2 rounded-lg text-sm transition-all hover:bg-indigo-50"
-                                                            >
-                                                                <div className="flex-1 min-w-0">
-                                                                    <span className="font-semibold block text-gray-800 group-hover:text-indigo-600">{link.label}</span>
-                                                                    {link.description && <span className="text-xs text-gray-400 block mt-0.5 line-clamp-2">{link.description}</span>}
-                                                                </div>
-                                                            </a>
-                                                        </li>
-                                                    ))}
-                                                </ul>
+                                                <RecursiveLinks links={col.links} isMobile={false} depth={0} />
                                             </div>
                                         ))}
                                     </div>
