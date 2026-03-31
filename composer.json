@@ -62,7 +62,8 @@
             "Modules\\Layout\\": "Modules/Layout/app/",
             "Modules\\ContentType\\": "Modules/ContentType/app/",
             "Modules\\PhpEventHooks\\": "Modules/PhpEventHooks/app/",
-            "Modules\\MegaMenu\\": "Modules/MegaMenu/app/"
+            "Modules\\MegaMenu\\": "Modules/MegaMenu/app/",
+            "Modules\\GeneralApi\\": "Modules/GeneralApi/app/"
         }
     },
     "autoload-dev": {

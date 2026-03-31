@@ -1,0 +1,21 @@
+{
+    "name": "GeneralApi",
+    "alias": "generalapi",
+    "description": "Create custom API endpoints with Bridge (Safe) or PHP Script (Advanced) modes.",
+    "keywords": ["api", "bridge", "custom", "php", "endpoint"],
+    "priority": 0,
+    "providers": [
+        "Modules\\GeneralApi\\Providers\\GeneralApiServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "system",
+    "settings_fields": [
+        {
+            "name": "safe_mode",
+            "label": "Safe Mode Only",
+            "description": "Disable Custom PHP script execution for all endpoints.",
+            "type": "boolean",
+            "default": false
+        }
+    ]
+}
