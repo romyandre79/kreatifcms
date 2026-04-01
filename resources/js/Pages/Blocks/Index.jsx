@@ -1,21 +1,28 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, Link, useForm } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { Head, Link, useForm, usePage } from '@inertiajs/react';
 import { Layout, Plus, Edit2, Trash2, X, FileText } from 'lucide-react';
 
-const BLOCK_TYPES = [
-    { id: 'hero', name: 'Hero Section' },
-    { id: 'text', name: 'Rich Text' },
-    { id: 'image', name: 'Single Image' },
-    { id: 'feature_grid', name: 'Feature Grid' }
-];
 
 export default function Index({ blocks }) {
+    const { plugins = [] } = usePage().props;
     const [showCreateModal, setShowCreateModal] = useState(false);
+
+    const isContentTypeEnabled = useMemo(() => plugins.some(p => p.alias === 'contenttype' && p.enabled !== false), [plugins]);
+    
+    const blockPlugins = useMemo(() => plugins.filter(p => p.type === 'block'), [plugins]);
+    
+    const BLOCK_TYPES = useMemo(() => 
+        blockPlugins.map(p => ({
+            id: p.meta?.id || p.alias,
+            name: p.meta?.name || p.name
+        })).filter(p => isContentTypeEnabled || (p.id !== 'content_list' && p.id !== 'form' && p.id !== 'slideshow' && p.id !== 'timeline' && p.id !== 'feature_grid')),
+        [blockPlugins, isContentTypeEnabled]
+    );
 
     const { data, setData, post, processing, errors, reset } = useForm({
         name: '',
-        type: 'text'
+        type: BLOCK_TYPES.some(t => t.id === 'text') ? 'text' : (BLOCK_TYPES[0]?.id || '')
     });
 
     const handleCreate = (e) => {
