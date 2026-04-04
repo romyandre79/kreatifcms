@@ -178,11 +178,15 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
             newBlock.data = { url: '', caption: '' };
         } else if (type === 'feature_grid') {
             newBlock.data = {
+                source: 'manual',
                 title: 'Our Features',
-                features: [
-                    { id: generateId(), title: 'Feature 1', desc: 'Description for feature one', iconUrl: '' },
-                    { id: generateId(), title: 'Feature 2', desc: 'Description for feature two', iconUrl: '' }
-                ]
+                columns: 3,
+                items: [
+                    { id: generateId(), title: 'Feature 1', desc: 'Description for feature one', image: '' },
+                    { id: generateId(), title: 'Feature 2', desc: 'Description for feature two', image: '' }
+                ],
+                content_type: '',
+                mapping: { title: 'title', desc: 'desc', image: 'image' }
             };
         } else if (type === 'slideshow') {
             newBlock.data = {
@@ -516,10 +520,10 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                         // Assumption: nested media picker usually updates 'image' or 'url'
                         // For timeline, it's 'image'. For others, we might need a subFieldName.
                         // Let's use a heuristic or check the block type.
-                        if (block.type === 'timeline') {
+                        if (block.type === 'timeline' || block.type === 'slideshow' || block.type === 'feature_grid') {
                             newItems[index] = { ...newItems[index], image: url };
-                        } else if (block.type === 'slideshow') {
-                            newItems[index] = { ...newItems[index], image: url };
+                        } else if (block.type === 'video_grid') {
+                            newItems[index] = { ...newItems[index], poster: url };
                         } else {
                             newItems[index] = { ...newItems[index], url: url };
                         }
@@ -1920,73 +1924,162 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 );
             }
             case 'feature_grid': {
-                const features = Array.isArray(data.features) ? data.features : [];
+                const source = data.source || 'manual';
+                const items = Array.isArray(data.items) ? data.items : (Array.isArray(data.features) ? data.features : []);
+                const columns = data.columns || 3;
+                const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedType ? selectedType.fields : [];
+
                 return (
                     <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['manual'].concat(isContentTypeEnabled ? ['dynamic'] : []).map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => updateBlockData(block.id, 'source', s)}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${source === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Section Title</label>
                             <input type="text" value={data.title || ''} onChange={e => updateBlockData(block.id, 'title', e.target.value)} className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50" />
                         </div>
+
                         <div>
-                            <div className="flex items-center justify-between mb-2">
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Features</label>
-                                <button
-                                    onClick={() => {
-                                        const newFeatures = [...features, { id: generateId(), title: 'New Feature', desc: '', iconUrl: '' }];
-                                        updateBlockData(block.id, 'features', newFeatures);
-                                    }}
-                                    className="text-xs text-indigo-600 font-semibold hover:text-indigo-800"
-                                >
-                                    + Add Feature
-                                </button>
-                            </div>
-                            <div className="space-y-3">
-                                <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'features', e)}>
-                                    <SortableContext items={features.map((f, idx) => f.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
-                                        {features.map((feature, idx) => {
-                                            const featureId = feature.id || `item-${idx}`;
-                                            return (
-                                            <SortableNestedItem key={featureId} id={featureId}>
-                                                <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
-                                                    <button
-                                                        onClick={() => {
-                                                            const newFeatures = features.filter((_, i) => i !== idx);
-                                                            updateBlockData(block.id, 'features', newFeatures);
-                                                        }}
-                                                        className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                    >
-                                                        <X className="w-4 h-4" />
-                                                    </button>
-                                                    <input
-                                                        type="text"
-                                                        value={feature.title || ''}
-                                                        onChange={(e) => {
-                                                            const newFeatures = [...features];
-                                                            newFeatures[idx] = { ...newFeatures[idx], title: e.target.value };
-                                                            updateBlockData(block.id, 'features', newFeatures);
-                                                        }}
-                                                        placeholder="Feature Title"
-                                                        className="w-full text-sm border-0 border-b border-gray-200 focus:ring-0 focus:border-indigo-500 px-0 py-1 mb-2 font-semibold"
-                                                    />
-                                                    <textarea
-                                                        value={feature.desc || ''}
-                                                        onChange={(e) => {
-                                                            const newFeatures = [...features];
-                                                            newFeatures[idx] = { ...newFeatures[idx], desc: e.target.value };
-                                                            updateBlockData(block.id, 'features', newFeatures);
-                                                        }}
-                                                        rows="2"
-                                                        placeholder="Feature description..."
-                                                        className="w-full text-sm border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 mb-2"
-                                                    />
-                                                </div>
-                                            </SortableNestedItem>
-                                            );
-                                        })}
-                                    </SortableContext>
-                                </DndContext>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Grid Columns</label>
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4].map(num => (
+                                    <button
+                                        key={num}
+                                        onClick={() => updateBlockData(block.id, 'columns', num)}
+                                        className={`flex-1 py-2 rounded-lg border text-sm font-bold transition-all ${columns == num ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                                    >
+                                        {num}
+                                    </button>
+                                ))}
                             </div>
                         </div>
+
+                        {source === 'manual' ? (
+                            <div>
+                                <div className="flex items-center justify-between mb-2">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Features</label>
+                                    <button
+                                        onClick={() => {
+                                            const newItems = [...items, { id: generateId(), title: 'New Feature', desc: '', image: '' }];
+                                            updateBlockData(block.id, 'items', newItems);
+                                        }}
+                                        className="text-xs text-indigo-600 font-semibold hover:text-indigo-800"
+                                    >
+                                        + Add Feature
+                                    </button>
+                                </div>
+                                <div className="space-y-3">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'items', e)}>
+                                        <SortableContext items={items.map((it, idx) => it.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
+                                            {items.map((item, idx) => {
+                                                const featureId = item.id || `item-${idx}`;
+                                                return (
+                                                <SortableNestedItem key={featureId} id={featureId}>
+                                                    <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newItems = items.filter((_, i) => i !== idx);
+                                                                updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                        >
+                                                            <X className="w-4 h-4" />
+                                                        </button>
+                                                        <input
+                                                            type="text"
+                                                            value={item.title || ''}
+                                                            onChange={(e) => {
+                                                                const newItems = [...items];
+                                                                newItems[idx] = { ...newItems[idx], title: e.target.value };
+                                                                updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            placeholder="Feature Title"
+                                                            className="w-full text-sm border-0 border-b border-gray-200 focus:ring-0 focus:border-indigo-500 px-0 py-1 mb-2 font-semibold"
+                                                        />
+                                                        <textarea
+                                                            value={item.desc || ''}
+                                                            onChange={(e) => {
+                                                                const newItems = [...items];
+                                                                newItems[idx] = { ...newItems[idx], desc: e.target.value };
+                                                                updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            rows="2"
+                                                            placeholder="Feature description..."
+                                                            className="w-full text-[10px] border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 mb-2"
+                                                        />
+                                                        <div className="flex gap-2 items-center">
+                                                            <div 
+                                                                className="w-8 h-8 bg-gray-100 rounded border border-gray-200 cursor-pointer overflow-hidden flex items-center justify-center group/img"
+                                                                onClick={() => openMediaPicker(block.id, 'items', idx)}
+                                                            >
+                                                                {item.image ? (
+                                                                    <img src={item.image} className="w-full h-full object-cover" />
+                                                                ) : (
+                                                                    <LucideIcons.Image className="w-3 h-3 text-gray-400 group-hover/img:text-indigo-500" />
+                                                                )}
+                                                            </div>
+                                                            <span className="text-[10px] text-gray-400">Feature Image</span>
+                                                        </div>
+                                                    </div>
+                                                </SortableNestedItem>
+                                                );
+                                            })}
+                                        </SortableContext>
+                                    </DndContext>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Type</label>
+                                    <select 
+                                        value={data.content_type || ''} 
+                                        onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
+                                        className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Content Type...</option>
+                                        {contentTypes.map(ct => (
+                                            <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {data.content_type && (
+                                    <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4">
+                                        <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Field Mapping</label>
+                                        <div className="space-y-3">
+                                            {['title', 'desc', 'image'].map(key => (
+                                                <div key={key}>
+                                                    <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">{key === 'desc' ? 'Description' : key}</label>
+                                                    <select 
+                                                        value={data.mapping?.[key] || ''} 
+                                                        onChange={e => updateBlockData(block.id, 'mapping', { ...data.mapping, [key]: e.target.value })}
+                                                        className="w-full text-[10px] border-gray-200 rounded bg-white h-7 px-1 focus:ring-indigo-500"
+                                                    >
+                                                        <option value="">-- Map to field --</option>
+                                                        {fields.map(f => (
+                                                            <option key={f.name} value={f.name}>{f.label || f.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 );
             }
