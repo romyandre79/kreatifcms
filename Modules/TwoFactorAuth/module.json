@@ -1,0 +1,12 @@
+{
+    "name": "TwoFactorAuth",
+    "alias": "twofactorauth",
+    "description": "Two-Factor Authentication for KreatifCMS.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\TwoFactorAuth\\Providers\\TwoFactorAuthServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "security"
+}

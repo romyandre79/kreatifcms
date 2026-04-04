@@ -27,5 +27,6 @@
     "ContentType": true,
     "PhpEventHooks": true,
     "MegaMenu": true,
-    "GeneralApi": true
+    "GeneralApi": true,
+    "TwoFactorAuth": true
 }

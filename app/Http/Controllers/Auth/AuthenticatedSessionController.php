@@ -31,6 +31,24 @@ class AuthenticatedSessionController extends Controller
     {
         $request->authenticate();
 
+        $user = Auth::user();
+
+        if ($user && $user->two_factor_confirmed_at && class_exists('\Nwidart\Modules\Facades\Module')) {
+            $module = \Nwidart\Modules\Facades\Module::find('TwoFactorAuth');
+            
+            if ($module && $module->isEnabled()) {
+                $userId = $user->id;
+                $remember = $request->boolean('remember');
+
+                Auth::logout();
+
+                $request->session()->put('login.id', $userId);
+                $request->session()->put('login.remember', $remember);
+
+                return redirect()->route('two-factor.challenge');
+            }
+        }
+
         $request->session()->regenerate();
 
         return redirect()->intended(route('dashboard', absolute: false));

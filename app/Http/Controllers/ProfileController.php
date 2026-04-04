@@ -18,9 +18,23 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+        $twoFactorEnabled = false;
+        $twoFactorModuleEnabled = false;
+        
+        if (class_exists('\Nwidart\Modules\Facades\Module')) {
+            $module = \Nwidart\Modules\Facades\Module::find('TwoFactorAuth');
+            if ($module && $module->isEnabled()) {
+                $twoFactorModuleEnabled = true;
+                $twoFactorEnabled = !is_null($user->two_factor_confirmed_at);
+            }
+        }
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
+            'twoFactorEnabled' => $twoFactorEnabled,
+            'twoFactorModuleEnabled' => $twoFactorModuleEnabled,
         ]);
     }
 
