@@ -26,5 +26,7 @@
     "Layout": true,
     "ContentType": true,
     "PhpEventHooks": true,
-    "MegaMenu": true
+    "MegaMenu": true,
+    "GeneralApi": true,
+    "TwoFactorAuth": true
 }

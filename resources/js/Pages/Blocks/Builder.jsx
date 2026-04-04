@@ -1,20 +1,31 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, router } from '@inertiajs/react';
+import { Head, router, usePage } from '@inertiajs/react';
 import { useState } from 'react';
+import * as LucideIcons from 'lucide-react';
 import { 
     Layout, Type, Image as ImageIcon, Grid, 
-    Save, ArrowLeft, X
+    Save, ArrowLeft, X, Code, ShieldAlert
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
-
-const BLOCK_TYPES = [
-    { id: 'hero', name: 'Hero Section', icon: Layout, desc: 'Large title with background and CTA' },
-    { id: 'text', name: 'Rich Text', icon: Type, desc: 'Standard text, paragraphs, headings' },
-    { id: 'image', name: 'Single Image', icon: ImageIcon, desc: 'A full-width or contained image' },
-    { id: 'feature_grid', name: 'Feature Grid', icon: Grid, desc: 'Grid of cards with icons/images' }
-];
+import SocialIcon from '@/Components/SocialIcon';
+import MarkdownToolbar from '@/Components/MarkdownToolbar';
 
 export default function Builder({ block }) {
+    const { plugins = [] } = usePage().props;
+    const blockPlugins = plugins.filter(p => p.type === 'block');
+
+    const BLOCK_TYPES = blockPlugins.map(p => {
+        const IconComponent = p.meta?.icon ? LucideIcons[p.meta.icon] || LucideIcons.LayoutGrid : LucideIcons.LayoutGrid;
+        return {
+            id: p.meta?.id || p.alias,
+            name: p.meta?.name || p.name,
+            icon: IconComponent,
+            desc: p.meta?.desc || p.description || ''
+        };
+    });
+
+    const typeInfo = BLOCK_TYPES.find(t => t.id === block.type) || { id: block.type, name: block.type, icon: LucideIcons.LayoutGrid };
+
     // Data stores the block's internal payload (title, subtitle, etc.)
     const [data, setData] = useState(block.data || {});
     const [name, setName] = useState(block.name);
@@ -22,8 +33,6 @@ export default function Builder({ block }) {
     const [saving, setSaving] = useState(false);
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [mediaPickerTargetField, setMediaPickerTargetField] = useState(null);
-
-    const typeInfo = BLOCK_TYPES.find(t => t.id === block.type) || BLOCK_TYPES[0];
 
     // Ensure defaults if empty
     useState(() => {
@@ -208,6 +217,163 @@ export default function Builder({ block }) {
                     </div>
                 );
             }
+            case 'navbar': {
+                const composition = data.composition || ['logo', 'links', 'buttons', 'social_links'];
+                const links = data.links || [];
+                const buttons = data.buttons || [];
+                const social_links = data.social_links || [];
+
+                const renderSection = (key, idx) => {
+                    const isFirst = idx === 0;
+                    const isLast = idx === composition.length - 1;
+
+                    const moveItem = (arr, index, direction, fieldName) => {
+                        const newArr = [...arr];
+                        const targetIndex = index + direction;
+                        if (targetIndex < 0 || targetIndex >= arr.length) return;
+                        [newArr[index], newArr[targetIndex]] = [newArr[targetIndex], newArr[index]];
+                        updateData(fieldName, newArr);
+                    };
+
+                    const sectionHeader = (title, onAdd, addLabel) => (
+                        <div className="flex items-center justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">{title}</label>
+                                <div className="flex gap-1">
+                                    <button disabled={isFirst} onClick={() => moveItem(composition, idx, -1, 'composition')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><LucideIcons.ChevronUp className="w-3.5 h-3.5" /></button>
+                                    <button disabled={isLast} onClick={() => moveItem(composition, idx, 1, 'composition')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><LucideIcons.ChevronDown className="w-3.5 h-3.5" /></button>
+                                </div>
+                            </div>
+                            {onAdd && <button onClick={onAdd} className="text-[10px] text-indigo-600 font-bold hover:underline">{addLabel}</button>}
+                        </div>
+                    );
+
+                    const cssInput = (key) => (
+                        <div className="mt-3">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Section Style CSS</label>
+                            <input 
+                                type="text" 
+                                value={data[`${key}_css`] || ''} 
+                                onChange={e => updateData(`${key}_css`, e.target.value)} 
+                                placeholder="e.g. flex: 1; justify-content: center;"
+                                className="w-full text-xs border-gray-200 rounded-lg bg-gray-50/50 p-2 focus:ring-1 focus:ring-indigo-500 shadow-sm" 
+                            />
+                        </div>
+                    );
+
+                    switch (key) {
+                        case 'logo':
+                            return (
+                                <div key="logo" className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    {sectionHeader('Navbar Logo', null, '')}
+                                    <div className="flex gap-2">
+                                        <input type="text" value={data.logo || ''} readOnly placeholder="Select logo..." className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-50 text-gray-400" />
+                                        <button onClick={() => openMediaPicker('logo')} className="px-3 py-1.5 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-bold hover:bg-indigo-100 border border-indigo-100 uppercase tracking-wider">Browse</button>
+                                    </div>
+                                    {cssInput('logo')}
+                                </div>
+                            );
+                        case 'links':
+                            return (
+                                <div key="links" className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    {sectionHeader('Menu Links', () => updateData('links', [...links, { id: Math.random().toString(36).substr(2, 9), label: 'New Link', url: '#' }]), '+ ADD LINK')}
+                                    <div className="space-y-3">
+                                        {links.map((link, lIdx) => (
+                                            <div key={link.id} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => updateData('links', links.filter((_, i) => i !== lIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3">
+                                                    <input type="text" value={link.label || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value }; updateData('links', newLinks); }} placeholder="Label" className="w-full text-xs border-none bg-transparent focus:ring-0 font-bold p-0" />
+                                                    <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value }; updateData('links', newLinks); }} placeholder="URL" className="w-full text-[10px] border-none bg-transparent focus:ring-0 text-gray-400 p-0" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {cssInput('links')}
+                                </div>
+                            );
+                        case 'buttons':
+                            return (
+                                <div key="buttons" className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    {sectionHeader('CTA Buttons', () => updateData('buttons', [...buttons, { id: Math.random().toString(36).substr(2, 9), label: 'New Button', url: '#', style: 'primary' }]), '+ ADD BUTTON')}
+                                    <div className="space-y-3">
+                                        {buttons.map((btn, bIdx) => (
+                                            <div key={btn.id} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => updateData('buttons', buttons.filter((_, i) => i !== bIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-3 mb-2">
+                                                    <input type="text" value={btn.label || ''} onChange={(e) => { const arr = [...buttons]; arr[bIdx] = { ...arr[bIdx], label: e.target.value }; updateData('buttons', arr); }} placeholder="Label" className="text-xs border-none bg-transparent focus:ring-0 font-bold p-0" />
+                                                    <select value={btn.style || 'primary'} onChange={(e) => { const arr = [...buttons]; arr[bIdx] = { ...arr[bIdx], style: e.target.value }; updateData('buttons', arr); }} className="text-[10px] border-none bg-transparent focus:ring-0 text-gray-400 p-0 uppercase tracking-wider font-bold">
+                                                        <option value="primary">Primary</option>
+                                                        <option value="ghost">Ghost</option>
+                                                        <option value="outline">Outline</option>
+                                                    </select>
+                                                </div>
+                                                <input type="text" value={btn.url || ''} onChange={(e) => { const arr = [...buttons]; arr[bIdx] = { ...arr[bIdx], url: e.target.value }; updateData('buttons', arr); }} placeholder="URL" className="w-full text-[10px] border-none bg-transparent focus:ring-0 text-gray-400 p-0" />
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {cssInput('buttons')}
+                                </div>
+                            );
+                        case 'social_links':
+                            const iconOptions = ['Facebook', 'Instagram', 'Twitter', 'X', 'Linkedin', 'Youtube', 'Github', 'Tiktok', 'Globe', 'Mail'];
+                            return (
+                                <div key="social_links" className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    {sectionHeader('Social Media', () => updateData('social_links', [...social_links, { id: Math.random().toString(36).substr(2, 9), icon: 'Facebook', url: '#' }]), '+ ADD SOCIAL')}
+                                    <div className="space-y-3">
+                                        {social_links.map((link, sIdx) => (
+                                            <div key={link.id} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <button onClick={() => updateData('social_links', social_links.filter((_, i) => i !== sIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                                                </div>
+                                                <div className="flex gap-3 items-center">
+                                                    <select
+                                                        value={link.icon || 'Facebook'} 
+                                                        onChange={(e) => { const arr = [...social_links]; arr[sIdx] = { ...arr[sIdx], icon: e.target.value }; updateData('social_links', arr); }}
+                                                        className="text-xs border-gray-200 rounded p-1 bg-white focus:ring-1 focus:ring-indigo-500"
+                                                    >
+                                                        {iconOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                    </select>
+                                                    <input type="text" value={link.url || ''} onChange={(e) => { const arr = [...social_links]; arr[sIdx] = { ...arr[sIdx], url: e.target.value }; updateData('social_links', arr); }} placeholder="URL" className="flex-1 text-[10px] border-none bg-transparent focus:ring-0 text-gray-400 p-0" />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {cssInput('social_links')}
+                                </div>
+                            );
+                        default:
+                            return null;
+                    }
+                };
+
+                return (
+                    <div className="space-y-6">
+                        <div className="grid grid-cols-2 gap-6 bg-indigo-50/50 p-6 rounded-3xl border border-indigo-100 shadow-inner">
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className={`w-10 h-5 rounded-full p-1 transition-colors ${data.sticky !== false ? 'bg-indigo-600' : 'bg-gray-300'}`}>
+                                    <div className={`w-3 h-3 bg-white rounded-full transition-transform ${data.sticky !== false ? 'translate-x-5' : ''}`} />
+                                </div>
+                                <input type="checkbox" className="hidden" checked={data.sticky !== false} onChange={e => updateData('sticky', e.target.checked)} />
+                                <span className="text-xs font-bold text-gray-600 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Sticky Navbar</span>
+                            </label>
+                            <label className="flex items-center gap-3 cursor-pointer group">
+                                <div className={`w-10 h-5 rounded-full p-1 transition-colors ${data.glass !== false ? 'bg-indigo-600' : 'bg-gray-300'}`}>
+                                    <div className={`w-3 h-3 bg-white rounded-full transition-transform ${data.glass !== false ? 'translate-x-5' : ''}`} />
+                                </div>
+                                <input type="checkbox" className="hidden" checked={data.glass !== false} onChange={e => updateData('glass', e.target.checked)} />
+                                <span className="text-xs font-bold text-gray-600 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Glassmorphism</span>
+                            </label>
+                        </div>
+                        <div className="space-y-6">
+                            {composition.map((key, idx) => renderSection(key, idx))}
+                        </div>
+                    </div>
+                );
+            }
             default:
                 return <p className="text-gray-500 text-sm p-4 bg-gray-50 rounded-lg">No configuration available for this block.</p>;
         }
@@ -272,6 +438,56 @@ export default function Builder({ block }) {
                             </div>
                             
                             {renderBlockConfig()}
+
+                            <div className="mt-12 pt-8 border-t border-gray-100 italic font-mono text-[10px] text-gray-300 mb-4 uppercase tracking-[0.2em] text-center">Implementation Details / Advanced Settings</div>
+                            
+                            <div className="bg-white rounded-3xl border border-gray-100 p-8 shadow-sm space-y-6">
+                                <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+                                    <Code className="w-4 h-4 text-indigo-500" /> Advanced Settings & Callbacks
+                                </h4>
+                                
+                                <div className="space-y-8">
+                                    <div>
+                                        <div className="flex items-center justify-between mb-2">
+                                            <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider">Custom CSS Styling</label>
+                                            <span className="text-[8px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full font-bold uppercase">Scoped to block</span>
+                                        </div>
+                                        <textarea
+                                            value={data.customCss || ''}
+                                            onChange={e => updateData('customCss', e.target.value)}
+                                            placeholder={`.block-${block.id} {\n  /* write your custom css here */\n  background: linear-gradient(to right, #4f46e5, #06b6d4);\n}`}
+                                            rows="6"
+                                            className="w-full text-xs font-mono border-gray-100 rounded-2xl bg-gray-50/50 focus:ring-1 focus:ring-indigo-500 shadow-sm p-4"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Custom JS Initialization</label>
+                                        <textarea
+                                            value={data.customJs || ''}
+                                            onChange={e => updateData('customJs', e.target.value)}
+                                            placeholder="console.log('Block initialized:', blockId);"
+                                            rows="5"
+                                            className="w-full text-xs font-mono border-gray-100 rounded-2xl bg-gray-50/50 focus:ring-1 focus:ring-indigo-500 shadow-sm p-4"
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <div className="flex items-center gap-2 mb-2">
+                                            <ShieldAlert className="w-3.5 h-3.5 text-red-400" />
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider">Server-Side Logic (PHP)</label>
+                                        </div>
+                                        <textarea
+                                            value={data.customPhp || ''}
+                                            onChange={e => updateData('customPhp', e.target.value)}
+                                            placeholder="// Use $data or $block for context"
+                                            rows="4"
+                                            className="w-full text-xs font-mono border-red-50 rounded-2xl bg-red-50/5 focus:ring-1 focus:ring-red-200 shadow-sm p-4 text-red-900"
+                                        />
+                                        <p className="mt-2 text-[9px] text-gray-400 leading-relaxed italic">Warning: PHP code is executed on the server before rendering. Use with caution.</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

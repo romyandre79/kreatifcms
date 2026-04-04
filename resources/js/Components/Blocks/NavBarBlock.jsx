@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-import { Globe, ChevronDown, Menu, X, Search, ShoppingCart } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, Search, ShoppingCart, Grid, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import SocialIcon from '@/Components/SocialIcon';
 
 const NavBarBlock = ({ data = {} }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -204,7 +205,6 @@ const NavBarBlock = ({ data = {} }) => {
                     return Array.isArray(data.social_links) && data.social_links.length > 0 && (
                         <div key="social_links" className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">
                             {data.social_links.map((link, i) => {
-                                const IconComponent = LucideIcons[link.icon] || LucideIcons.Globe;
                                 return (
                                     <a 
                                         key={link.id || i} 
@@ -215,7 +215,7 @@ const NavBarBlock = ({ data = {} }) => {
                                         style={{ color: data.text_color || '#9ca3af' }}
                                         title={link.icon}
                                     >
-                                        <IconComponent className="w-4 h-4" />
+                                        <SocialIcon name={link.icon} size={16} color="brand" />
                                     </a>
                                 );
                             })}
@@ -346,7 +346,6 @@ const NavBarBlock = ({ data = {} }) => {
                 return Array.isArray(data.social_links) && data.social_links.length > 0 && (
                     <div className="pt-4 border-t border-gray-100 mt-2 flex justify-center gap-6 pb-4">
                         {data.social_links.map((link, i) => {
-                            const IconComponent = LucideIcons[link.icon] || LucideIcons.Globe;
                             return (
                                 <a 
                                     key={link.id || i} 
@@ -355,7 +354,7 @@ const NavBarBlock = ({ data = {} }) => {
                                     rel="noopener noreferrer" 
                                     className="text-gray-400 hover:text-indigo-600 transition-colors"
                                 >
-                                    <IconComponent className="w-6 h-6" />
+                                    <SocialIcon name={link.icon} size={24} color="brand" />
                                 </a>
                             );
                         })}

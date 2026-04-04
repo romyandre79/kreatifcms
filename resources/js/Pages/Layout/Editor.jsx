@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
+import SocialIcon from '@/Components/SocialIcon';
 import MarkdownToolbar from '@/Components/MarkdownToolbar';
 import {
     DndContext,
@@ -44,6 +45,10 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
             desc: p.meta?.desc || p.description || ''
         };
     });
+
+    const iconOptions = [
+        'Facebook', 'Instagram', 'Twitter', 'X', 'Linkedin', 'Youtube', 'Github', 'Tiktok', 'Globe', 'Mail', 'Smartphone', 'Video', 'MessageSquare', 'Send', 'Share2', 'Link2'
+    ];
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -108,7 +113,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
             </div>
         );
     };
-    
+
     // Ensure all blocks have an ID (for backward compatibility)
     const ensureIds = (blockArr) => {
         if (!Array.isArray(blockArr)) return [];
@@ -120,7 +125,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
 
     const [activeTab, setActiveTab] = useState('header'); // 'header' or 'footer'
     const [blocks, setBlocks] = useState(activeTab === 'header' ? initialHeader : initialFooter);
-    
+
     const [headerData, setHeaderData] = useState(initialHeader);
     const [footerData, setFooterData] = useState(initialFooter);
     const [theme, setTheme] = useState(themeData);
@@ -152,7 +157,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
         if (tab === 'header') setBlocks(headerData);
         else if (tab === 'footer') setBlocks(footerData);
         else setBlocks([]); // Clear blocks for theme tab
-        
+
         setActiveBlockId(null);
     };
 
@@ -167,17 +172,17 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
         } else if (type === 'feature_grid') {
             newBlock.data = { title: '', features: [] };
         } else if (type === 'navbar') {
-            newBlock.data = { 
-                logo: '', 
-                links: [{ id: generateId(), label: 'Home', url: '/' }], 
+            newBlock.data = {
+                logo: '',
+                links: [{ id: generateId(), label: 'Home', url: '/' }],
                 buttons: [
                     { id: generateId(), label: 'Login', url: '/login', style: 'ghost', visibility: 'guest' },
                     { id: generateId(), label: 'Get Started', url: '#', style: 'primary' }
                 ],
                 social_links: [],
                 composition: ['links', 'buttons', 'social_links'],
-                sticky: true, 
-                glass: true 
+                sticky: true,
+                glass: true
             };
         } else if (type === 'social_media') {
             newBlock.data = {
@@ -449,9 +454,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                     const cssInput = (key) => (
                         <div className="mt-2 pt-2 border-t border-gray-50">
                             <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Section Style CSS</label>
-                            <input 
-                                type="text" 
-                                value={data[`${key}_css`] || ''} 
+                            <input
+                                type="text"
+                                value={data[`${key}_css`] || ''}
                                 onChange={(e) => updateBlockData(block.id, `${key}_css`, e.target.value)}
                                 placeholder="e.g. flex: 1; justify-content: center;"
                                 className="w-full text-[10px] border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 h-7"
@@ -539,24 +544,54 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                         const newSocial = [...social_links, { id: generateId(), icon: 'Facebook', url: '#' }];
                                         updateBlockData(block.id, 'social_links', newSocial);
                                     }, '+ ADD SOCIAL')}
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         {social_links.map((link, sIdx) => (
-                                            <div key={link.id || `s-${sIdx}`} className="flex gap-2 items-center group bg-gray-50/50 p-2 rounded-xl border border-gray-100 relative">
-                                                <select value={link.icon || 'Facebook'} onChange={(e) => { const newLinks = [...social_links]; newLinks[sIdx] = { ...newLinks[sIdx], icon: e.target.value }; updateBlockData(block.id, 'social_links', newLinks); }} className="text-[10px] border-transparent bg-transparent p-0 focus:ring-0 font-bold text-gray-500">
-                                                    <option value="Facebook">FB</option>
-                                                    <option value="Instagram">IG</option>
-                                                    <option value="Twitter">X</option>
-                                                    <option value="Linkedin">IN</option>
-                                                    <option value="Youtube">YT</option>
-                                                    <option value="Github">GH</option>
-                                                    <option value="Globe">WEB</option>
-                                                </select>
-                                                <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...social_links]; newLinks[sIdx] = { ...newLinks[sIdx], url: e.target.value }; updateBlockData(block.id, 'social_links', newLinks); }} placeholder="URL" className="flex-1 text-[10px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400 px-1" />
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div key={link.id || `s-${sIdx}`} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                     <button disabled={sIdx === 0} onClick={() => moveItem(social_links, sIdx, -1, 'social_links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
                                                     <button disabled={sIdx === social_links.length - 1} onClick={() => moveItem(social_links, sIdx, 1, 'social_links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
                                                     <button onClick={() => updateBlockData(block.id, 'social_links', social_links.filter((_, i) => i !== sIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                                                 </div>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-gray-100 shrink-0">
+                                                        <SocialIcon name={link.icon} size={18} color="brand" />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2 flex-1 pt-1">
+                                                        <select
+                                                            value={link.icon || 'Facebook'} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...social_links];
+                                                                newLinks[sIdx] = { ...newLinks[sIdx], icon: e.target.value };
+                                                                updateBlockData(block.id, 'social_links', newLinks);
+                                                            }}
+                                                            className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white"
+                                                        >
+                                                            {iconOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                        </select>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.label || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...social_links];
+                                                                newLinks[sIdx] = { ...newLinks[sIdx], label: e.target.value };
+                                                                updateBlockData(block.id, 'social_links', newLinks);
+                                                            }} 
+                                                            placeholder="Label (opt)" 
+                                                            className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    value={link.url || ''} 
+                                                    onChange={(e) => {
+                                                        const newLinks = [...social_links];
+                                                        newLinks[sIdx] = { ...newLinks[sIdx], url: e.target.value };
+                                                        updateBlockData(block.id, 'social_links', newLinks);
+                                                    }} 
+                                                    placeholder="URL" 
+                                                    className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white" 
+                                                />
                                             </div>
                                         ))}
                                     </div>
@@ -569,9 +604,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     {sectionHeader('Search Bar', null, '')}
                                     <div>
                                         <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Placeholder Text</label>
-                                        <input 
-                                            type="text" 
-                                            value={data.search_placeholder || ''} 
+                                        <input
+                                            type="text"
+                                            value={data.search_placeholder || ''}
                                             onChange={(e) => updateBlockData(block.id, 'search_placeholder', e.target.value)}
                                             placeholder="e.g. Cari produk..."
                                             className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
@@ -586,9 +621,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     {sectionHeader('Shopping Cart', null, '')}
                                     <div>
                                         <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Cart URL</label>
-                                        <input 
-                                            type="text" 
-                                            value={data.cart_url || ''} 
+                                        <input
+                                            type="text"
+                                            value={data.cart_url || ''}
                                             onChange={(e) => updateBlockData(block.id, 'cart_url', e.target.value)}
                                             placeholder="/cart"
                                             className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500"
@@ -662,7 +697,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                                                 const arr = [...mega_menus]; const cols = (arr[mIdx].columns || []).filter((_, i) => i !== cIdx); arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
                                                                             }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/col:opacity-100"><X className="w-2.5 h-2.5" /></button>
                                                                         </div>
-                                                                        
+
                                                                         {renderLinks(col.links, [], updateLinks)}
 
                                                                         <button onClick={() => {
@@ -782,9 +817,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 {availableSections.map(sec => (
                                     <label key={sec.id} className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={composition.includes(sec.id)} 
+                                            <input
+                                                type="checkbox"
+                                                checked={composition.includes(sec.id)}
                                                 onChange={() => toggleSection(sec.id)}
                                                 className="sr-only"
                                             />
@@ -837,6 +872,33 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Glass Effect</span>
                             </label>
                         </div>
+
+                        {/* Block-wide Custom CSS/JS for Navbar specifically (Prominence) */}
+                        <div className="space-y-4 pt-6 mt-2 border-t border-gray-100">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                <Code className="w-3 h-3" /> Advanced Override
+                            </label>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Navbar Custom CSS</label>
+                                <textarea 
+                                    value={data.customCss || ''} 
+                                    onChange={e => updateBlockData(block.id, 'customCss', e.target.value)}
+                                    placeholder=".navbar { ... }"
+                                    className="w-full text-[10px] font-mono border-gray-100 rounded-lg bg-gray-50/50 p-2 focus:ring-1 focus:ring-indigo-500 shadow-sm"
+                                    rows="3"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1.5">Navbar Custom JS (On Load)</label>
+                                <textarea 
+                                    value={data.customJs || ''} 
+                                    onChange={e => updateBlockData(block.id, 'customJs', e.target.value)}
+                                    placeholder="console.log('navbar loaded');"
+                                    className="w-full text-[10px] font-mono border-gray-100 rounded-lg bg-gray-50/50 p-2 focus:ring-1 focus:ring-indigo-500 shadow-sm"
+                                    rows="3"
+                                />
+                            </div>
+                        </div>
                     </div>
                 );
             }
@@ -873,7 +935,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     <option value="updated_at">Last Updated</option>
                                     <option value="id">ID</option>
                                     <optgroup label="Custom Fields">
-                                        {fields.map(f => { const fn = f.name.toLowerCase().replace(/ /g, '_'); return <option key={'sort_'+f.id} value={fn}>{f.name}</option>; })}
+                                        {fields.map(f => { const fn = f.name.toLowerCase().replace(/ /g, '_'); return <option key={'sort_' + f.id} value={fn}>{f.name}</option>; })}
                                     </optgroup>
                                 </select>
                             </div>
@@ -898,7 +960,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                 className="flex-1 text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                             >
                                                 <option value="">-- None --</option>
-                                                {(slot === 'image' ? fields : fields.filter(f => ['text','longtext','string'].includes(f.type))).map(f => {
+                                                {(slot === 'image' ? fields : fields.filter(f => ['text', 'longtext', 'string'].includes(f.type))).map(f => {
                                                     const fn = f.name.toLowerCase().replace(/ /g, '_');
                                                     return <option key={`m_${slot}_${f.id}`} value={fn}>{f.name}</option>;
                                                 })}
@@ -940,7 +1002,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                     <div className="space-y-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Content Editor</label>
-                            <MarkdownToolbar 
+                            <MarkdownToolbar
                                 onInsert={(syntax) => {
                                     const textarea = document.getElementById(`text-editor-${block.id}`);
                                     if (!textarea) return;
@@ -950,7 +1012,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     const before = text.substring(0, start);
                                     const selected = text.substring(start, end);
                                     const after = text.substring(end);
-                                    
+
                                     let replacement = '';
                                     if (syntax === 'bold') replacement = `**${selected}**`;
                                     else if (syntax === 'italic') replacement = `*${selected}*`;
@@ -961,18 +1023,18 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
 
                                     const newValue = before + replacement + after;
                                     updateBlockData(block.id, 'content', newValue);
-                                    
+
                                     setTimeout(() => {
                                         textarea.focus();
                                         textarea.setSelectionRange(start + 2, start + 2 + selected.length);
                                     }, 10);
                                 }}
                             />
-                            <textarea 
+                            <textarea
                                 id={`text-editor-${block.id}`}
-                                value={data.content || ''} 
-                                onChange={e => updateBlockData(block.id, 'content', e.target.value)} 
-                                rows="10" 
+                                value={data.content || ''}
+                                onChange={e => updateBlockData(block.id, 'content', e.target.value)}
+                                rows="10"
                                 className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
                             />
                         </div>
@@ -998,18 +1060,18 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Palette className="w-3 h-3" /> Colors</label>
                                 <div className="flex gap-2">
                                     <div className="flex-1">
-                                        <input 
-                                            type="color" 
-                                            value={data.backgroundColor || '#ffffff'} 
+                                        <input
+                                            type="color"
+                                            value={data.backgroundColor || '#ffffff'}
                                             onChange={e => updateBlockData(block.id, 'backgroundColor', e.target.value)}
                                             className="w-full h-8 p-0.5 rounded-lg border-gray-200 cursor-pointer"
                                             title="Background Color"
                                         />
                                     </div>
                                     <div className="flex-1">
-                                        <input 
-                                            type="color" 
-                                            value={data.textColor || '#111827'} 
+                                        <input
+                                            type="color"
+                                            value={data.textColor || '#111827'}
                                             onChange={e => updateBlockData(block.id, 'textColor', e.target.value)}
                                             className="w-full h-8 p-0.5 rounded-lg border-gray-200 cursor-pointer"
                                             title="Text Color"
@@ -1022,18 +1084,18 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Vertical Spacing (px)</label>
-                                <input 
-                                    type="number" 
-                                    value={data.paddingY || 64} 
+                                <input
+                                    type="number"
+                                    value={data.paddingY || 64}
                                     onChange={e => updateBlockData(block.id, 'paddingY', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
                                 />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Border Radius (px)</label>
-                                <input 
-                                    type="number" 
-                                    value={data.borderRadius || 0} 
+                                <input
+                                    type="number"
+                                    value={data.borderRadius || 0}
                                     onChange={e => updateBlockData(block.id, 'borderRadius', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
                                 />
@@ -1121,21 +1183,21 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                             <span className="text-[10px] text-gray-500 w-12">Image</span>
                                             <select value={data.mapping?.image || ''} onChange={e => { const mapping = { ...(data.mapping || {}), image: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-[10px] border-gray-100 rounded bg-white">
                                                 <option value="">-- Choose --</option>
-                                                {fields.map(f => <option key={'s_img_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
+                                                {fields.map(f => <option key={'s_img_' + f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
                                             </select>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[10px] text-gray-500 w-12">Title</span>
                                             <select value={data.mapping?.title || ''} onChange={e => { const mapping = { ...(data.mapping || {}), title: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-[10px] border-gray-100 rounded bg-white">
                                                 <option value="">-- None --</option>
-                                                {fields.filter(f => ['text', 'string'].includes(f.type)).map(f => <option key={'s_title_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
+                                                {fields.filter(f => ['text', 'string'].includes(f.type)).map(f => <option key={'s_title_' + f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
                                             </select>
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <span className="text-[10px] text-gray-500 w-12">Link</span>
                                             <select value={data.mapping?.link || ''} onChange={e => { const mapping = { ...(data.mapping || {}), link: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-[10px] border-gray-100 rounded bg-white">
                                                 <option value="">-- None --</option>
-                                                {fields.map(f => <option key={'s_link_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
+                                                {fields.map(f => <option key={'s_link_' + f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>)}
                                             </select>
                                         </div>
                                     </div>
@@ -1199,41 +1261,41 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                         {features.map((feature, idx) => {
                                             const featureId = feature.id || `item-${idx}`;
                                             return (
-                                            <SortableNestedItem key={featureId} id={featureId}>
-                                                <div className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 group relative flex-1">
-                                                    <button
-                                                        onClick={() => {
-                                                            const newFeatures = features.filter((_, i) => i !== idx);
-                                                            updateBlockData(block.id, 'features', newFeatures);
-                                                        }}
-                                                        className="absolute -top-1 -right-1 p-1 bg-white shadow-sm border border-gray-100 rounded-full text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                    >
-                                                        <X className="w-3 h-3" />
-                                                    </button>
-                                                    <input
-                                                        type="text"
-                                                        value={feature.title || ''}
-                                                        onChange={(e) => {
-                                                            const newFeatures = [...features];
-                                                            newFeatures[idx] = { ...newFeatures[idx], title: e.target.value };
-                                                            updateBlockData(block.id, 'features', newFeatures);
-                                                        }}
-                                                        placeholder="Feature Title"
-                                                        className="w-full text-xs border-transparent bg-transparent focus:ring-0 font-bold text-gray-900 p-0 mb-1"
-                                                    />
-                                                    <textarea
-                                                        value={feature.desc || ''}
-                                                        onChange={(e) => {
-                                                            const newFeatures = [...features];
-                                                            newFeatures[idx] = { ...newFeatures[idx], desc: e.target.value };
-                                                            updateBlockData(block.id, 'features', newFeatures);
-                                                        }}
-                                                        placeholder="Description..."
-                                                        rows="2"
-                                                        className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 text-gray-400 p-0 resize-none"
-                                                    />
-                                                </div>
-                                            </SortableNestedItem>
+                                                <SortableNestedItem key={featureId} id={featureId}>
+                                                    <div className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 group relative flex-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newFeatures = features.filter((_, i) => i !== idx);
+                                                                updateBlockData(block.id, 'features', newFeatures);
+                                                            }}
+                                                            className="absolute -top-1 -right-1 p-1 bg-white shadow-sm border border-gray-100 rounded-full text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                        >
+                                                            <X className="w-3 h-3" />
+                                                        </button>
+                                                        <input
+                                                            type="text"
+                                                            value={feature.title || ''}
+                                                            onChange={(e) => {
+                                                                const newFeatures = [...features];
+                                                                newFeatures[idx] = { ...newFeatures[idx], title: e.target.value };
+                                                                updateBlockData(block.id, 'features', newFeatures);
+                                                            }}
+                                                            placeholder="Feature Title"
+                                                            className="w-full text-xs border-transparent bg-transparent focus:ring-0 font-bold text-gray-900 p-0 mb-1"
+                                                        />
+                                                        <textarea
+                                                            value={feature.desc || ''}
+                                                            onChange={(e) => {
+                                                                const newFeatures = [...features];
+                                                                newFeatures[idx] = { ...newFeatures[idx], desc: e.target.value };
+                                                                updateBlockData(block.id, 'features', newFeatures);
+                                                            }}
+                                                            placeholder="Description..."
+                                                            rows="2"
+                                                            className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 text-gray-400 p-0 resize-none"
+                                                        />
+                                                    </div>
+                                                </SortableNestedItem>
                                             );
                                         })}
                                     </SortableContext>
@@ -1245,9 +1307,6 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
             }
             case 'social_media': {
                 const links = Array.isArray(data.links) ? data.links : [];
-                const iconOptions = [
-                    'Facebook', 'Instagram', 'Twitter', 'Linkedin', 'Youtube', 'Github', 'Tiktok', 'Globe', 'Mail', 'Smartphone', 'Video', 'MessageSquare', 'Send', 'Share2', 'Link2'
-                ];
                 return (
                     <div className="space-y-6">
                         <div className="grid grid-cols-2 gap-4">
@@ -1284,13 +1343,16 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     + Add Link
                                 </button>
                             </div>
-                            
+
                             <div className="space-y-2">
                                 <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'links', e)}>
                                     <SortableContext items={links.map(l => l.id)} strategy={verticalListSortingStrategy}>
                                         {links.map((link, idx) => (
                                             <SortableNestedItem key={link.id} id={link.id}>
                                                 <div className="flex-1 flex gap-2 items-center bg-gray-50 p-2 rounded-lg border border-gray-100">
+                                                    <div className="w-6 h-6 flex items-center justify-center bg-white rounded shadow-sm border border-gray-100 shrink-0">
+                                                        <SocialIcon name={link.icon} size={14} color="brand" />
+                                                    </div>
                                                     <select
                                                         value={link.icon}
                                                         onChange={(e) => {
@@ -1404,8 +1466,8 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
 
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Content Type</label>
-                                    <select 
-                                        value={data.content_type || ''} 
+                                    <select
+                                        value={data.content_type || ''}
                                         onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                         className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
                                     >
@@ -1435,13 +1497,13 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                             </div>
                                             <div className="col-span-2">
                                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Max Items</label>
-                                                <input 
-                                                    type="number" 
-                                                    value={data.limit || 5} 
-                                                    onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value) || 5)} 
-                                                    className="w-full text-[10px] border-gray-200 rounded-lg bg-white" 
-                                                    min="1" 
-                                                    max="50" 
+                                                <input
+                                                    type="number"
+                                                    value={data.limit || 5}
+                                                    onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value) || 5)}
+                                                    className="w-full text-[10px] border-gray-200 rounded-lg bg-white"
+                                                    min="1"
+                                                    max="50"
                                                 />
                                             </div>
                                         </div>
@@ -1488,7 +1550,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                         + Add Item
                                     </button>
                                 </div>
-                                
+
                                 <div className="space-y-3">
                                     <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'items', e)}>
                                         <SortableContext items={items.map(it => it.id)} strategy={verticalListSortingStrategy}>
@@ -1510,7 +1572,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                         </div>
                                                         <textarea value={item.content} onChange={e => { const newItems = [...items]; newItems[idx].content = e.target.value; updateBlockData(block.id, 'items', newItems); }} placeholder="Content (Markdown)" rows="2" className="w-full text-[10px] border-none bg-white rounded p-1 resize-none" />
                                                         <div className="flex gap-2 items-center">
-                                                            <div 
+                                                            <div
                                                                 className="w-12 h-10 bg-gray-100 rounded border border-gray-200 cursor-pointer overflow-hidden flex items-center justify-center group/img"
                                                                 onClick={() => openMediaPicker(block.id, 'items', idx)}
                                                             >
@@ -1539,21 +1601,6 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 </div>
                             </div>
                         )}
-
-                        <div className="space-y-4 pt-4 border-t border-gray-100">
-                             <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Custom CSS</label>
-                                <textarea value={data.customCss || ''} onChange={e => updateBlockData(block.id, 'customCss', e.target.value)} rows="3" className="w-full text-[10px] font-mono border-gray-100 rounded bg-gray-50 p-2" placeholder=".timeline { ... }" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Custom JS</label>
-                                <textarea value={data.customJs || ''} onChange={e => updateBlockData(block.id, 'customJs', e.target.value)} rows="3" className="w-full text-[10px] font-mono border-gray-100 rounded bg-gray-50 p-2" placeholder="console.log('hi');" />
-                            </div>
-                            <div>
-                                <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Custom PHP</label>
-                                <textarea value={data.customPhp || ''} onChange={e => updateBlockData(block.id, 'customPhp', e.target.value)} rows="3" className="w-full text-[10px] font-mono border-gray-100 rounded bg-gray-50 p-2" placeholder="// Server logic" />
-                            </div>
-                        </div>
                     </div>
                 );
             }
@@ -1728,7 +1775,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                     <label className="w-1/3 text-[10px] font-bold text-gray-500 uppercase tracking-widest">{slot}</label>
                                                     <select value={data.mapping?.[slot] || ''} onChange={e => { const mapping = { ...(data.mapping || {}), [slot]: e.target.value }; updateBlockData(block.id, 'mapping', mapping); }} className="flex-1 text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500">
                                                         <option value="">-- None --</option>
-                                                        {(slot === 'image' ? fields : fields.filter(f => ['text','longtext','string'].includes(f.type))).map(f => {
+                                                        {(slot === 'image' ? fields : fields.filter(f => ['text', 'longtext', 'string'].includes(f.type))).map(f => {
                                                             const fn = f.name.toLowerCase().replace(/ /g, '_');
                                                             return <option key={`m_${slot}_${f.id}`} value={fn}>{f.name}</option>;
                                                         })}
@@ -1833,19 +1880,19 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                     <div className="p-4 border-b border-gray-100 bg-gray-50/50">
                         <h2 className="font-bold text-gray-900 leading-tight">Layout Editor</h2>
                         <div className="mt-3 flex gap-1 p-1 bg-gray-100 rounded-xl">
-                            <button 
+                            <button
                                 onClick={() => switchTab('header')}
                                 className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'header' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Header
                             </button>
-                            <button 
+                            <button
                                 onClick={() => switchTab('footer')}
                                 className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'footer' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
                                 Footer
                             </button>
-                            <button 
+                            <button
                                 onClick={() => switchTab('theme')}
                                 className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'theme' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                             >
@@ -1869,8 +1916,8 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     <div className="space-y-3 p-3 bg-gray-50 rounded-xl border border-gray-100 shadow-sm">
                                         <div>
                                             <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Default Font Family</span>
-                                            <select 
-                                                value={theme.fontFamily || 'Inter'} 
+                                            <select
+                                                value={theme.fontFamily || 'Inter'}
                                                 onChange={e => setTheme({ ...theme, fontFamily: e.target.value })}
                                                 className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                             >
@@ -1885,9 +1932,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                         <div>
                                             <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Base Font Size (px)</span>
                                             <div className="flex items-center gap-2">
-                                                <input 
-                                                    type="number" 
-                                                    value={theme.fontSize || 16} 
+                                                <input
+                                                    type="number"
+                                                    value={theme.fontSize || 16}
                                                     onChange={e => setTheme({ ...theme, fontSize: e.target.value })}
                                                     className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                                 />
@@ -1926,7 +1973,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                         <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
                                             <Palette className="w-3.5 h-3.5" /> Additional Styles
                                         </label>
-                                        <button 
+                                        <button
                                             onClick={() => {
                                                 const newStyles = [...(theme.customStyles || []), {
                                                     id: generateId(),
@@ -1948,7 +1995,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                     <div className="space-y-6">
                                         {(theme.customStyles || []).map((style, idx) => (
                                             <div key={style.id || idx} className="relative p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4 group">
-                                                <button 
+                                                <button
                                                     onClick={() => {
                                                         const newStyles = theme.customStyles.filter((_, i) => i !== idx);
                                                         setTheme({ ...theme, customStyles: newStyles });
@@ -1961,9 +2008,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                 <div className="grid grid-cols-2 gap-3">
                                                     <div>
                                                         <span className="block text-[9px] text-gray-400 font-bold uppercase mb-1">Style Name</span>
-                                                        <input 
-                                                            type="text" 
-                                                            value={style.name} 
+                                                        <input
+                                                            type="text"
+                                                            value={style.name}
                                                             onChange={e => {
                                                                 const newStyles = [...theme.customStyles];
                                                                 newStyles[idx].name = e.target.value;
@@ -1974,9 +2021,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                     </div>
                                                     <div>
                                                         <span className="block text-[9px] text-gray-400 font-bold uppercase mb-1">CSS Selector</span>
-                                                        <input 
-                                                            type="text" 
-                                                            value={style.selector} 
+                                                        <input
+                                                            type="text"
+                                                            value={style.selector}
                                                             onChange={e => {
                                                                 const newStyles = [...theme.customStyles];
                                                                 newStyles[idx].selector = e.target.value;
@@ -1991,8 +2038,8 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                 <div className="space-y-3 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
                                                     <div>
                                                         <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Font Family</span>
-                                                        <select 
-                                                            value={style.fontFamily} 
+                                                        <select
+                                                            value={style.fontFamily}
                                                             onChange={e => {
                                                                 const newStyles = [...theme.customStyles];
                                                                 newStyles[idx].fontFamily = e.target.value;
@@ -2011,9 +2058,9 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                     <div>
                                                         <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Font Size (px)</span>
                                                         <div className="flex items-center gap-2">
-                                                            <input 
-                                                                type="number" 
-                                                                value={style.fontSize} 
+                                                            <input
+                                                                type="number"
+                                                                value={style.fontSize}
                                                                 onChange={e => {
                                                                     const newStyles = [...theme.customStyles];
                                                                     newStyles[idx].fontSize = e.target.value;
@@ -2028,15 +2075,15 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                                         <div className="space-y-1.5">
                                                             <span className="text-[10px] text-gray-400 font-bold uppercase">Color</span>
                                                             <div className="flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-100">
-                                                                <input type="color" value={style.textColor || '#111827'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].textColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="w-5 h-5 rounded border-0 p-0 cursor-pointer" />
-                                                                <input type="text" value={style.textColor || '#111827'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].textColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="flex-1 bg-transparent border-0 p-0 text-[9px] font-mono focus:ring-0 uppercase" />
+                                                                <input type="color" value={style.textColor || '#111827'} onChange={e => { const newStyles = [...theme.customStyles]; newStyles[idx].textColor = e.target.value; setTheme({ ...theme, customStyles: newStyles }); }} className="w-5 h-5 rounded border-0 p-0 cursor-pointer" />
+                                                                <input type="text" value={style.textColor || '#111827'} onChange={e => { const newStyles = [...theme.customStyles]; newStyles[idx].textColor = e.target.value; setTheme({ ...theme, customStyles: newStyles }); }} className="flex-1 bg-transparent border-0 p-0 text-[9px] font-mono focus:ring-0 uppercase" />
                                                             </div>
                                                         </div>
                                                         <div className="space-y-1.5">
                                                             <span className="text-[10px] text-gray-400 font-bold uppercase">Bg Color</span>
                                                             <div className="flex gap-2 items-center bg-white p-1.5 rounded-lg border border-gray-100">
-                                                                <input type="color" value={style.bgColor || 'transparent'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].bgColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="w-5 h-5 rounded border-0 p-0 cursor-pointer" />
-                                                                <input type="text" value={style.bgColor || 'transparent'} onChange={e => { const newStyles=[...theme.customStyles]; newStyles[idx].bgColor=e.target.value; setTheme({...theme, customStyles:newStyles}); }} className="flex-1 bg-transparent border-0 p-0 text-[9px] font-mono focus:ring-0 uppercase" />
+                                                                <input type="color" value={style.bgColor || 'transparent'} onChange={e => { const newStyles = [...theme.customStyles]; newStyles[idx].bgColor = e.target.value; setTheme({ ...theme, customStyles: newStyles }); }} className="w-5 h-5 rounded border-0 p-0 cursor-pointer" />
+                                                                <input type="text" value={style.bgColor || 'transparent'} onChange={e => { const newStyles = [...theme.customStyles]; newStyles[idx].bgColor = e.target.value; setTheme({ ...theme, customStyles: newStyles }); }} className="flex-1 bg-transparent border-0 p-0 text-[9px] font-mono focus:ring-0 uppercase" />
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2055,14 +2102,14 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 {/* Advanced Section */}
                                 <div className="space-y-4 pt-4 border-t border-gray-100">
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider flex items-center gap-2">
-                                         Advanced
+                                        Advanced
                                     </label>
                                     <div>
                                         <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5 flex items-center gap-1">
                                             <Code className="w-3 h-3" /> Custom Global CSS
                                         </span>
-                                        <textarea 
-                                            value={theme.customCss || ''} 
+                                        <textarea
+                                            value={theme.customCss || ''}
                                             onChange={e => setTheme({ ...theme, customCss: e.target.value })}
                                             placeholder="/* Write your custom CSS here... */"
                                             rows="8"
@@ -2141,6 +2188,53 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 </div>
                                 <div className="flex-1 overflow-y-auto p-5">
                                     {renderBlockConfig(activeBlock)}
+
+                                    {/* Universal Custom CSS & JS for all layout blocks */}
+                                    <div className="mt-8 pt-6 border-t border-gray-100 italic font-mono text-[9px] text-gray-300 mb-2">EXTENSIONS</div>
+                                    <div className="space-y-4">
+                                        <h4 className="text-[10px] font-bold text-gray-500 uppercase tracking-widest flex items-center gap-1.5 mb-1">
+                                            <Code className="w-3.5 h-3.5 text-indigo-500" /> Advanced Settings
+                                        </h4>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                                                    Custom CSS
+                                                    <span className="text-[8px] bg-gray-100 px-1 rounded">SELECTOR: .block-id</span>
+                                                </label>
+                                                <textarea
+                                                    value={activeBlock.data?.customCss || ''}
+                                                    onChange={e => updateBlockData(activeBlock.id, 'customCss', e.target.value)}
+                                                    placeholder={`.layout-block-${activeBlock.id} { ... }`}
+                                                    rows="4"
+                                                    className="w-full text-[10px] font-mono border-gray-200 rounded-xl bg-gray-50/30 focus:ring-1 focus:ring-indigo-500 shadow-sm p-3"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1.5">Custom JS (Page Load)</label>
+                                                <textarea
+                                                    value={activeBlock.data?.customJs || ''}
+                                                    onChange={e => updateBlockData(activeBlock.id, 'customJs', e.target.value)}
+                                                    placeholder="window.addEventListener('load', () => { ... });"
+                                                    rows="4"
+                                                    className="w-full text-[10px] font-mono border-gray-200 rounded-xl bg-gray-50/30 focus:ring-1 focus:ring-indigo-500 shadow-sm p-3"
+                                                />
+                                            </div>
+                                            {activeBlock.type === 'timeline' && (
+                                                <div>
+                                                    <label className="block text-[10px] font-bold text-red-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                                                        <LucideIcons.ShieldAlert className="w-3 h-3" /> Server Logic (PHP)
+                                                    </label>
+                                                    <textarea
+                                                        value={activeBlock.data?.customPhp || ''}
+                                                        onChange={e => updateBlockData(activeBlock.id, 'customPhp', e.target.value)}
+                                                        placeholder="// Server-side execution context"
+                                                        rows="3"
+                                                        className="w-full text-[10px] font-mono border-red-100 rounded-xl bg-red-50/10 focus:ring-1 focus:ring-red-500 shadow-sm p-3"
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </>
                         );
@@ -2160,10 +2254,10 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                         </div>
 
                         <div className="flex-1 relative overflow-y-auto p-8">
-                             {/* The actual preview would render Header or Footer */}
-                             <div className="opacity-50 pointer-events-none">
+                            {/* The actual preview would render Header or Footer */}
+                            <div className="opacity-50 pointer-events-none">
                                 <DynamicPageRenderer blocks={blocks} reusableBlocks={reusableBlocks} />
-                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -2238,9 +2332,9 @@ function SortableBlockItem({ block, isActive, onClick, onRemove, blockTypes = []
             className={`group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer transition-all border ${isDragging ? 'opacity-50 scale-95 shadow-xl bg-indigo-50 border-indigo-300 ring-2 ring-indigo-200' : isActive ? 'bg-indigo-50 border-indigo-200 shadow-sm' : 'bg-white border-gray-100 hover:border-gray-300'}`}
             onClick={onClick}
         >
-            <div 
-                {...attributes} 
-                {...listeners} 
+            <div
+                {...attributes}
+                {...listeners}
                 className="p-1 cursor-grab active:cursor-grabbing hover:bg-gray-200 rounded text-gray-400 hover:text-gray-700 transition-colors"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -2254,8 +2348,8 @@ function SortableBlockItem({ block, isActive, onClick, onRemove, blockTypes = []
                 {typeInfo?.name || 'Block'}
             </span>
             {isActive && (
-                <button 
-                    onClick={(e) => { e.stopPropagation(); onRemove(); }} 
+                <button
+                    onClick={(e) => { e.stopPropagation(); onRemove(); }}
                     className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -2283,9 +2377,9 @@ function SortableNestedItem({ id, children }) {
 
     return (
         <div ref={setNodeRef} style={style} className={`flex items-center gap-3 group/nested ${isDragging ? 'ring-2 ring-indigo-500 ring-offset-2 rounded-xl' : ''}`}>
-            <div 
-                {...attributes} 
-                {...listeners} 
+            <div
+                {...attributes}
+                {...listeners}
                 className="p-2 -ml-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
                 title="Drag to reorder"
             >

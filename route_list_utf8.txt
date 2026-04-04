@@ -1,0 +1,22 @@
+﻿
+   ReflectionException 
+
+  Class "App\Http\Controllers\ContentTypeController" does not exist
+
+  at vendor\laravel\framework\src\Illuminate\Foundation\Console\RouteListCommand.php:255
+    251Γûò             if ($this->isFrameworkController($route)) {
+    252Γûò                 return false;
+    253Γûò             }
+    254Γûò 
+  Γ₧£ 255Γûò             $path = (new ReflectionClass($route->getControllerClass()))
+    256Γûò                 ->getFileName();
+    257Γûò         } else {
+    258Γûò             return false;
+    259Γûò         }
+
+  1   vendor\laravel\framework\src\Illuminate\Foundation\Console\RouteListCommand.php:255
+      ReflectionClass::__construct("App\Http\Controllers\ContentTypeController")
+
+  2   vendor\laravel\framework\src\Illuminate\Foundation\Console\RouteListCommand.php:150
+      Illuminate\Foundation\Console\RouteListCommand::isVendorRoute(Object(Illuminate\Routing\Route))
+

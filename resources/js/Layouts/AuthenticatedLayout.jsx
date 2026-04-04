@@ -21,7 +21,8 @@ import {
     FileText,
     Mail,
     Image as ImageIcon,
-    Activity
+    Activity,
+    Globe
 } from 'lucide-react';
 import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
 
@@ -72,6 +73,7 @@ export default function AuthenticatedLayout({ header, children }) {
         { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*'), contentType: 'pages' },
         { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'reusableblock' },
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
+        { name: 'General API', href: safeRoute('admin.general-api.index'), icon: Puzzle, active: isRouteActive('admin.general-api.*'), contentType: 'plugins' },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
     ];

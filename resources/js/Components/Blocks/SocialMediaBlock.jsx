@@ -1,5 +1,6 @@
 import React from 'react';
 import * as LucideIcons from 'lucide-react';
+import SocialIcon from '@/Components/SocialIcon';
 
 const SocialMediaBlock = ({ data = {} }) => {
     const links = Array.isArray(data.links) ? data.links : [];
@@ -55,7 +56,6 @@ const SocialMediaBlock = ({ data = {} }) => {
         >
             <div className={`flex flex-wrap gap-4 ${getAlignmentClass()} max-w-7xl mx-auto`}>
                 {links.map((link, idx) => {
-                    const IconComponent = LucideIcons[link.icon] || LucideIcons.Link2;
                     return (
                         <a
                             key={link.id || idx}
@@ -69,7 +69,7 @@ const SocialMediaBlock = ({ data = {} }) => {
                             }}
                             title={link.label || link.icon}
                         >
-                            <IconComponent size={getIconSize()} strokeWidth={2} />
+                            <SocialIcon name={link.icon} size={getIconSize()} color="brand" />
                         </a>
                     );
                 })}

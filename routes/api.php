@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\ContentTypeController;
+use Modules\ContentType\Http\Controllers\ContentTypeController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -41,17 +41,17 @@ Route::middleware(['auth:api', 'throttle:api'])->group(function () {
         // but actually the CheckPermission middleware needs the contentType name.
         // We can pass the slug dynamicly in a custom way or update CheckPermission to handle it.
         
-        Route::get('{contentTypeSlug}', [App\Http\Controllers\ContentEntryController::class, 'index'])->name('index');
-        Route::post('{contentTypeSlug}', [App\Http\Controllers\ContentEntryController::class, 'store'])->name('store');
-        Route::get('{contentTypeSlug}/{id}', [App\Http\Controllers\ContentEntryController::class, 'show'])->name('show');
-        Route::put('{contentTypeSlug}/{id}', [App\Http\Controllers\ContentEntryController::class, 'update'])->name('update');
-        Route::delete('{contentTypeSlug}/{id}', [App\Http\Controllers\ContentEntryController::class, 'destroy'])->name('destroy');
-        Route::get('{contentTypeSlug}/{id}/history', [App\Http\Controllers\ContentEntryController::class, 'history'])->name('history');
+        Route::get('{contentTypeSlug}', [\Modules\ContentType\Http\Controllers\ContentEntryController::class, 'index'])->name('index');
+        Route::post('{contentTypeSlug}', [\Modules\ContentType\Http\Controllers\ContentEntryController::class, 'store'])->name('store');
+        Route::get('{contentTypeSlug}/{id}', [\Modules\ContentType\Http\Controllers\ContentEntryController::class, 'show'])->name('show');
+        Route::put('{contentTypeSlug}/{id}', [\Modules\ContentType\Http\Controllers\ContentEntryController::class, 'update'])->name('update');
+        Route::delete('{contentTypeSlug}/{id}', [\Modules\ContentType\Http\Controllers\ContentEntryController::class, 'destroy'])->name('destroy');
+        Route::get('{contentTypeSlug}/{id}/history', [\Modules\ContentType\Http\Controllers\ContentEntryController::class, 'history'])->name('history');
     });
 });
 
 // Schema Sync Routes
-Route::post('/sync/receive', [\App\Http\Controllers\SchemaSyncController::class, 'receive'])->name('api.sync.receive');
+Route::post('/sync/receive', [\Modules\ContentType\Http\Controllers\SchemaSyncController::class, 'receive'])->name('api.sync.receive');
 
 Route::group([
     'middleware' => ['api', 'throttle:api'],

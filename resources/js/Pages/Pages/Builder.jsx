@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
+import SocialIcon from '@/Components/SocialIcon';
 import MarkdownToolbar from '@/Components/MarkdownToolbar';
 import {
     DndContext,
@@ -58,6 +59,10 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
     const DISPLAY_BLOCK_TYPES = BLOCK_TYPES.filter(p => isContentTypeEnabled || p.id !== 'content_list');
 
     const generateId = () => Math.random().toString(36).substr(2, 9);
+
+    const iconOptions = [
+        'Facebook', 'Instagram', 'Twitter', 'X', 'Linkedin', 'Youtube', 'Github', 'Tiktok', 'Globe', 'Mail', 'Smartphone', 'Video', 'MessageSquare', 'Send', 'Share2', 'Link2'
+    ];
 
     const renderLinks = (links, path, updateFn, depth = 0) => {
         return (
@@ -632,25 +637,54 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                         const newSocial = [...social_links, { id: generateId(), icon: 'Facebook', url: '#' }];
                                         updateBlockData(block.id, 'social_links', newSocial);
                                     }, '+ ADD SOCIAL')}
-                                    <div className="space-y-2">
+                                    <div className="space-y-3">
                                         {social_links.map((link, sIdx) => (
-                                            <div key={link.id || `s-${sIdx}`} className="flex gap-2 items-center group bg-white p-2 rounded-lg border border-gray-100 shadow-sm relative">
-                                                <select value={link.icon || 'Facebook'} onChange={(e) => { const newLinks = [...social_links]; newLinks[sIdx] = { ...newLinks[sIdx], icon: e.target.value }; updateBlockData(block.id, 'social_links', newLinks); }} className="text-[10px] border-gray-200 rounded bg-gray-50 px-1">
-                                                    <option value="Facebook">FB</option>
-                                                    <option value="Instagram">IG</option>
-                                                    <option value="Twitter">X</option>
-                                                    <option value="Linkedin">IN</option>
-                                                    <option value="Youtube">YT</option>
-                                                    <option value="Tiktok">TK</option>
-                                                    <option value="Github">GH</option>
-                                                    <option value="Globe">WEB</option>
-                                                </select>
-                                                <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...social_links]; newLinks[sIdx] = { ...newLinks[sIdx], url: e.target.value }; updateBlockData(block.id, 'social_links', newLinks); }} placeholder="URL" className="flex-1 text-[10px] border-gray-200 rounded px-1" />
-                                                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div key={link.id || `s-${sIdx}`} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
+                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
                                                     <button disabled={sIdx === 0} onClick={() => moveItem(social_links, sIdx, -1, 'social_links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
                                                     <button disabled={sIdx === social_links.length - 1} onClick={() => moveItem(social_links, sIdx, 1, 'social_links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
                                                     <button onClick={() => updateBlockData(block.id, 'social_links', social_links.filter((_, i) => i !== sIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
                                                 </div>
+                                                <div className="flex items-center gap-3 mb-2">
+                                                    <div className="w-8 h-8 flex items-center justify-center bg-white rounded-lg shadow-sm border border-gray-100 shrink-0">
+                                                        <SocialIcon name={link.icon} size={18} color="brand" />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2 flex-1 pt-1">
+                                                        <select
+                                                            value={link.icon || 'Facebook'} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...social_links];
+                                                                newLinks[sIdx] = { ...newLinks[sIdx], icon: e.target.value };
+                                                                updateBlockData(block.id, 'social_links', newLinks);
+                                                            }}
+                                                            className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white"
+                                                        >
+                                                            {iconOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                                                        </select>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.label || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...social_links];
+                                                                newLinks[sIdx] = { ...newLinks[sIdx], label: e.target.value };
+                                                                updateBlockData(block.id, 'social_links', newLinks);
+                                                            }} 
+                                                            placeholder="Label (opt)" 
+                                                            className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white"
+                                                        />
+                                                    </div>
+                                                </div>
+                                                <input 
+                                                    type="text" 
+                                                    value={link.url || ''} 
+                                                    onChange={(e) => {
+                                                        const newLinks = [...social_links];
+                                                        newLinks[sIdx] = { ...newLinks[sIdx], url: e.target.value };
+                                                        updateBlockData(block.id, 'social_links', newLinks);
+                                                    }} 
+                                                    placeholder="URL" 
+                                                    className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white" 
+                                                />
                                             </div>
                                         ))}
                                     </div>
@@ -926,6 +960,33 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 <input type="checkbox" checked={data.glass !== false} onChange={e => updateBlockData(block.id, 'glass', e.target.checked)} className="rounded text-indigo-600" />
                                 <span className="text-xs font-semibold text-gray-700">Glassmorphism</span>
                             </label>
+                        </div>
+
+                        {/* Block-wide Custom CSS/JS for Navbar specifically (Prominence) */}
+                        <div className="space-y-4 pt-6 border-t border-gray-100">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                                <LucideIcons.Code2 className="w-3 h-3" /> Advanced Override
+                            </label>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Navbar Custom CSS</label>
+                                <textarea 
+                                    value={data.customCss || ''} 
+                                    onChange={e => updateBlockData(block.id, 'customCss', e.target.value)}
+                                    placeholder=".block-id { ... }"
+                                    className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
+                                    rows="3"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Navbar Custom JS (On Load)</label>
+                                <textarea 
+                                    value={data.customJs || ''} 
+                                    onChange={e => updateBlockData(block.id, 'customJs', e.target.value)}
+                                    placeholder="console.log('navbar loaded');"
+                                    className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
+                                    rows="3"
+                                />
+                            </div>
                         </div>
                     </div>
                 );
@@ -1221,11 +1282,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                     </div>
                 );
             case 'social_media': {
-
                 const links = Array.isArray(data.links) ? data.links : [];
-                const iconOptions = [
-                    'Facebook', 'Instagram', 'Twitter', 'Linkedin', 'Youtube', 'Github', 'Tiktok', 'Globe', 'Mail', 'Smartphone', 'Video', 'MessageSquare', 'Send', 'Share2', 'Link2'
-                ];
                 return (
                     <div className="space-y-6">
                         <div>
@@ -1233,7 +1290,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Social Links</label>
                                 <button
                                     onClick={() => {
-                                        const newLinks = [...links, { id: generateId(), icon: 'Link2', url: '#', label: '' }];
+                                        const newLinks = [...links, { id: generateId(), icon: 'Facebook', url: '#', label: '' }];
                                         updateBlockData(block.id, 'links', newLinks);
                                     }}
                                     className="text-xs text-indigo-600 font-semibold hover:text-indigo-800"
@@ -1258,18 +1315,22 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                         >
                                                             <X className="w-4 h-4" />
                                                         </button>
-                                                        <div className="grid grid-cols-2 gap-2 mb-2">
-                                                            <select
-                                                                value={link.icon || 'Link2'}
-                                                                onChange={(e) => {
-                                                                    const newLinks = [...links];
-                                                                    newLinks[idx] = { ...newLinks[idx], icon: e.target.value };
-                                                                    updateBlockData(block.id, 'links', newLinks);
-                                                                }}
-                                                                className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
-                                                            >
-                                                                {iconOptions.map(icon => <option key={icon} value={icon}>{icon}</option>)}
-                                                            </select>
+                                                        <div className="flex items-center gap-3 mb-2">
+                                                            <div className="w-8 h-8 flex items-center justify-center bg-gray-50 rounded-lg shrink-0">
+                                                                <SocialIcon name={link.icon} size={18} color="brand" />
+                                                            </div>
+                                                            <div className="grid grid-cols-2 gap-2 flex-1">
+                                                                <select
+                                                                    value={link.icon || 'Facebook'}
+                                                                    onChange={(e) => {
+                                                                        const newLinks = [...links];
+                                                                        newLinks[idx] = { ...newLinks[idx], icon: e.target.value };
+                                                                        updateBlockData(block.id, 'links', newLinks);
+                                                                    }}
+                                                                    className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 px-1"
+                                                                >
+                                                                    {iconOptions.map(icon => <option key={icon} value={icon}>{icon}</option>)}
+                                                                </select>
                                                             <input
                                                                 type="text"
                                                                 value={link.label || ''}
@@ -1281,6 +1342,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                                 placeholder="Label (optional)"
                                                                 className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
                                                             />
+                                                        </div>
                                                         </div>
                                                         <input
                                                             type="text"
@@ -2584,6 +2646,18 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                     className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
                                                 />
                                                 <p className="text-[10px] text-gray-400 mt-1">Use <code className="bg-gray-100 px-1 rounded">.block-{activeBlock.id}</code> as selector.</p>
+                                            </div>
+
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Custom JavaScript (On Load)</label>
+                                                <textarea
+                                                    value={activeBlock.data?.customJs || ''}
+                                                    onChange={e => updateBlockData(activeBlock.id, 'customJs', e.target.value)}
+                                                    placeholder={`console.log('Block loaded', blockId);`}
+                                                    rows="4"
+                                                    className="w-full text-xs font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
+                                                />
+                                                <p className="text-[10px] text-gray-400 mt-1">Runs once after the block is mounted.</p>
                                             </div>
 
                                             <div className="pt-3 border-t border-dashed border-gray-100">
