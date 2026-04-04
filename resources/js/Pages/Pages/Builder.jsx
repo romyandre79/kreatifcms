@@ -341,6 +341,22 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 cta_label: '',
                 cta_url: ''
             };
+        } else if (type === 'video') {
+            newBlock.data = {
+                source: 'external',
+                url: '',
+                poster: '',
+                title: '',
+                description: '',
+                autoplay: false,
+                loop: false,
+                muted: false,
+                controls: true,
+                is_paid: false,
+                paid_message: 'This video is exclusive to registered members. Please log in to watch.',
+                locked_title: 'Premium Content',
+                locked_button_text: 'Log In to Watch'
+            };
         }
 
 
@@ -2450,6 +2466,129 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                     </div>
                 );
             }
+            case 'video':
+                return (
+                    <div className="space-y-6">
+                        <div className="flex items-center justify-between mb-2">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Video Source</label>
+                            <div className="flex bg-gray-100 p-0.5 rounded-lg">
+                                {['internal', 'external'].map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => updateBlockData(block.id, 'source', s)}
+                                        className={`px-3 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${data.source === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">
+                                {data.source === 'external' ? 'YouTube / Vimeo URL' : 'Internal / Streaming URL'}
+                            </label>
+                            <div className="flex gap-2">
+                                <input 
+                                    type="text" 
+                                    value={data.url || ''} 
+                                    onChange={e => updateBlockData(block.id, 'url', e.target.value)} 
+                                    placeholder={data.source === 'external' ? 'https://www.youtube.com/watch?v=...' : 'https://.../stream.m3u8'}
+                                    className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 h-8 px-2" 
+                                />
+                                {data.source === 'internal' && (
+                                    <button onClick={() => openMediaPicker(block.id, 'url')} className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 border border-indigo-200 uppercase tracking-tight">Browse</button>
+                                )}
+                            </div>
+                            <p className="text-[9px] text-gray-400 mt-1">Supports MP4, HLS (.m3u8), and DASH (.mpd)</p>
+                        </div>
+
+                        <div>
+                            <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Poster Image (Thumbnail)</label>
+                            <div className="flex gap-2">
+                                <input type="text" value={data.poster || ''} readOnly placeholder="Select poster..." className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-100 text-gray-500 h-8 px-2" />
+                                <button onClick={() => openMediaPicker(block.id, 'poster')} className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 border border-indigo-200 uppercase tracking-tight">Select</button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Title</label>
+                                <input type="text" value={data.title || ''} onChange={e => updateBlockData(block.id, 'title', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 h-8 px-2" />
+                            </div>
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Description</label>
+                                <input type="text" value={data.description || ''} onChange={e => updateBlockData(block.id, 'description', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 h-8 px-2" />
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 space-y-4">
+                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Playback Settings</label>
+                            <div className="grid grid-cols-2 gap-y-3 gap-x-6">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={data.autoplay} onChange={e => updateBlockData(block.id, 'autoplay', e.target.checked)} className="rounded text-indigo-600" />
+                                    <span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">Autoplay</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={data.loop} onChange={e => updateBlockData(block.id, 'loop', e.target.checked)} className="rounded text-indigo-600" />
+                                    <span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">Loop</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={data.muted} onChange={e => updateBlockData(block.id, 'muted', e.target.checked)} className="rounded text-indigo-600" />
+                                    <span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">Muted</span>
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={data.controls !== false} onChange={e => updateBlockData(block.id, 'controls', e.target.checked)} className="rounded text-indigo-600" />
+                                    <span className="text-[11px] font-bold text-gray-700 uppercase tracking-tight">Controls</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div className="p-4 bg-amber-50/50 rounded-2xl border border-amber-100/50 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input type="checkbox" checked={data.is_paid} onChange={e => updateBlockData(block.id, 'is_paid', e.target.checked)} className="rounded text-amber-600 focus:ring-amber-500" />
+                                    <span className="text-[11px] font-bold text-amber-900 uppercase tracking-widest flex items-center gap-1.5">
+                                        <LucideIcons.Lock className="w-3 h-3" /> Paid Access
+                                    </span>
+                                </label>
+                            </div>
+                            {data.is_paid && (
+                                <div className="space-y-4">
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-amber-700 uppercase mb-1">Locked Title</label>
+                                        <input 
+                                            type="text" 
+                                            value={data.locked_title || ''} 
+                                            onChange={e => updateBlockData(block.id, 'locked_title', e.target.value)}
+                                            className="w-full text-[10px] border-amber-200 rounded-lg bg-white focus:ring-amber-500 h-8 px-2"
+                                            placeholder="Premium Content"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-amber-700 uppercase mb-1">Locked Message</label>
+                                        <textarea 
+                                            value={data.paid_message || ''} 
+                                            onChange={e => updateBlockData(block.id, 'paid_message', e.target.value)}
+                                            className="w-full text-[10px] border-amber-200 rounded-lg bg-white focus:ring-amber-500 focus:border-amber-500 px-2 py-1"
+                                            rows="2"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-amber-700 uppercase mb-1">Button Text</label>
+                                        <input 
+                                            type="text" 
+                                            value={data.locked_button_text || ''} 
+                                            onChange={e => updateBlockData(block.id, 'locked_button_text', e.target.value)}
+                                            className="w-full text-[10px] border-amber-200 rounded-lg bg-white focus:ring-amber-500 h-8 px-2"
+                                            placeholder="Log In to Watch"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
             default:
                 return <p className="text-gray-500 text-sm">No configuration available for this block.</p>;
         }
