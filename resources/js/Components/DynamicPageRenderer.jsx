@@ -14,6 +14,7 @@ const SocialMediaBlock = lazy(() => import('./Blocks/SocialMediaBlock'));
 const TimelineBlock = lazy(() => import('./Blocks/TimelineBlock'));
 const MegaMenuBlock = lazy(() => import('./Blocks/MegaMenuBlock'));
 const VideoBlock = lazy(() => import('./Blocks/VideoBlock'));
+const VideoGridBlock = lazy(() => import('./Blocks/VideoGridBlock'));
 
 
 
@@ -29,7 +30,8 @@ const BlockComponents = {
     social_media: SocialMediaBlock,
     timeline: TimelineBlock,
     megamenu: MegaMenuBlock,
-    video: VideoBlock
+    video: VideoBlock,
+    video_grid: VideoGridBlock
 };
 
 

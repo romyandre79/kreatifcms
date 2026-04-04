@@ -29,5 +29,6 @@
     "MegaMenu": true,
     "GeneralApi": true,
     "TwoFactorAuth": true,
-    "VideoBlock": true
+    "VideoBlock": true,
+    "VideoGrid": true
 }

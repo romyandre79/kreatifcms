@@ -357,6 +357,35 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 locked_title: 'Premium Content',
                 locked_button_text: 'Log In to Watch'
             };
+        } else if (type === 'video_grid') {
+            newBlock.data = {
+                source: 'manual',
+                title: 'Video Library',
+                subtitle: 'Watch our latest videos and tutorials.',
+                columns: 3,
+                items: [
+                    { 
+                        id: generateId(), 
+                        title: 'Sample Video', 
+                        description: 'Brief description of the video content.', 
+                        url: '', 
+                        poster: '', 
+                        is_paid: false,
+                        locked_title: 'Premium Video',
+                        paid_message: 'Please log in to watch this video.'
+                    }
+                ],
+                content_type: '',
+                limit: 6,
+                mapping: {
+                    title: 'title',
+                    url: 'video_url',
+                    poster: 'thumbnail',
+                    is_paid: 'is_premium',
+                    locked_title: 'locked_title',
+                    paid_message: 'paid_message'
+                }
+            };
         }
 
 
@@ -2589,6 +2618,200 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                         </div>
                     </div>
                 );
+            case 'video_grid': {
+                const source = data.source || 'manual';
+                const columns = data.columns || 3;
+                const items = Array.isArray(data.items) ? data.items : [];
+                const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedType ? selectedType.fields : [];
+
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['manual'].concat(isContentTypeEnabled ? ['dynamic'] : []).map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => updateBlockData(block.id, 'source', s)}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${source === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Grid Columns</label>
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4].map(num => (
+                                    <button
+                                        key={num}
+                                        onClick={() => updateBlockData(block.id, 'columns', num)}
+                                        className={`flex-1 py-2 rounded-lg border text-sm font-bold transition-all ${columns == num ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                                    >
+                                        {num}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {source === 'manual' ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Videos</label>
+                                    <button
+                                        onClick={() => {
+                                            const newItems = [...items, { id: generateId(), title: 'New Video', description: '', url: '', poster: '', is_paid: false }];
+                                            updateBlockData(block.id, 'items', newItems);
+                                        }}
+                                        className="text-[10px] text-indigo-600 font-bold hover:text-indigo-800"
+                                    >
+                                        + Add Video
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'items', e)}>
+                                        <SortableContext items={items.map((item, idx) => item.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
+                                            {items.map((item, idx) => (
+                                                <SortableNestedItem key={item.id || idx} id={item.id || `item-${idx}`}>
+                                                    <div className="p-3 border border-gray-200 rounded-xl bg-white relative group flex-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                const newItems = items.filter((_, i) => i !== idx);
+                                                                updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        
+                                                        <div className="space-y-3">
+                                                            <input 
+                                                                type="text" 
+                                                                value={item.title || ''} 
+                                                                onChange={e => {
+                                                                    const newItems = [...items];
+                                                                    newItems[idx] = { ...newItems[idx], title: e.target.value };
+                                                                    updateBlockData(block.id, 'items', newItems);
+                                                                }}
+                                                                placeholder="Video Title"
+                                                                className="w-full text-xs font-bold border-transparent bg-transparent p-0 focus:ring-0 focus:border-indigo-500"
+                                                            />
+                                                            <div className="flex gap-2">
+                                                                <div className="w-16 h-12 bg-gray-50 rounded border border-gray-100 overflow-hidden shrink-0 relative">
+                                                                    {item.poster ? <img src={item.poster} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-4 h-4 text-gray-300" /></div>}
+                                                                    <button onClick={() => openMediaPicker(block.id, 'items', idx)} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-[8px] text-white font-bold uppercase">Poster</button>
+                                                                </div>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={item.url || ''} 
+                                                                    onChange={e => {
+                                                                        const newItems = [...items];
+                                                                        newItems[idx] = { ...newItems[idx], url: e.target.value };
+                                                                        updateBlockData(block.id, 'items', newItems);
+                                                                    }}
+                                                                    placeholder="Video URL / File Path"
+                                                                    className="flex-1 text-[10px] border-gray-100 rounded bg-gray-50 px-2 h-7 focus:ring-indigo-500"
+                                                                />
+                                                            </div>
+                                                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                                                <input type="checkbox" checked={item.is_paid} onChange={e => {
+                                                                    const newItems = [...items];
+                                                                    newItems[idx] = { ...newItems[idx], is_paid: e.target.checked };
+                                                                    updateBlockData(block.id, 'items', newItems);
+                                                                }} className="w-3 h-3 rounded text-amber-600 focus:ring-amber-500" />
+                                                                <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider">Paid Content</span>
+                                                            </label>
+
+                                                            {item.is_paid && (
+                                                                <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100 space-y-2">
+                                                                    <input 
+                                                                        type="text" 
+                                                                        value={item.locked_title || ''} 
+                                                                        onChange={e => {
+                                                                            const newItems = [...items];
+                                                                            newItems[idx] = { ...newItems[idx], locked_title: e.target.value };
+                                                                            updateBlockData(block.id, 'items', newItems);
+                                                                        }}
+                                                                        placeholder="Locked Title (e.g. Premium)"
+                                                                        className="w-full text-[9px] border-amber-200 rounded h-6 px-1 focus:ring-amber-500"
+                                                                    />
+                                                                    <textarea 
+                                                                        value={item.paid_message || ''} 
+                                                                        onChange={e => {
+                                                                            const newItems = [...items];
+                                                                            newItems[idx] = { ...newItems[idx], paid_message: e.target.value };
+                                                                            updateBlockData(block.id, 'items', newItems);
+                                                                        }}
+                                                                        placeholder="Locked message..."
+                                                                        className="w-full text-[9px] border-amber-200 rounded p-1 focus:ring-amber-500"
+                                                                        rows="1"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </SortableNestedItem>
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
+                                    <select 
+                                        value={data.content_type || ''} 
+                                        onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
+                                        className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Content Type...</option>
+                                        {contentTypes.map(ct => (
+                                            <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {data.content_type && (
+                                    <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4">
+                                        <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Field Mapping</label>
+                                        <div className="space-y-3">
+                                            {['title', 'url', 'poster', 'is_paid', 'locked_title', 'paid_message'].map(key => (
+                                                <div key={key}>
+                                                    <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">{key.replace('_', ' ')}</label>
+                                                    <select 
+                                                        value={data.mapping?.[key] || ''} 
+                                                        onChange={e => updateBlockData(block.id, 'mapping', { ...data.mapping, [key]: e.target.value })}
+                                                        className="w-full text-[10px] border-gray-200 rounded bg-white h-7 px-1 focus:ring-indigo-500"
+                                                    >
+                                                        <option value="">-- Map to field --</option>
+                                                        {fields.map(f => (
+                                                            <option key={f.name} value={f.name}>{f.label || f.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Items Limit</label>
+                                    <input 
+                                        type="number" 
+                                        value={data.limit || 6} 
+                                        onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value))}
+                                        className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 h-8 px-2"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
             default:
                 return <p className="text-gray-500 text-sm">No configuration available for this block.</p>;
         }
