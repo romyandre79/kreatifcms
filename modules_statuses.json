@@ -28,5 +28,7 @@
     "PhpEventHooks": true,
     "MegaMenu": true,
     "GeneralApi": true,
-    "TwoFactorAuth": true
+    "TwoFactorAuth": true,
+    "VideoBlock": true,
+    "VideoGrid": true
 }

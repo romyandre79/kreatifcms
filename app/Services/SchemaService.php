@@ -163,7 +163,7 @@ class SchemaService
                     }
                 }
 
-                if ($block['type'] === 'content_list' || $block['type'] === 'slideshow' || $block['type'] === 'timeline' || $block['type'] === 'megamenu' || $block['type'] === 'navbar') {
+                if ($block['type'] === 'content_list' || $block['type'] === 'slideshow' || $block['type'] === 'timeline' || $block['type'] === 'megamenu' || $block['type'] === 'navbar' || $block['type'] === 'video_grid') {
                     $source = $block['data']['source'] ?? ($block['type'] === 'content_list' || $block['type'] === 'timeline' ? 'dynamic' : 'manual');
                     
                     // For navbar, we check the specific megamenu_source property

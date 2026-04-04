@@ -1,0 +1,18 @@
+{
+    "name": "VideoGrid",
+    "alias": "videogrid",
+    "description": "Create responsive video grids for your website. Supports manual video entry or dynamic content from any Content Type.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\VideoGrid\\Providers\\VideoGridServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "video_grid",
+        "name": "Video Grid",
+        "icon": "LayoutGrid",
+        "desc": "Responsive grid of videos with manual or dynamic source"
+    }
+}
