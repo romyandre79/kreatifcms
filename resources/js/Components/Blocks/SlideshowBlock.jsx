@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import ReactPlayer from 'react-player';
 
 const SlideshowBlock = ({ data = {} }) => {
     const items = Array.isArray(data.items) ? data.items : [];
@@ -31,16 +32,24 @@ const SlideshowBlock = ({ data = {} }) => {
 
     // Support dynamic mapping if it's a dynamic source
     const getSlideData = (item) => {
-        if (!item) return { image: '', title: '', link: '#' };
+        if (!item) return { type: 'image', image: '', video_url: '', title: '', link: '#' };
         
         if (data.source === 'dynamic' && data.mapping) {
             return {
+                type: 'image', // Dynamic currently only supports images
                 image: (data.mapping.image && item[data.mapping.image]) ? item[data.mapping.image] : '',
+                video_url: '',
                 title: (data.mapping.title && item[data.mapping.title]) ? item[data.mapping.title] : '',
                 link: (data.mapping.link && item[data.mapping.link]) ? item[data.mapping.link] : '#'
             };
         }
-        return item || { image: '', title: '', link: '#' };
+        return {
+            type: item.type || 'image',
+            image: item.image || '',
+            video_url: item.video_url || '',
+            title: item.title || '',
+            link: item.link || '#'
+        };
     };
 
     return (
@@ -59,7 +68,27 @@ const SlideshowBlock = ({ data = {} }) => {
                             key={idx}
                             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                         >
-                            {slide.image && (
+                            {slide.type === 'video' && slide.video_url ? (
+                                <div className="w-full h-full relative pointer-events-none">
+                                    <ReactPlayer
+                                        url={slide.video_url}
+                                        playing={idx === currentIndex && !isPaused}
+                                        loop={true}
+                                        muted={true}
+                                        width="100%"
+                                        height="100%"
+                                        playsinline={true}
+                                        style={{ objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+                                        config={{
+                                            youtube: { playerVars: { showinfo: 0, modestbranding: 1, controls: 0 } }
+                                        }}
+                                    />
+                                    {/* Fallback backrgound image while loading or if provided */}
+                                    {slide.image && idx !== currentIndex && (
+                                        <img src={slide.image} className="w-full h-full object-cover absolute inset-0 z-0" alt="" />
+                                    )}
+                                </div>
+                            ) : slide.image && (
                                 <img 
                                     src={slide.image} 
                                     alt={slide.title || 'Slide'} 
