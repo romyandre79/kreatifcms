@@ -30,5 +30,6 @@
     "GeneralApi": true,
     "TwoFactorAuth": true,
     "VideoBlock": true,
-    "VideoGrid": true
+    "VideoGrid": true,
+    "Brevo": true
 }

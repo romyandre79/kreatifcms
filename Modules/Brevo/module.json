@@ -1,0 +1,38 @@
+{
+    "name": "Brevo",
+    "alias": "brevo",
+    "description": "Brevo plugin for create email and whatsapp marketing",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\Brevo\\Providers\\BrevoServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "marketing",
+    "settings_fields": [
+        {
+            "name": "api_key",
+            "label": "Brevo API Key (v3)",
+            "type": "password",
+            "default": ""
+        },
+        {
+            "name": "sender_name",
+            "label": "Default Sender Name",
+            "type": "text",
+            "default": "Kreatif CMS"
+        },
+        {
+            "name": "sender_email",
+            "label": "Default Sender Email",
+            "type": "text",
+            "default": ""
+        },
+        {
+            "name": "wa_business_id",
+            "label": "WhatsApp Business Account ID",
+            "type": "text",
+            "default": ""
+        }
+    ]
+}

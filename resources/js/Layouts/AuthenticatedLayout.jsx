@@ -22,7 +22,8 @@ import {
     Mail,
     Image as ImageIcon,
     Activity,
-    Globe
+    Globe,
+    Send
 } from 'lucide-react';
 import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
 
@@ -110,6 +111,10 @@ export default function AuthenticatedLayout({ header, children }) {
 
     if (hasPermission('email-templates', 'read') && plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
         filteredNavItems.push({ name: 'Email Templates', href: safeRoute('email-templates.index'), icon: Mail, active: isRouteActive('email-templates.*') });
+    }
+
+    if (plugins.some(p => p.alias === 'brevo' && p.enabled !== false) && route().has('brevo.index')) {
+        filteredNavItems.push({ name: 'Marketing', href: safeRoute('brevo.index'), icon: Send, active: isRouteActive('brevo.*') });
     }
 
     if (hasPermission('jobs', 'read') && plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {
