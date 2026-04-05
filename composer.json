@@ -69,7 +69,8 @@
             "Modules\\GeneralApi\\": "Modules/GeneralApi/app/",
             "Modules\\VideoBlock\\": "Modules/VideoBlock/app/",
             "Modules\\VideoGrid\\": "Modules/VideoGrid/app/",
-            "Modules\\Brevo\\": "Modules/Brevo/app/"
+            "Modules\\Brevo\\": "Modules/Brevo/app/",
+            "Modules\\PhotoGrid\\": "Modules/PhotoGrid/app/"
         }
     },
     "autoload-dev": {

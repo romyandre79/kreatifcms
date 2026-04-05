@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { usePage } from '@inertiajs/react';
-import { Lock, Play, Youtube, Video } from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
 import ReactPlayer from 'react-player';
 
 const VideoBlock = ({ data = {} }) => {
@@ -36,12 +36,37 @@ const VideoBlock = ({ data = {} }) => {
     }
 
     return (
-        <div className="max-w-6xl mx-auto px-4 py-12">
-            <div className="space-y-6">
-                {(data.title || data.description) && (
-                    <div className="space-y-2 mb-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
-                        {data.title && <h2 className="text-3xl font-bold text-gray-900 tracking-tight">{data.title}</h2>}
-                        {data.description && <p className="text-gray-500 text-lg leading-relaxed max-w-3xl">{data.description}</p>}
+        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
+            <div className="max-w-6xl mx-auto">
+                {(data.title || data.subtitle || data.cta_text) && (
+                    <div className={`mb-16 space-y-4 ${data.align === 'center' ? 'text-center' : data.align === 'right' ? 'text-right' : 'text-left'}`}>
+                        {data.title && (
+                            <h2 
+                                className="text-4xl font-black tracking-tight uppercase"
+                                style={{ color: data.title_color || '#111827' }}
+                            >
+                                {data.title}
+                            </h2>
+                        )}
+                        {data.subtitle && (
+                            <p 
+                                className={`text-lg leading-relaxed ${data.align === 'center' ? 'max-w-2xl mx-auto' : data.align === 'right' ? 'ml-auto max-w-2xl' : 'mr-auto max-w-2xl'}`}
+                                style={{ color: data.subtitle_color || '#6b7280' }}
+                            >
+                                {data.subtitle}
+                            </p>
+                        )}
+                        {data.cta_text && data.cta_url && (
+                            <div className="pt-2">
+                                <a 
+                                    href={data.cta_url}
+                                    className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-100 uppercase tracking-wider text-xs"
+                                >
+                                    {data.cta_text}
+                                    <LucideIcons.ArrowRight className="ml-2 w-4 h-4" />
+                                </a>
+                            </div>
+                        )}
                     </div>
                 )}
                 
@@ -68,7 +93,7 @@ const VideoBlock = ({ data = {} }) => {
                     />
                 </div>
             </div>
-        </div>
+        </section>
     );
 };
 

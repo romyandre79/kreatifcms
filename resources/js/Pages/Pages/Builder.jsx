@@ -390,6 +390,35 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                     paid_message: 'paid_message'
                 }
             };
+        } else if (type === 'photogrid') {
+            newBlock.data = {
+                source: 'manual',
+                title: 'Photo Gallery',
+                subtitle: 'A collection of our best moments.',
+                columns: 3,
+                lightbox: true,
+                items: [
+                    { 
+                        id: generateId(), 
+                        title: 'Sample Photo', 
+                        description: 'Description of the photo.', 
+                        image: '', 
+                        is_paid: false,
+                        locked_title: 'Premium Photo',
+                        paid_message: 'Please log in to view this photo.'
+                    }
+                ],
+                content_type: '',
+                limit: 6,
+                mapping: {
+                    title: 'title',
+                    description: 'description',
+                    image: 'image',
+                    is_paid: 'is_premium',
+                    locked_title: 'locked_title',
+                    paid_message: 'paid_message'
+                }
+            };
         }
 
 
@@ -399,7 +428,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
     };
 
     const updateBlockData = (id, field, value) => {
-        setBlocks(blocks.map(b => {
+        setBlocks(prevBlocks => prevBlocks.map(b => {
             if (b.id === id) {
                 return { ...b, data: { ...b.data, [field]: value } };
             }
@@ -511,50 +540,132 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
             
             if (blockId === 'seo') {
                 if (fieldName === 'og_image') setOgImage(url);
-            } else if (index !== null && index !== undefined) {
-                // Handle nested items (e.g., timeline events, gallery images)
-                const block = blocks.find(b => b.id === blockId);
-                if (block && Array.isArray(block.data[fieldName])) {
-                    const newItems = [...block.data[fieldName]];
-                    if (newItems[index]) {
-                        // Assumption: nested media picker usually updates 'image' or 'url'
-                        // For timeline, it's 'image'. For others, we might need a subFieldName.
-                        // Let's use a heuristic or check the block type.
-                        if (block.type === 'timeline' || block.type === 'slideshow' || block.type === 'feature_grid') {
-                            newItems[index] = { ...newItems[index], image: url };
-                        } else if (block.type === 'video_grid') {
-                            newItems[index] = { ...newItems[index], poster: url };
-                        } else {
-                            newItems[index] = { ...newItems[index], url: url };
-                        }
-                        updateBlockData(blockId, fieldName, newItems);
-                    }
-                }
             } else {
-                // Handle megamenu column images with pattern col_img_{menuIdx}_{colIdx}
-                const colImgMatch = fieldName.match(/^col_img_(\d+)_(\d+)$/);
-                if (colImgMatch) {
-                    const block = blocks.find(b => b.id === blockId);
-                    if (block && block.type === 'megamenu') {
-                        const mIdx = parseInt(colImgMatch[1]);
-                        const cIdx = parseInt(colImgMatch[2]);
-                        const newMenus = [...(block.data.menus || [])];
-                        if (newMenus[mIdx]) {
-                            const cols = [...(newMenus[mIdx].columns || [])];
-                            if (cols[cIdx]) {
-                                cols[cIdx] = { ...cols[cIdx], image: url };
-                                newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
-                                updateBlockData(blockId, 'menus', newMenus);
+                setBlocks(prevBlocks => prevBlocks.map(block => {
+                    if (block.id !== blockId) return block;
+
+                    const newData = { ...block.data };
+
+                    if (index !== null && index !== undefined) {
+                        if (Array.isArray(newData[fieldName])) {
+                            const newItems = [...newData[fieldName]];
+                            if (newItems[index]) {
+                                const item = { ...newItems[index] };
+                                // Dynamically detect which field to update
+                                if (Object.prototype.hasOwnProperty.call(item, 'image')) {
+                                    item.image = url;
+                                } else if (Object.prototype.hasOwnProperty.call(item, 'poster')) {
+                                    item.poster = url;
+                                } else {
+                                    item.url = url;
+                                }
+                                newItems[index] = item;
+                                newData[fieldName] = newItems;
                             }
                         }
+                    } else {
+                        // Handle megamenu column images
+                        const colImgMatch = fieldName.match(/^col_img_(\d+)_(\d+)$/);
+                        if (colImgMatch && block.type === 'megamenu') {
+                            const mIdx = parseInt(colImgMatch[1]);
+                            const cIdx = parseInt(colImgMatch[2]);
+                            const newMenus = [...(newData.menus || [])];
+                            if (newMenus[mIdx]) {
+                                const cols = [...(newMenus[mIdx].columns || [])];
+                                if (cols[cIdx]) {
+                                    cols[cIdx] = { ...cols[cIdx], image: url };
+                                    newMenus[mIdx] = { ...newMenus[mIdx], columns: cols };
+                                    newData.menus = newMenus;
+                                }
+                            }
+                        } else {
+                            newData[fieldName] = url;
+                        }
                     }
-                } else {
-                    updateBlockData(blockId, fieldName, url);
-                }
+
+                    return { ...block, data: newData };
+                }));
             }
         }
         setMediaPickerTarget(null);
         setMediaPickerOpen(false);
+    };
+
+    const renderHeaderConfig = (block) => {
+        const data = block.data || {};
+        return (
+            <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-4 mb-6">
+                <div>
+                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Section Header Settings</label>
+                    <div className="space-y-3">
+                        <input 
+                            type="text" 
+                            value={data.title || ''} 
+                            onChange={e => updateBlockData(block.id, 'title', e.target.value)} 
+                            placeholder="Main Title"
+                            className="w-full text-xs font-bold border-gray-200 rounded-lg bg-white h-9 px-3 focus:ring-indigo-500" 
+                        />
+                        <textarea 
+                            value={data.subtitle || ''} 
+                            onChange={e => updateBlockData(block.id, 'subtitle', e.target.value)} 
+                            placeholder="Subtitle / Description"
+                            className="w-full text-xs border-gray-200 rounded-lg bg-white px-3 py-2 focus:ring-indigo-500 resize-none h-16" 
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 pt-2 border-t border-gray-100/50">
+                    <div>
+                        <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1.5">Alignment</label>
+                        <div className="flex bg-gray-200/50 p-1 rounded-lg w-fit">
+                            {['left', 'center', 'right'].map(align => {
+                                const Icon = align === 'left' ? LucideIcons.AlignLeft : align === 'center' ? LucideIcons.AlignCenter : LucideIcons.AlignRight;
+                                return (
+                                    <button
+                                        key={align}
+                                        onClick={() => updateBlockData(block.id, 'align', align)}
+                                        className={`p-1.5 rounded-md transition-all ${data.align === align ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        <Icon className="w-3.5 h-3.5" />
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    </div>
+                    <div>
+                        <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1.5">Section Styling</label>
+                        <div className="flex gap-2">
+                             <div className="relative group">
+                                <input type="color" title="Title Color" value={data.title_color || '#111827'} onChange={e => updateBlockData(block.id, 'title_color', e.target.value)} className="w-6 h-6 p-0 border-none rounded bg-transparent cursor-pointer overflow-hidden shadow-sm hover:scale-110 transition-transform" />
+                             </div>
+                             <div className="relative group">
+                                <input type="color" title="Background Color" value={data.bg_color || '#ffffff'} onChange={e => updateBlockData(block.id, 'bg_color', e.target.value)} className="w-6 h-6 p-0 border-none rounded bg-transparent cursor-pointer overflow-hidden shadow-sm hover:scale-110 transition-transform" />
+                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="pt-2 border-t border-gray-100/50">
+                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Call to Action (CTA)</label>
+                    <div className="space-y-2">
+                        <input 
+                            type="text" 
+                            value={data.cta_text || ''} 
+                            onChange={e => updateBlockData(block.id, 'cta_text', e.target.value)} 
+                            placeholder="Button / Link Text (e.g., View All)"
+                            className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
+                        />
+                        <input 
+                            type="text" 
+                            value={data.cta_url || ''} 
+                            onChange={e => updateBlockData(block.id, 'cta_url', e.target.value)} 
+                            placeholder="Destination URL (e.g., /gallery)"
+                            className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
+                        />
+                    </div>
+                </div>
+            </div>
+        );
     };
 
     const renderBlockConfig = (block) => {
@@ -627,19 +738,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                         updateBlockData(block.id, 'links', newLinks);
                                     }, '+ ADD LINK')}
                                     <div className="space-y-3">
-                                        {links.map((link, lIdx) => (
-                                            <div key={link.id || `l-${lIdx}`} className="p-3 border border-gray-200 rounded-lg bg-white relative group">
-                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                    <button disabled={lIdx === 0} onClick={() => moveItem(links, lIdx, -1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
-                                                    <button disabled={lIdx === links.length - 1} onClick={() => moveItem(links, lIdx, 1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
-                                                    <button onClick={() => updateBlockData(block.id, 'links', links.filter((_, i) => i !== lIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
-                                                </div>
-                                                <div className="grid grid-cols-2 gap-2 mt-1">
-                                                    <input type="text" value={link.label || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="Label" className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 px-1" />
-                                                    <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="URL" className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 px-1" />
-                                                </div>
-                                            </div>
-                                        ))}
+                                        {renderLinks(links, [], (newLinks) => updateBlockData(block.id, 'links', newLinks))}
                                     </div>
                                     {cssInput('links')}
                                 </div>
@@ -1078,6 +1177,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 
                 return (
                     <div className="space-y-6">
+                        {renderHeaderConfig(block)}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
@@ -1487,6 +1587,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                 const items = Array.isArray(data.items) ? data.items : [];
                 return (
                     <div className="space-y-6">
+                        {renderHeaderConfig(block)}
                         <div className="pt-2">
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Data Source</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -1730,6 +1831,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
 
                 return (
                     <div className="space-y-6">
+                        {renderHeaderConfig(block)}
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -1975,6 +2077,8 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
 
                 return (
                     <div className="space-y-6">
+                        {renderHeaderConfig(block)}
+                        
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -1989,12 +2093,6 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 ))}
                             </div>
                         </div>
-
-                        <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Section Title</label>
-                            <input type="text" value={data.title || ''} onChange={e => updateBlockData(block.id, 'title', e.target.value)} className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-gray-50" />
-                        </div>
-
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Grid Columns</label>
                             <div className="flex gap-2">
@@ -2634,6 +2732,8 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
             case 'video':
                 return (
                     <div className="space-y-6">
+                        {renderHeaderConfig(block)}
+                        
                         <div className="flex items-center justify-between mb-2">
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Video Source</label>
                             <div className="flex bg-gray-100 p-0.5 rounded-lg">
@@ -2763,6 +2863,8 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
 
                 return (
                     <div className="space-y-6">
+                        {renderHeaderConfig(block)}
+                        
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -2926,6 +3028,217 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                         <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Field Mapping</label>
                                         <div className="space-y-3">
                                             {['title', 'url', 'poster', 'is_paid', 'locked_title', 'paid_message'].map(key => (
+                                                <div key={key}>
+                                                    <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">{key.replace('_', ' ')}</label>
+                                                    <select 
+                                                        value={data.mapping?.[key] || ''} 
+                                                        onChange={e => updateBlockData(block.id, 'mapping', { ...data.mapping, [key]: e.target.value })}
+                                                        className="w-full text-[10px] border-gray-200 rounded bg-white h-7 px-1 focus:ring-indigo-500"
+                                                    >
+                                                        <option value="">-- Map to field --</option>
+                                                        {fields.map(f => (
+                                                            <option key={f.name} value={f.name}>{f.label || f.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Items Limit</label>
+                                    <input 
+                                        type="number" 
+                                        value={data.limit || 6} 
+                                        onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value))}
+                                        className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 h-8 px-2"
+                                    />
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                );
+            }
+            case 'photogrid': {
+                const source = data.source || 'manual';
+                const columns = data.columns || 3;
+                const items = Array.isArray(data.items) ? data.items : [];
+                const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedType ? selectedType.fields : [];
+
+                return (
+                    <div className="space-y-6">
+                        {renderHeaderConfig(block)}
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['manual'].concat(isContentTypeEnabled ? ['dynamic'] : []).map(s => (
+                                    <button
+                                        key={s}
+                                        onClick={() => updateBlockData(block.id, 'source', s)}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${source === s ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Grid Columns</label>
+                            <div className="flex gap-2">
+                                {[1, 2, 3, 4].map(num => (
+                                    <button
+                                        key={num}
+                                        onClick={() => updateBlockData(block.id, 'columns', num)}
+                                        className={`flex-1 py-2 rounded-lg border text-sm font-bold transition-all ${columns == num ? 'bg-indigo-50 border-indigo-200 text-indigo-600' : 'bg-white border-gray-200 text-gray-400 hover:border-gray-300'}`}
+                                    >
+                                        {num}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
+                            <span className="text-xs font-bold text-gray-700 uppercase tracking-tight">Enable Lightbox</span>
+                            <label className="relative inline-flex items-center cursor-pointer">
+                                <input 
+                                    type="checkbox" 
+                                    checked={data.lightbox !== false} 
+                                    onChange={e => updateBlockData(block.id, 'lightbox', e.target.checked)}
+                                    className="sr-only peer"
+                                />
+                                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
+                        {source === 'manual' ? (
+                            <div className="space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider">Photos</label>
+                                    <button
+                                        onClick={() => {
+                                            const newItems = [...items, { id: generateId(), title: 'New Photo', description: '', image: '', is_paid: false }];
+                                            updateBlockData(block.id, 'items', newItems);
+                                        }}
+                                        className="text-[10px] text-indigo-600 font-bold hover:text-indigo-800"
+                                    >
+                                        + Add Photo
+                                    </button>
+                                </div>
+                                <div className="space-y-4">
+                                    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={(e) => handleNestedDragEnd(block.id, 'items', e)}>
+                                        <SortableContext items={items.map((item, idx) => item.id || `item-${idx}`)} strategy={verticalListSortingStrategy}>
+                                            {items.map((item, idx) => (
+                                                <SortableNestedItem key={item.id || idx} id={item.id || `item-${idx}`}>
+                                                    <div className="p-3 border border-gray-200 rounded-xl bg-white relative group flex-1">
+                                                        <button
+                                                            onClick={() => {
+                                                                 const newItems = items.filter((_, i) => i !== idx);
+                                                                 updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        
+                                                        <div className="space-y-3">
+                                                            <div className="flex gap-3">
+                                                                <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden shrink-0 relative">
+                                                                    {item.image ? <img src={item.image} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-5 h-5 text-gray-200" /></div>}
+                                                                    <button onClick={() => openMediaPicker(block.id, 'items', idx)} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-[8px] text-white font-bold uppercase transition-all">Select</button>
+                                                                </div>
+                                                                <div className="flex-1 space-y-2">
+                                                                    <input 
+                                                                        type="text" 
+                                                                        value={item.title || ''} 
+                                                                        onChange={e => {
+                                                                            const newItems = [...items];
+                                                                            newItems[idx] = { ...newItems[idx], title: e.target.value };
+                                                                            updateBlockData(block.id, 'items', newItems);
+                                                                        }}
+                                                                        placeholder="Photo Title"
+                                                                        className="w-full text-xs font-bold border-transparent bg-transparent p-0 focus:ring-0 focus:border-indigo-500"
+                                                                    />
+                                                                    <textarea 
+                                                                        value={item.description || ''} 
+                                                                        onChange={e => {
+                                                                            const newItems = [...items];
+                                                                            newItems[idx] = { ...newItems[idx], description: e.target.value };
+                                                                            updateBlockData(block.id, 'items', newItems);
+                                                                        }}
+                                                                        placeholder="Description (optional)"
+                                                                        className="w-full text-[10px] text-gray-500 border-none bg-transparent p-0 focus:ring-0 resize-none h-8"
+                                                                    />
+                                                                </div>
+                                                            </div>
+                                                            
+                                                            <label className="flex items-center gap-1.5 cursor-pointer">
+                                                                <input type="checkbox" checked={item.is_paid} onChange={e => {
+                                                                    const newItems = [...items];
+                                                                    newItems[idx] = { ...newItems[idx], is_paid: e.target.checked };
+                                                                    updateBlockData(block.id, 'items', newItems);
+                                                                }} className="w-3 h-3 rounded text-amber-600 focus:ring-amber-500" />
+                                                                <span className="text-[9px] font-bold text-amber-700 uppercase tracking-wider">Premium Access</span>
+                                                            </label>
+
+                                                            {item.is_paid && (
+                                                                <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100 space-y-2">
+                                                                    <input 
+                                                                        type="text" 
+                                                                        value={item.locked_title || ''} 
+                                                                        onChange={e => {
+                                                                            const newItems = [...items];
+                                                                            newItems[idx] = { ...newItems[idx], locked_title: e.target.value };
+                                                                            updateBlockData(block.id, 'items', newItems);
+                                                                        }}
+                                                                        placeholder="Locked Title"
+                                                                        className="w-full text-[9px] border-amber-200 rounded h-6 px-1 focus:ring-amber-500 bg-white"
+                                                                    />
+                                                                    <textarea 
+                                                                        value={item.paid_message || ''} 
+                                                                        onChange={e => {
+                                                                            const newItems = [...items];
+                                                                            newItems[idx] = { ...newItems[idx], paid_message: e.target.value };
+                                                                            updateBlockData(block.id, 'items', newItems);
+                                                                        }}
+                                                                        placeholder="Locked message..."
+                                                                        className="w-full text-[9px] border-amber-200 rounded p-1 focus:ring-amber-500 bg-white"
+                                                                        rows="1"
+                                                                    />
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                </SortableNestedItem>
+                                            ))}
+                                        </SortableContext>
+                                    </DndContext>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
+                                    <select 
+                                        value={data.content_type || ''} 
+                                        onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
+                                        className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Content Type...</option>
+                                        {contentTypes.map(ct => (
+                                            <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                {data.content_type && (
+                                    <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4">
+                                        <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Field Mapping</label>
+                                        <div className="space-y-3">
+                                            {['title', 'description', 'image', 'is_paid', 'locked_title', 'paid_message'].map(key => (
                                                 <div key={key}>
                                                     <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">{key.replace('_', ' ')}</label>
                                                     <select 

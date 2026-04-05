@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import ReactPlayer from 'react-player';
+import BlockHeader from './BlockHeader';
 
 const SlideshowBlock = ({ data = {} }) => {
     const items = Array.isArray(data.items) ? data.items : [];
@@ -65,12 +66,16 @@ const SlideshowBlock = ({ data = {} }) => {
     };
 
     return (
-        <section 
-            className="relative w-full overflow-hidden group"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-        >
-            {data.customCss && <style dangerouslySetInnerHTML={{ __html: data.customCss }} />}
+        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
+            <div className="max-w-7xl mx-auto">
+                <BlockHeader data={data} />
+
+                <div 
+                    className="relative w-full overflow-hidden group rounded-3xl shadow-2xl"
+                    onMouseEnter={() => setIsPaused(true)}
+                    onMouseLeave={() => setIsPaused(false)}
+                >
+                    {data.customCss && <style dangerouslySetInnerHTML={{ __html: data.customCss }} />}
             
             <div className="relative aspect-[21/9] md:aspect-[3/1] w-full bg-gray-900">
                 {items.map((item, idx) => {
@@ -179,8 +184,10 @@ const SlideshowBlock = ({ data = {} }) => {
                     </div>
                 )}
             </div>
-        </section>
-    );
+        </div>
+    </div>
+</section>
+);
 };
 
 export default SlideshowBlock;
