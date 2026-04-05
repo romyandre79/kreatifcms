@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
-import { Head, useForm } from '@inertiajs/react';
+import { Head, useForm, Link } from '@inertiajs/react';
+import Summernote from '@/Components/Summernote';
 import { 
     Mail, 
     MessageSquare, 
@@ -15,9 +16,10 @@ import {
     Clock
 } from 'lucide-react';
 
-export default function Dashboard({ auth, campaigns, inboundEmails, account }) {
+export default function Dashboard({ auth, campaigns, inboundEmails, account, emailTemplates = [] }) {
     const [activeTab, setActiveTab] = useState('campaigns');
     const [showCreateModal, setShowCreateModal] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState('');
 
     const { data, setData, post, processing, reset, errors } = useForm({
         name: '',
@@ -53,6 +55,23 @@ export default function Dashboard({ auth, campaigns, inboundEmails, account }) {
 
             <div className="py-12">
                 <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                    {/* Error Alert */}
+                    {account?.error && (
+                        <div className="mb-8 p-4 bg-red-50 border-l-4 border-red-500 rounded-lg flex items-center gap-3">
+                            <AlertCircle className="w-5 h-5 text-red-500 shrink-0" />
+                            <div>
+                                <h4 className="text-sm font-bold text-red-800">Connection Issue</h4>
+                                <p className="text-sm text-red-700">{account.error}</p>
+                            </div>
+                            <Link 
+                                href={route('plugins.index')} 
+                                className="ml-auto text-xs font-bold text-red-800 hover:underline bg-red-100 px-2 py-1 rounded"
+                            >
+                                Settings
+                            </Link>
+                        </div>
+                    )}
+
                     {/* Stats Grid */}
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                         {stats.map((stat, i) => (
@@ -194,29 +213,68 @@ export default function Dashboard({ auth, campaigns, inboundEmails, account }) {
                             </div>
 
                             {data.type === 'email' && (
-                                <div>
-                                    <label className="block text-sm font-bold text-gray-700 mb-1">Subject Line</label>
-                                    <input 
-                                        type="text" 
-                                        value={data.subject} 
-                                        onChange={e => setData('subject', e.target.value)}
-                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
-                                        placeholder="Special Offer for You!"
-                                    />
-                                </div>
+                                <>
+                                    {emailTemplates.length > 0 && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">Use Template</label>
+                                            <select
+                                                value={selectedTemplate}
+                                                onChange={e => {
+                                                    const val = e.target.value;
+                                                    setSelectedTemplate(val);
+                                                    if (val) {
+                                                        const template = emailTemplates.find(t => t.id.toString() === val);
+                                                        if (template) {
+                                                            setData(data => ({
+                                                                ...data,
+                                                                subject: template.subject || '',
+                                                                content: template.content || ''
+                                                            }));
+                                                        }
+                                                    } else {
+                                                        setData(data => ({ ...data, subject: '', content: '' }));
+                                                    }
+                                                }}
+                                                className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                            >
+                                                <option value="">No Template (Internal)</option>
+                                                {emailTemplates.map(t => (
+                                                    <option key={t.id} value={t.id}>{t.name}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    )}
+                                    <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Subject Line</label>
+                                        <input 
+                                            type="text" 
+                                            value={data.subject} 
+                                            onChange={e => setData('subject', e.target.value)}
+                                            className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500" 
+                                            placeholder="Special Offer for You!"
+                                        />
+                                    </div>
+                                </>
                             )}
 
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-1">
                                     {data.type === 'email' ? 'Email Content (HTML)' : 'WhatsApp Template ID'}
                                 </label>
-                                <textarea 
-                                    value={data.content} 
-                                    onChange={e => setData('content', e.target.value)}
-                                    rows="6"
-                                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm" 
-                                    placeholder={data.type === 'email' ? '<h1>Hello!</h1>...' : 'template_id_123'}
-                                />
+                                {data.type === 'email' ? (
+                                    <Summernote
+                                        value={data.content}
+                                        onChange={(content) => setData('content', content)}
+                                    />
+                                ) : (
+                                    <textarea 
+                                        value={data.content} 
+                                        onChange={e => setData('content', e.target.value)}
+                                        rows="6"
+                                        className="w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 font-mono text-sm" 
+                                        placeholder="template_id_123"
+                                    />
+                                )}
                                 {errors.content && <p className="text-red-500 text-xs mt-1">{errors.content}</p>}
                             </div>
 

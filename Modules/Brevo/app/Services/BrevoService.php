@@ -12,7 +12,7 @@ class BrevoService
 
     public function __construct()
     {
-        $this->apiKey = Setting::get('brevo', 'api_key', '');
+        $this->apiKey = trim(Setting::get('brevo', 'api_key', ''));
     }
 
     public function isConfigured(): bool
@@ -25,12 +25,22 @@ class BrevoService
      */
     protected function client()
     {
-        return Http::withHeaders([
+        $options = [
             'api-key' => $this->apiKey,
             'accept' => 'application/json',
             'content-type' => 'application/json',
-        ])->baseUrl($this->baseUrl)
-          ->timeout(5); // 5 second timeout
+        ];
+
+        $client = Http::withHeaders($options)
+            ->baseUrl($this->baseUrl)
+            ->timeout(15);
+
+        // On local windows development, sometimes CA bundles are missing
+        if (app()->environment('local') && PHP_OS_FAMILY === 'Windows') {
+            $client->withoutVerifying();
+        }
+
+        return $client;
     }
 
     /**

@@ -36,14 +36,21 @@ class BrevoController extends Controller
                     $accountStats = ['error' => 'Brevo API Error: ' . ($response->json('message') ?? 'Unknown error')];
                 }
             } catch (\Exception $e) {
-                $accountStats = ['error' => 'Could not connect to Brevo. Please check your internet connection.'];
+                \Log::error('Brevo Connection Error: ' . $e->getMessage());
+                $accountStats = ['error' => 'Could not connect to Brevo. ' . $e->getMessage()];
             }
         }
 
-        return Inertia::render('Brevo/Dashboard', [
+        $emailTemplates = [];
+        if (\Nwidart\Modules\Facades\Module::has('EmailTemplates') && \Nwidart\Modules\Facades\Module::isEnabled('EmailTemplates')) {
+            $emailTemplates = \Modules\EmailTemplates\Models\EmailTemplate::all();
+        }
+
+        return Inertia::render('Brevo::Dashboard', [
             'campaigns' => Campaign::latest()->get(),
             'inboundEmails' => InboundEmail::latest()->get(),
-            'account' => $accountStats
+            'account' => $accountStats,
+            'emailTemplates' => $emailTemplates
         ]);
     }
 
