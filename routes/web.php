@@ -88,6 +88,13 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::resource('roles', App\Http\Controllers\RoleController::class);
     });
 
+    // System Update Routes
+    Route::middleware(['permission:system,update'])->group(function () {
+        Route::get('/system/update', [App\Http\Controllers\SystemUpdateController::class, 'index'])->name('system.update.index');
+        Route::post('/system/update/check', [App\Http\Controllers\SystemUpdateController::class, 'check'])->name('system.update.check');
+        Route::post('/system/update/run', [App\Http\Controllers\SystemUpdateController::class, 'run'])->name('system.update.run');
+    });
+
     // Dashboard Widget Routes
     Route::get('/api/dashboard/widgets', [App\Http\Controllers\DashboardWidgetController::class, 'index'])->name('dashboard.widgets.index');
     Route::post('/api/dashboard/widgets', [App\Http\Controllers\DashboardWidgetController::class, 'store'])->name('dashboard.widgets.store');
