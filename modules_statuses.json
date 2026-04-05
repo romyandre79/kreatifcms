@@ -31,5 +31,6 @@
     "TwoFactorAuth": true,
     "VideoBlock": true,
     "VideoGrid": true,
-    "Brevo": true
+    "Brevo": true,
+    "PhotoGrid": true
 }

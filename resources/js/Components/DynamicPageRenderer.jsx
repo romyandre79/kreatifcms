@@ -15,6 +15,7 @@ const TimelineBlock = lazy(() => import('./Blocks/TimelineBlock'));
 const MegaMenuBlock = lazy(() => import('./Blocks/MegaMenuBlock'));
 const VideoBlock = lazy(() => import('./Blocks/VideoBlock'));
 const VideoGridBlock = lazy(() => import('./Blocks/VideoGridBlock'));
+const PhotoGridBlock = lazy(() => import('./Blocks/PhotoGridBlock'));
 
 
 
@@ -31,7 +32,8 @@ const BlockComponents = {
     timeline: TimelineBlock,
     megamenu: MegaMenuBlock,
     video: VideoBlock,
-    video_grid: VideoGridBlock
+    video_grid: VideoGridBlock,
+    photogrid: PhotoGridBlock
 };
 
 

@@ -1,0 +1,23 @@
+{
+    "name": "nwidart/photogrid",
+    "description": "PhotoGrid module for KreatifCMS",
+    "authors": [
+        {
+            "name": "KreatifCMS Team",
+            "email": "support@kreatifcms.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\PhotoGrid\\Providers\\PhotoGridServiceProvider"
+            ],
+            "aliases": {}
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\PhotoGrid\\": "app/"
+        }
+    }
+}

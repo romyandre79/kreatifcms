@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import ReactMarkdown from 'react-markdown';
 import { usePage, Link } from '@inertiajs/react';
-import { Lock, Play, Youtube, Video, LayoutGrid, ChevronRight } from 'lucide-react';
+import { Lock, Play, Youtube, Video, LayoutGrid, ChevronRight, ArrowRight } from 'lucide-react';
 import ReactPlayer from 'react-player';
+import BlockHeader from './BlockHeader';
 
 const VideoCard = ({ video, columns = 3 }) => {
     const { auth } = usePage().props;
@@ -155,22 +157,9 @@ const VideoGridBlock = ({ data = {}, contentTypes = [] }) => {
     }[columns] || 'grid-cols-1 md:grid-cols-3';
 
     return (
-        <section className="py-20 px-6 bg-white overflow-hidden">
+        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
             <div className="max-w-7xl mx-auto">
-                {(data.title || data.subtitle) && (
-                    <div className="text-center mb-16 space-y-3">
-                        {data.title && (
-                            <h2 className="text-4xl font-extrabold text-gray-900 tracking-tight">
-                                {data.title}
-                            </h2>
-                        )}
-                        {data.subtitle && (
-                            <p className="text-gray-500 text-lg max-w-2xl mx-auto leading-relaxed">
-                                {data.subtitle}
-                            </p>
-                        )}
-                    </div>
-                )}
+                <BlockHeader data={data} />
 
                 {displayItems.length > 0 ? (
                     <div className={`grid ${gridClasses} gap-8`}>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ArrowRight } from 'lucide-react';
+import BlockHeader from './BlockHeader';
 
 const FeatureGridBlock = ({ data = {} }) => {
     const source = data.source || 'manual';
@@ -30,13 +30,9 @@ const FeatureGridBlock = ({ data = {} }) => {
     }[columns] || 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
 
     return (
-        <section className="py-20 px-6 bg-white overflow-hidden">
+        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
             <div className="max-w-7xl mx-auto">
-                {data.title && (
-                    <h2 className="text-3xl md:text-4xl font-extrabold text-center text-gray-900 mb-16 tracking-tight">
-                        {data.title}
-                    </h2>
-                )}
+                <BlockHeader data={data} />
                 <div className={`grid ${gridClasses} gap-10`}>
                     {displayItems.map((feature, i) => (
                         <div key={feature.id || i} className="p-8 rounded-3xl bg-gray-50 border border-transparent hover:border-indigo-100 hover:bg-white hover:shadow-2xl hover:shadow-indigo-50 transition-all group overflow-hidden">
