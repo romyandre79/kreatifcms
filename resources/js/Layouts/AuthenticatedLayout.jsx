@@ -74,7 +74,6 @@ export default function AuthenticatedLayout({ header, children }) {
         { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*'), contentType: 'pages' },
         { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'reusableblock' },
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
-        { name: 'General API', href: safeRoute('admin.general-api.index'), icon: Puzzle, active: isRouteActive('admin.general-api.*'), contentType: 'plugins' },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
     ];
@@ -103,6 +102,18 @@ export default function AuthenticatedLayout({ header, children }) {
 
     if (hasPermission('layouts', 'read') && plugins.some(p => p.alias === 'layout' && p.enabled !== false) && route().has('layouts.index')) {
         filteredNavItems.splice(4, 0, { name: 'Layout Editor', href: safeRoute('layouts.index'), icon: Layout, active: isRouteActive('layouts.index') });
+    }
+
+    if (hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'generalapi' && p.enabled !== false) && route().has('admin.general-api.index')) {
+        const pluginsIndex = filteredNavItems.findIndex(item => item.name === 'Plugins');
+        if (pluginsIndex !== -1) {
+            filteredNavItems.splice(pluginsIndex + 1, 0, { 
+                name: 'General API', 
+                href: safeRoute('admin.general-api.index'), 
+                icon: Puzzle, 
+                active: isRouteActive('admin.general-api.*') 
+            });
+        }
     }
 
     if (hasPermission('databasemanager', 'read') && plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
