@@ -191,7 +191,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
         } else if (type === 'slideshow') {
             newBlock.data = {
                 source: 'manual',
-                items: [{ id: generateId(), image: '', title: '', link: '' }],
+                items: [{ id: generateId(), type: 'image', image: '', video_url: '', title: '', link: '' }],
                 config: { autoPlay: true, interval: 5000, showArrows: true, showDots: true }
             };
         } else if (type === 'navbar') {
@@ -559,6 +559,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
 
     const renderBlockConfig = (block) => {
         const data = block.data || {};
+        const isVideoActive = plugins.some(p => (p.alias === 'videogrid' || p.alias === 'video') && p.enabled !== false);
         switch (block.type) {
             case 'navbar': {
                 const links = Array.isArray(data.links) ? data.links : [];
@@ -1771,8 +1772,36 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                 <X className="w-3 h-3" />
                                             </button>
                                             
+                                            <div className="flex items-center justify-between mb-3 bg-white/50 p-1 rounded-lg border border-gray-100">
+                                                <div className="flex gap-1">
+                                                    <button 
+                                                        onClick={() => {
+                                                            const newItems = [...items];
+                                                            newItems[idx] = { ...newItems[idx], type: 'image' };
+                                                            updateBlockData(block.id, 'items', newItems);
+                                                        }}
+                                                        className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all ${(!item.type || item.type === 'image') ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:bg-gray-100'}`}
+                                                    >
+                                                        Image
+                                                    </button>
+                                                    {isVideoActive && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newItems = [...items];
+                                                                newItems[idx] = { ...newItems[idx], type: 'video' };
+                                                                updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            className={`px-3 py-1 rounded text-[9px] font-bold uppercase transition-all ${item.type === 'video' ? 'bg-indigo-600 text-white shadow-sm' : 'text-gray-400 hover:bg-gray-100'}`}
+                                                        >
+                                                            Video
+                                                        </button>
+                                                    )}
+                                                </div>
+                                                <span className="text-[8px] font-bold text-gray-300 uppercase mr-1">Slide #{idx + 1}</span>
+                                            </div>
+
                                             <div className="flex gap-3 mb-3">
-                                                <div className="w-20 h-20 bg-white rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 relative">
+                                                <div className="w-16 h-16 bg-white rounded-lg border border-gray-200 overflow-hidden flex-shrink-0 relative">
                                                     {item.image ? (
                                                         <img src={item.image} className="w-full h-full object-cover" />
                                                     ) : (
@@ -1781,24 +1810,38 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                         </div>
                                                     )}
                                                     <button 
-                                                        onClick={() => openMediaPicker(block.id, `items.${idx}.image`)}
-                                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[10px] font-bold"
+                                                        onClick={() => openMediaPicker(block.id, 'items', idx)}
+                                                        className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[9px] font-bold"
                                                     >
-                                                        Change
+                                                        {item.type === 'video' ? 'Poster' : 'Slide'}
                                                     </button>
                                                 </div>
                                                 <div className="flex-1 space-y-2">
-                                                    <input 
-                                                        type="text" 
-                                                        value={item.title || ''} 
-                                                        onChange={e => {
-                                                            const newItems = [...items];
-                                                            newItems[idx] = { ...newItems[idx], title: e.target.value };
-                                                            updateBlockData(block.id, 'items', newItems);
-                                                        }}
-                                                        placeholder="Slide Caption"
-                                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
-                                                    />
+                                                    {item.type === 'video' ? (
+                                                        <input 
+                                                            type="text" 
+                                                            value={item.video_url || ''} 
+                                                            onChange={e => {
+                                                                const newItems = [...items];
+                                                                newItems[idx] = { ...newItems[idx], video_url: e.target.value };
+                                                                updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            placeholder="Video URL (YouTube/Vimeo/Direct)"
+                                                            className="w-full text-[10px] border-gray-200 rounded-lg focus:ring-indigo-500 font-mono"
+                                                        />
+                                                    ) : (
+                                                        <input 
+                                                            type="text" 
+                                                            value={item.title || ''} 
+                                                            onChange={e => {
+                                                                const newItems = [...items];
+                                                                newItems[idx] = { ...newItems[idx], title: e.target.value };
+                                                                updateBlockData(block.id, 'items', newItems);
+                                                            }}
+                                                            placeholder="Slide Caption"
+                                                            className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
+                                                        />
+                                                    )}
                                                     <input 
                                                         type="text" 
                                                         value={item.link || ''} 
@@ -1808,7 +1851,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                             updateBlockData(block.id, 'items', newItems);
                                                         }}
                                                         placeholder="Button Link (optional)"
-                                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
+                                                        className="w-full text-[10px] border-gray-200 rounded-lg focus:ring-indigo-500"
                                                     />
                                                 </div>
                                             </div>
@@ -2792,6 +2835,16 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                                                 placeholder="Video Title"
                                                                 className="w-full text-xs font-bold border-transparent bg-transparent p-0 focus:ring-0 focus:border-indigo-500"
                                                             />
+                                                            <textarea 
+                                                                value={item.description || ''} 
+                                                                onChange={e => {
+                                                                    const newItems = [...items];
+                                                                    newItems[idx] = { ...newItems[idx], description: e.target.value };
+                                                                    updateBlockData(block.id, 'items', newItems);
+                                                                }}
+                                                                placeholder="Video Description (optional)"
+                                                                className="w-full text-[10px] text-gray-500 border-none bg-transparent p-0 focus:ring-0 resize-none h-8"
+                                                            />
                                                             <div className="flex gap-2">
                                                                 <div className="w-16 h-12 bg-gray-50 rounded border border-gray-100 overflow-hidden shrink-0 relative">
                                                                     {item.poster ? <img src={item.poster} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-4 h-4 text-gray-300" /></div>}
@@ -3178,8 +3231,8 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 </div>
                             ) : (
                                 <div className="flex-1 overflow-y-auto w-full">
-                                    {/* Isolate styling with pointer-events-none if we don't want them clicking links in preview */}
-                                    <div className="w-full h-full pointer-events-none origin-top">
+                                    {/* Enable interactions in preview */}
+                                    <div className="w-full h-full origin-top">
                                         <DynamicPageRenderer blocks={blocks} reusableBlocks={reusableBlocks} />
                                     </div>
                                 </div>

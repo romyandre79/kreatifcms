@@ -6,7 +6,6 @@ import ReactPlayer from 'react-player';
 const VideoCard = ({ video, columns = 3 }) => {
     const { auth } = usePage().props;
     const isAllowed = !video.is_paid || !!auth.user;
-    const [isPlaying, setIsPlaying] = useState(false);
 
     if (!isAllowed) {
         return (
@@ -43,44 +42,56 @@ const VideoCard = ({ video, columns = 3 }) => {
         );
     }
 
+    const hasUrl = !!video.url && typeof video.url === 'string' && video.url.trim().length > 0;
+    const sanitizedUrl = hasUrl ? video.url.trim() : '';
+
+    // Convert YouTube URLs to Embed URLs
+    const getEmbedUrl = (url) => {
+        if (!url) return '';
+        let videoId = '';
+        if (url.includes('youtube.com/watch?v=')) {
+            videoId = url.split('v=')[1]?.split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=0&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}` : url;
+    };
+
+    const isYouTube = sanitizedUrl.includes('youtube.com') || sanitizedUrl.includes('youtu.be');
+
     return (
         <div className="group relative flex flex-col bg-white rounded-3xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
-            {/* Thumbnail/Player Container */}
-            <div className="relative aspect-video bg-gray-950 overflow-hidden">
-                {!isPlaying ? (
+            {/* Thumbnail/Player Container with Aspect Ratio Fallback */}
+            <div className="relative w-full pb-[56.25%] bg-gray-950 overflow-hidden group/player">
+                {hasUrl ? (
                     <>
-                        <img 
-                            src={video.poster || '/images/video-placeholder.jpg'} 
-                            alt={video.title}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                        />
-                        <div className="absolute inset-0 bg-black/10 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                            <button 
-                                onClick={() => setIsPlaying(true)}
-                                className="w-14 h-14 bg-white/90 backdrop-blur-md rounded-full flex items-center justify-center text-indigo-600 shadow-xl transform transition-all group-hover:scale-110"
-                            >
-                                <Play className="w-6 h-6 fill-current ml-1" />
-                            </button>
+                        {isYouTube ? (
+                            <iframe 
+                                src={getEmbedUrl(sanitizedUrl)}
+                                className="absolute inset-0 w-full h-full z-10 border-none"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                allowFullScreen
+                            />
+                        ) : (
+                            <ReactPlayer
+                                url={sanitizedUrl}
+                                controls={true}
+                                playing={false}
+                                width="100%"
+                                height="100%"
+                                className="absolute inset-0 z-10"
+                            />
+                        )}
+                        {/* DIAGNOSTIC OVERLAY - DELETE AFTER FIX */}
+                        <div className="absolute bottom-2 left-2 z-20 bg-black/80 text-white text-[8px] font-mono px-1.5 py-0.5 rounded opacity-0 group-hover/player:opacity-100 transition-opacity whitespace-nowrap overflow-hidden max-w-[90%] border border-white/20">
+                            URL: {sanitizedUrl}
                         </div>
                     </>
                 ) : (
-                    <ReactPlayer
-                        url={video.url}
-                        controls={true}
-                        playing={true}
-                        width="100%"
-                        height="100%"
-                        className="absolute inset-0"
-                        config={{
-                            file: {
-                                forceHLS: video.url?.split('?')[0].endsWith('.m3u8'),
-                                forceDASH: video.url?.split('?')[0].endsWith('.mpd'),
-                                attributes: {
-                                    poster: video.poster
-                                }
-                            }
-                        }}
-                    />
+                    <div className="absolute inset-0 flex flex-col items-center justify-center text-gray-700 space-y-2">
+                        <Video className="w-8 h-8 opacity-20" />
+                        <span className="text-[10px] uppercase tracking-widest font-bold opacity-30">No URL Provided</span>
+                    </div>
                 )}
             </div>
 

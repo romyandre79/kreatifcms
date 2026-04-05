@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Image as ImageIcon, ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
+import ReactPlayer from 'react-player';
 
 const SlideshowBlock = ({ data = {} }) => {
     const items = Array.isArray(data.items) ? data.items : [];
@@ -31,16 +32,36 @@ const SlideshowBlock = ({ data = {} }) => {
 
     // Support dynamic mapping if it's a dynamic source
     const getSlideData = (item) => {
-        if (!item) return { image: '', title: '', link: '#' };
+        if (!item) return { type: 'image', image: '', video_url: '', title: '', link: '#' };
         
         if (data.source === 'dynamic' && data.mapping) {
             return {
+                type: 'image', // Dynamic currently only supports images
                 image: (data.mapping.image && item[data.mapping.image]) ? item[data.mapping.image] : '',
+                video_url: '',
                 title: (data.mapping.title && item[data.mapping.title]) ? item[data.mapping.title] : '',
                 link: (data.mapping.link && item[data.mapping.link]) ? item[data.mapping.link] : '#'
             };
         }
-        return item || { image: '', title: '', link: '#' };
+        return {
+            type: item.type || 'image',
+            image: item.image || '',
+            video_url: item.video_url || '',
+            title: item.title || '',
+            link: item.link || '#'
+        };
+    };
+
+    // Convert YouTube URLs to Embed URLs
+    const getEmbedUrl = (url) => {
+        if (!url) return '';
+        let videoId = '';
+        if (url.includes('youtube.com/watch?v=')) {
+            videoId = url.split('v=')[1]?.split('&')[0];
+        } else if (url.includes('youtu.be/')) {
+            videoId = url.split('youtu.be/')[1]?.split('?')[0];
+        }
+        return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1&mute=1&loop=1&playlist=${videoId}&controls=0&showinfo=0&modestbranding=1&enablejsapi=1&origin=${typeof window !== 'undefined' ? window.location.origin : ''}` : url;
     };
 
     return (
@@ -54,12 +75,45 @@ const SlideshowBlock = ({ data = {} }) => {
             <div className="relative aspect-[21/9] md:aspect-[3/1] w-full bg-gray-900">
                 {items.map((item, idx) => {
                     const slide = getSlideData(item);
+                    const isYouTube = slide.video_url?.includes('youtube.com') || slide.video_url?.includes('youtu.be');
+                    
                     return (
                         <div 
                             key={idx}
                             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${idx === currentIndex ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}
                         >
-                            {slide.image && (
+                            {slide.type === 'video' && slide.video_url ? (
+                                <div className="w-full h-full relative">
+                                    {isYouTube ? (
+                                        <div className="w-full h-full relative pointer-events-none">
+                                            <iframe 
+                                                src={idx === currentIndex ? getEmbedUrl(slide.video_url) : ''}
+                                                className="absolute inset-0 w-full h-full border-none pointer-events-none"
+                                                style={{ objectFit: 'cover' }}
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                            />
+                                        </div>
+                                    ) : (
+                                        <ReactPlayer
+                                            url={slide.video_url}
+                                            light={slide.image || true}
+                                            playing={idx === currentIndex && !isPaused}
+                                            onStart={() => setIsPaused(true)}
+                                            onPlay={() => setIsPaused(true)}
+                                            onPause={() => setIsPaused(false)}
+                                            loop={true}
+                                            muted={true}
+                                            width="100%"
+                                            height="100%"
+                                            playsinline={true}
+                                            style={{ objectFit: 'cover', position: 'absolute', top: 0, left: 0 }}
+                                            config={{
+                                                youtube: { playerVars: { showinfo: 0, modestbranding: 1, controls: 1 } }
+                                            }}
+                                        />
+                                    )}
+                                </div>
+                            ) : slide.image && (
                                 <img 
                                     src={slide.image} 
                                     alt={slide.title || 'Slide'} 
@@ -68,8 +122,8 @@ const SlideshowBlock = ({ data = {} }) => {
                                 />
                             )}
                             {(slide.title || slide.link) && (
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-8 md:p-16">
-                                    <div className={`max-w-4xl mx-auto w-full transition-all duration-700 transform ${idx === currentIndex ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent flex flex-col justify-end p-8 md:p-16 pointer-events-none">
+                                    <div className={`max-w-4xl mx-auto w-full transition-all duration-700 transform pointer-events-auto ${idx === currentIndex ? 'translate-y-0 opacity-100' : 'translate-y-10 opacity-0'}`}>
                                         {slide.title && (
                                             <h2 className="text-3xl md:text-5xl font-extrabold text-white mb-4 drop-shadow-lg">
                                                 {slide.title}
