@@ -153,16 +153,39 @@ export default function Update({ info }) {
                                     Git Update
                                 </button>
                                 
-                                <button
-                                    onClick={() => runUpdate('zip')}
-                                    disabled={isUpdating}
-                                    className="text-[10px] text-gray-400 hover:text-indigo-600 font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1"
-                                >
-                                    <Download className="w-3 h-3" />
-                                    Try ZIP Fallback
-                                </button>
+                                <div className="flex flex-col items-center gap-1">
+                                    <button
+                                        onClick={() => runUpdate('zip')}
+                                        disabled={isUpdating}
+                                        className="text-[10px] text-gray-400 hover:text-indigo-600 font-bold uppercase tracking-widest transition-colors flex items-center justify-center gap-1"
+                                    >
+                                        <Download className="w-3 h-3" />
+                                        Try ZIP Download
+                                    </button>
+
+                                    {updateInfo.local_zip?.exists && (
+                                        <button
+                                            onClick={() => runUpdate('local')}
+                                            disabled={isUpdating}
+                                            className="mt-2 px-4 py-2 bg-amber-50 text-amber-600 border border-amber-100 text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-100 transition-all flex items-center gap-2 animate-bounce"
+                                        >
+                                            <AlertCircle className="w-3 h-3" />
+                                            Install Local update.zip ({updateInfo.local_zip.size})
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
+                    </div>
+
+                    <div className="mt-6 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100/50">
+                        <p className="text-[10px] text-indigo-400 font-bold uppercase tracking-widest flex items-center gap-2">
+                            <Terminal className="w-3 h-3" />
+                            Manual Update Tip
+                        </p>
+                        <p className="text-xs text-indigo-900/60 mt-1">
+                            For offline updates, place your <code className="bg-white px-1 rounded border">update.zip</code> in <code className="bg-white px-1 rounded border">storage/app/updates/</code> and refresh this page.
+                        </p>
                     </div>
 
                     {/* Gradient Decorations */}
