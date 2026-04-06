@@ -64,7 +64,7 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
             <ul className={`${isMobile ? 'pl-4 space-y-1' : (depth === 0 ? 'space-y-1' : 'absolute left-full top-0 ml-px w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover/recursive:opacity-100 group-hover/recursive:visible transition-all duration-200 z-[110]')}`}>
                 {links.map((link, i) => {
                     const hasChildren = Array.isArray(link.children) && link.children.length > 0;
-                    
+
                     if (isMobile) {
                         return (
                             <li key={link.id || i}>
@@ -313,7 +313,7 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
             }}
         >
             {/* Desktop Menu Bar */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="hidden md:flex items-center h-14 gap-1">
                     {/* Logo (optional) */}
                     {data.logo && (

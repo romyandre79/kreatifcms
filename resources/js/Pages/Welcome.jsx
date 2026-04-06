@@ -5,7 +5,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
     return (
         <div className="min-h-screen bg-slate-50 font-sans selection:bg-indigo-500 selection:text-white">
             <Head title="Welcome to Kreatif CMS" />
-            
+
             {/* Background Decorations */}
             <div className="fixed inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-200/40 rounded-full blur-[120px]" />
@@ -19,7 +19,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                     </div>
                     <span className="text-2xl font-black text-slate-900 tracking-tight">KREATIF<span className="text-indigo-600">CMS</span></span>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                     {auth.user ? (
                         <Link
@@ -43,7 +43,7 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
             </nav>
 
             <main className="relative z-10 pt-12 pb-24">
-                <div className="max-w-7xl mx-auto px-6">
+                <div className="mx-auto px-6">
                     {/* Hero Section */}
                     <div className="text-center max-w-4xl mx-auto mb-20 animate-in fade-in slide-in-from-bottom-6 duration-1000">
                         <div className="inline-flex items-center gap-2 px-4 py-2 bg-white/80 border border-slate-200 rounded-full text-indigo-600 text-sm font-bold mb-8 shadow-sm backdrop-blur-sm">
