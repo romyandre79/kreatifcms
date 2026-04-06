@@ -12,6 +12,7 @@ import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
 import SocialIcon from '@/Components/SocialIcon';
 import MarkdownToolbar from '@/Components/MarkdownToolbar';
+import Summernote from '@/Components/Summernote';
 import {
     DndContext,
     closestCenter,
@@ -477,27 +478,132 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 </div>
                             );
                         case 'links':
-                            return (
-                                <div key="links" className="space-y-3 pb-4 border-b border-gray-100">
-                                    {sectionHeader('Menu Links', () => {
-                                        const newLinks = [...links, { id: generateId(), label: 'New Link', url: '#' }];
-                                        updateBlockData(block.id, 'links', newLinks);
-                                    }, '+ ADD LINK')}
-                                    <div className="space-y-3">
-                                        {links.map((link, lIdx) => (
-                                            <div key={link.id || `l-${lIdx}`} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
-                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                    <button disabled={lIdx === 0} onClick={() => moveItem(links, lIdx, -1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
-                                                    <button disabled={lIdx === links.length - 1} onClick={() => moveItem(links, lIdx, 1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
-                                                    <button onClick={() => updateBlockData(block.id, 'links', links.filter((_, i) => i !== lIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                            const moveNestedItem = (arr, index, direction, parentPath = []) => {
+                                const newLinks = [...links];
+                                let targetArr = newLinks;
+                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                const targetIndex = index + direction;
+                                if (targetIndex < 0 || targetIndex >= targetArr.length) return;
+                                [targetArr[index], targetArr[targetIndex]] = [targetArr[targetIndex], targetArr[index]];
+                                updateBlockData(block.id, 'links', newLinks);
+                            };
+
+                            const renderNestedLinks = (currentLinks, parentPath = [], depth = 0) => {
+                                if (depth > 2) return null; 
+
+                                return (
+                                    <div className={`space-y-4 ${depth > 0 ? 'ml-6 mt-4 pl-4 border-l-2 border-indigo-50 bg-indigo-50/5 rounded-br-2xl py-3' : ''}`}>
+                                        {currentLinks.map((link, lIdx) => (
+                                            <div key={link.id || lIdx} className="p-4 border border-gray-100 rounded-2xl bg-white shadow-sm relative group hover:border-indigo-200 transition-all">
+                                                {/* Actions Floating Menu */}
+                                                <div className="absolute -top-3 -right-2 flex items-center gap-1.5 z-20 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100">
+                                                    <div className="flex items-center bg-white shadow-md border border-gray-100 rounded-lg p-1 gap-1">
+                                                        <button 
+                                                            disabled={lIdx === 0} 
+                                                            onClick={() => moveNestedItem(currentLinks, lIdx, -1, parentPath)} 
+                                                            className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-20 rounded transition-colors"
+                                                            title="Move Up"
+                                                        >
+                                                            <ChevronUp className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button 
+                                                            disabled={lIdx === currentLinks.length - 1} 
+                                                            onClick={() => moveNestedItem(currentLinks, lIdx, 1, parentPath)} 
+                                                            className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-20 rounded transition-colors"
+                                                            title="Move Down"
+                                                        >
+                                                            <ChevronDown className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <div className="w-px h-4 bg-gray-100 mx-1" />
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr.splice(lIdx, 1);
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }}
+                                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                            title="Delete"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-2 mt-1">
-                                                    <input type="text" value={link.label || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="Label" className="w-full text-xs border-transparent bg-transparent focus:ring-0 font-bold text-gray-900 p-0" />
-                                                    <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="URL" className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 text-gray-400 p-0" />
+
+                                                <div className="space-y-3 mb-2">
+                                                    <div className="flex flex-col">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Menu Label</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.label || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], label: e.target.value };
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }} 
+                                                            placeholder="e.g. Services" 
+                                                            className="w-full text-xs border-gray-100 rounded-xl bg-gray-50/50 focus:ring-indigo-500 focus:bg-white font-bold" 
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Redirect URL</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.url || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], url: e.target.value };
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }} 
+                                                            placeholder="e.g. /services or #" 
+                                                            className="w-full text-[11px] border-gray-100 rounded-xl bg-gray-50/50 focus:ring-indigo-500 focus:bg-white text-gray-500" 
+                                                        />
+                                                    </div>
                                                 </div>
+                                                
+                                                {/* Add Sub Button at Bottom */}
+                                                <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+                                                    <span className="text-[9px] text-gray-300 font-bold uppercase tracking-wider">Level {depth + 1}</span>
+                                                    {depth < 2 && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                
+                                                                const newSubLinks = Array.isArray(targetArr[lIdx].children) ? [...targetArr[lIdx].children] : [];
+                                                                newSubLinks.push({ id: generateId(), label: 'New Sub-link', url: '#' });
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], children: newSubLinks };
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all shadow-sm"
+                                                        >
+                                                            <Plus className="w-3 h-3" />
+                                                            Add Sub-Menu
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Sub-menus */}
+                                                {link.children && link.children.length > 0 && renderNestedLinks(link.children, [...parentPath, lIdx, 'children'], depth + 1)}
                                             </div>
                                         ))}
                                     </div>
+                                );
+                            };
+
+                            return (
+                                <div key="links" className="space-y-4 pb-6 border-b border-gray-100">
+                                    {sectionHeader('Menu Links & Navigation Hierarchy', () => {
+                                        const newLinks = [...links, { id: generateId(), label: 'New Link', url: '#' }];
+                                        updateBlockData(block.id, 'links', newLinks);
+                                    }, '+ ADD MAIN LINK')}
+                                    {renderNestedLinks(links, [], 0)}
                                     {cssInput('links')}
                                 </div>
                             );
@@ -997,46 +1103,57 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                         </div>
                     </div>
                 );
-            case 'text':
+            case 'text': {
+                const isSummernoteEnabled = plugins.some(p => p.alias === 'editorsummernote' && p.enabled !== false);
                 return (
                     <div className="space-y-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Content Editor</label>
-                            <MarkdownToolbar
-                                onInsert={(syntax) => {
-                                    const textarea = document.getElementById(`text-editor-${block.id}`);
-                                    if (!textarea) return;
-                                    const start = textarea.selectionStart;
-                                    const end = textarea.selectionEnd;
-                                    const text = textarea.value;
-                                    const before = text.substring(0, start);
-                                    const selected = text.substring(start, end);
-                                    const after = text.substring(end);
+                            {isSummernoteEnabled ? (
+                                <Summernote 
+                                    value={data.content || ''} 
+                                    onChange={val => updateBlockData(block.id, 'content', val)}
+                                    placeholder="Type your content here..."
+                                />
+                            ) : (
+                                <>
+                                    <MarkdownToolbar
+                                        onInsert={(syntax) => {
+                                            const textarea = document.getElementById(`text-editor-${block.id}`);
+                                            if (!textarea) return;
+                                            const start = textarea.selectionStart;
+                                            const end = textarea.selectionEnd;
+                                            const text = textarea.value;
+                                            const before = text.substring(0, start);
+                                            const selected = text.substring(start, end);
+                                            const after = text.substring(end);
 
-                                    let replacement = '';
-                                    if (syntax === 'bold') replacement = `**${selected}**`;
-                                    else if (syntax === 'italic') replacement = `*${selected}*`;
-                                    else if (syntax === 'link') replacement = `[${selected}](https://)`;
-                                    else if (syntax === 'list') replacement = `\n- ${selected}`;
-                                    else if (syntax === 'h1') replacement = `\n# ${selected}`;
-                                    else if (syntax === 'h2') replacement = `\n## ${selected}`;
+                                            let replacement = '';
+                                            if (syntax === 'bold') replacement = `**${selected}**`;
+                                            else if (syntax === 'italic') replacement = `*${selected}*`;
+                                            else if (syntax === 'link') replacement = `[${selected}](https://)`;
+                                            else if (syntax === 'list') replacement = `\n- ${selected}`;
+                                            else if (syntax === 'h1') replacement = `\n# ${selected}`;
+                                            else if (syntax === 'h2') replacement = `\n## ${selected}`;
 
-                                    const newValue = before + replacement + after;
-                                    updateBlockData(block.id, 'content', newValue);
+                                            const newValue = before + replacement + after;
+                                            updateBlockData(block.id, 'content', newValue);
 
-                                    setTimeout(() => {
-                                        textarea.focus();
-                                        textarea.setSelectionRange(start + 2, start + 2 + selected.length);
-                                    }, 10);
-                                }}
-                            />
-                            <textarea
-                                id={`text-editor-${block.id}`}
-                                value={data.content || ''}
-                                onChange={e => updateBlockData(block.id, 'content', e.target.value)}
-                                rows="10"
-                                className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
-                            />
+                                            setTimeout(() => {
+                                                textarea.focus();
+                                                textarea.setSelectionRange(start + 2, start + 2 + selected.length);
+                                            }, 10);
+                                        }}
+                                    />
+                                    <textarea
+                                        id={`text-editor-${block.id}`}
+                                        value={data.content || ''}
+                                        onChange={e => updateBlockData(block.id, 'content', e.target.value)}
+                                        rows="10"
+                                        className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
+                                    />
+                                </>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -1103,6 +1220,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                         </div>
                     </div>
                 );
+            }
             case 'slideshow': {
                 const source = data.source || 'manual';
                 const items = Array.isArray(data.items) ? data.items : [];

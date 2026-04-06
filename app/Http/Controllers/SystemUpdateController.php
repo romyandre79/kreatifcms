@@ -192,8 +192,12 @@ class SystemUpdateController extends Controller
         $dirs = glob($tempPath . '/*', GLOB_ONLYDIR);
         if (!empty($dirs)) $extractedDir = $dirs[0];
 
-        $log[] = ['step' => 'Install', 'command' => "filesystem::copy", 'output' => "Overwriting system files...", 'status' => 'success'];
-        $this->copyDirectory($extractedDir, base_path(), ['.env', 'storage', 'node_modules', 'vendor', '.git']);
+        $log[] = ['step' => 'Install', 'command' => "filesystem::copy", 'output' => "Overwriting system files (Excluding Modules)...", 'status' => 'success'];
+        $this->copyDirectory($extractedDir, base_path(), ['.env', 'storage', 'node_modules', 'vendor', '.git', 'Modules', 'composer.json', 'composer.lock', 'package-lock.json']);
+
+        // 3.1 Specialized Composer Sync
+        $log[] = ['step' => 'Composer Sync', 'command' => "composer::merge", 'output' => "Merging core dependencies...", 'status' => 'success'];
+        $this->syncComposerJson($extractedDir . '/composer.json', base_path('composer.json'));
 
         // 4. Post-Update Commands
         $commands = [
@@ -216,6 +220,40 @@ class SystemUpdateController extends Controller
             'log' => $log,
             'info' => $this->getUpdateInfo()
         ]);
+    }
+
+    /**
+     * Merge core dependencies from update while preserving local module PSR-4.
+     */
+    private function syncComposerJson($srcPath, $dstPath)
+    {
+        if (!file_exists($srcPath) || !file_exists($dstPath)) return;
+
+        $src = json_decode(file_get_contents($srcPath), true);
+        $dst = json_decode(file_get_contents($dstPath), true);
+
+        if (!$src || !$dst) return;
+
+        // Fields to update from core (everything except selective autoload)
+        $fieldsToSync = ['require', 'require-dev', 'scripts', 'config', 'extra', 'minimum-stability', 'prefer-stable'];
+        foreach ($fieldsToSync as $field) {
+            if (isset($src[$field])) {
+                $dst[$field] = $src[$field];
+            }
+        }
+
+        // Handle PSR-4: Keep existing Modules namespaces, but update others (App, Database, etc.)
+        if (isset($src['autoload']['psr-4'])) {
+            foreach ($src['autoload']['psr-4'] as $namespace => $path) {
+                // If it's NOT a module namespace, update it from core
+                if (!str_starts_with($namespace, 'Modules\\') || $namespace === 'Modules\\CorporateTheme\\') {
+                    $dst['autoload']['psr-4'][$namespace] = $path;
+                }
+            }
+        }
+
+        // Save back with pretty print
+        file_put_contents($dstPath, json_encode($dst, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
     }
 
     /**

@@ -122,8 +122,8 @@ export default function Welcome({ auth, laravelVersion, phpVersion }) {
                 </div>
             </main>
 
-            <footer className="relative z-10 border-t border-slate-200 bg-white/50 backdrop-blur-md">
-                <div className="max-w-7xl mx-auto px-6 py-12 flex flex-col md:flex-row justify-between items-center gap-6">
+            <footer className="site-footer">
+                <div className="site-footer-container">
                     <div className="flex items-center gap-2">
                         <Zap className="text-indigo-600 w-5 h-5 fill-current" />
                         <span className="font-black text-slate-900 tracking-tight">KREATIF<span className="text-indigo-600">CMS</span></span>

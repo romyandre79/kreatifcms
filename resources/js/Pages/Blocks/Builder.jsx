@@ -9,6 +9,7 @@ import {
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import SocialIcon from '@/Components/SocialIcon';
 import MarkdownToolbar from '@/Components/MarkdownToolbar';
+import Summernote from '@/Components/Summernote';
 
 export default function Builder({ block }) {
     const { plugins = [] } = usePage().props;
@@ -112,12 +113,21 @@ export default function Builder({ block }) {
                         </div>
                     </div>
                 );
-            case 'text':
+            case 'text': {
+                const isSummernoteEnabled = plugins.some(p => p.alias === 'editorsummernote' && p.enabled !== false);
                 return (
                     <div className="space-y-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content (Markdown supported)</label>
-                            <textarea value={data.content || ''} onChange={e => updateData('content', e.target.value)} rows="16" className="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm font-mono" />
+                            {isSummernoteEnabled ? (
+                                <Summernote 
+                                    value={data.content || ''} 
+                                    onChange={val => updateData('content', val)}
+                                    placeholder="Enter content..."
+                                />
+                            ) : (
+                                <textarea value={data.content || ''} onChange={e => updateData('content', e.target.value)} rows="16" className="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm font-mono" />
+                            )}
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Alignment</label>
@@ -129,6 +139,7 @@ export default function Builder({ block }) {
                         </div>
                     </div>
                 );
+            }
             case 'image':
                 return (
                     <div className="space-y-6">
@@ -274,22 +285,129 @@ export default function Builder({ block }) {
                                 </div>
                             );
                         case 'links':
-                            return (
-                                <div key="links" className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
-                                    {sectionHeader('Menu Links', () => updateData('links', [...links, { id: Math.random().toString(36).substr(2, 9), label: 'New Link', url: '#' }]), '+ ADD LINK')}
-                                    <div className="space-y-3">
-                                        {links.map((link, lIdx) => (
-                                            <div key={link.id} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
-                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                    <button onClick={() => updateData('links', links.filter((_, i) => i !== lIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                            const moveNestedItem = (arr, index, direction, parentPath = []) => {
+                                const newLinks = [...(data.links || [])];
+                                let targetArr = newLinks;
+                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                const targetIndex = index + direction;
+                                if (targetIndex < 0 || targetIndex >= targetArr.length) return;
+                                [targetArr[index], targetArr[targetIndex]] = [targetArr[targetIndex], targetArr[index]];
+                                updateData('links', newLinks);
+                            };
+
+                            const renderNestedLinks = (currentLinks, parentPath = [], depth = 0) => {
+                                if (depth > 2) return null; 
+
+                                return (
+                                    <div className={`space-y-4 ${depth > 0 ? 'ml-6 mt-4 pl-4 border-l-2 border-indigo-50 bg-indigo-50/5 rounded-br-2xl py-3' : ''}`}>
+                                        {currentLinks.map((link, lIdx) => (
+                                            <div key={link.id || lIdx} className="p-4 border border-gray-100 rounded-2xl bg-white shadow-sm relative group hover:border-indigo-200 transition-all">
+                                                {/* Actions Floating Menu */}
+                                                <div className="absolute -top-3 -right-2 flex items-center gap-1.5 z-20 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100">
+                                                    <div className="flex items-center bg-white shadow-md border border-gray-100 rounded-lg p-1 gap-1">
+                                                        <button 
+                                                            disabled={lIdx === 0} 
+                                                            onClick={() => moveNestedItem(currentLinks, lIdx, -1, parentPath)} 
+                                                            className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-20 rounded transition-colors"
+                                                            title="Move Up"
+                                                        >
+                                                            <LucideIcons.ChevronUp className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button 
+                                                            disabled={lIdx === currentLinks.length - 1} 
+                                                            onClick={() => moveNestedItem(currentLinks, lIdx, 1, parentPath)} 
+                                                            className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-20 rounded transition-colors"
+                                                            title="Move Down"
+                                                        >
+                                                            <LucideIcons.ChevronDown className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <div className="w-px h-4 bg-gray-100 mx-1" />
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newLinks = [...(data.links || [])];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr.splice(lIdx, 1);
+                                                                updateData('links', newLinks);
+                                                            }}
+                                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                            title="Delete"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    <input type="text" value={link.label || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value }; updateData('links', newLinks); }} placeholder="Label" className="w-full text-xs border-none bg-transparent focus:ring-0 font-bold p-0" />
-                                                    <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value }; updateData('links', newLinks); }} placeholder="URL" className="w-full text-[10px] border-none bg-transparent focus:ring-0 text-gray-400 p-0" />
+
+                                                <div className="space-y-3 mb-2">
+                                                    <div className="flex flex-col">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Menu Label</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.label || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...(data.links || [])];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], label: e.target.value };
+                                                                updateData('links', newLinks);
+                                                            }} 
+                                                            placeholder="e.g. Services" 
+                                                            className="w-full text-xs border-gray-100 rounded-xl bg-gray-50/50 focus:ring-indigo-500 focus:bg-white font-bold" 
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Redirect URL</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.url || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...(data.links || [])];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], url: e.target.value };
+                                                                updateData('links', newLinks);
+                                                            }} 
+                                                            placeholder="e.g. /services or #" 
+                                                            className="w-full text-[11px] border-gray-100 rounded-xl bg-gray-50/50 focus:ring-indigo-500 focus:bg-white text-gray-500" 
+                                                        />
+                                                    </div>
                                                 </div>
+                                                
+                                                {/* Add Sub Button at Bottom */}
+                                                <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+                                                    <span className="text-[9px] text-gray-300 font-bold uppercase tracking-wider">Level {depth + 1}</span>
+                                                    {depth < 2 && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newLinks = [...(data.links || [])];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                
+                                                                const newSubLinks = Array.isArray(targetArr[lIdx].children) ? [...targetArr[lIdx].children] : [];
+                                                                newSubLinks.push({ id: Math.random().toString(36).substr(2, 9), label: 'New Sub-link', url: '#' });
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], children: newSubLinks };
+                                                                updateData('links', newLinks);
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all shadow-sm"
+                                                        >
+                                                            <LucideIcons.Plus className="w-3 h-3" />
+                                                            Add Sub-Menu
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Sub-menus */}
+                                                {link.children && link.children.length > 0 && renderNestedLinks(link.children, [...parentPath, lIdx, 'children'], depth + 1)}
                                             </div>
                                         ))}
                                     </div>
+                                );
+                            };
+
+                            return (
+                                <div key="links" className="p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                                    {sectionHeader('Menu Links & Navigation Hierarchy', () => updateData('links', [...links, { id: Math.random().toString(36).substr(2, 9), label: 'New Link', url: '#' }]), '+ ADD MAIN LINK')}
+                                    {renderNestedLinks(links, [], 0)}
                                     {cssInput('links')}
                                 </div>
                             );
