@@ -74,6 +74,7 @@ export default function AuthenticatedLayout({ header, children }) {
         { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
         { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
+        { name: 'System Update', href: route('system.update.index'), icon: Settings, active: route().current('system.update.*'), contentType: 'system' },
     ];
 
     // Filter items based on permissions
