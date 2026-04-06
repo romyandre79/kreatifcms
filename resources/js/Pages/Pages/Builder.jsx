@@ -32,7 +32,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export default function Builder({ page, reusableBlocks = [], contentTypes = [] }) {
+export default function Builder({ page, layout = {}, reusableBlocks = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
     const isContentTypeEnabled = plugins.some(p => p.alias === 'contenttype' && p.enabled !== false);
     const blockPlugins = plugins.filter(p => p.type === 'block');
@@ -3595,7 +3595,19 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 <div className="flex-1 overflow-y-auto w-full">
                                     {/* Enable interactions in preview */}
                                     <div className="w-full h-full origin-top">
+                                        {layout.header && layout.header.length > 0 && (
+                                            <header className="site-header">
+                                                <DynamicPageRenderer blocks={layout.header} reusableBlocks={reusableBlocks} />
+                                            </header>
+                                        )}
                                         <DynamicPageRenderer blocks={blocks} reusableBlocks={reusableBlocks} />
+                                        {layout.footer && layout.footer.length > 0 && (
+                                            <footer className="site-footer">
+                                                <div className="site-footer-container">
+                                                    <DynamicPageRenderer blocks={layout.footer} reusableBlocks={reusableBlocks} />
+                                                </div>
+                                            </footer>
+                                        )}
                                     </div>
                                 </div>
                             )}

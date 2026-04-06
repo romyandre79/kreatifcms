@@ -56,8 +56,23 @@ class PageController extends Controller
             }),
             'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
                 ? \Modules\ContentType\Models\ContentType::with('fields')->get()
-                : []
+                : [],
+            'layout' => $this->getGlobalLayout($schemaService)
         ]);
+    }
+
+    private function getGlobalLayout($schemaService)
+    {
+        $header = \App\Models\Setting::where('module', 'layout')->where('key', 'header')->first();
+        $footer = \App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first();
+
+        $headerBlocks = $header ? json_decode($header->value, true) : [];
+        $footerBlocks = $footer ? json_decode($footer->value, true) : [];
+
+        return [
+            'header' => $schemaService->hydrateDynamicBlocks($headerBlocks),
+            'footer' => $schemaService->hydrateDynamicBlocks($footerBlocks),
+        ];
     }
 
     public function update(Request $request, Page $page)
