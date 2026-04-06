@@ -13,7 +13,7 @@ export default function Dashboard() {
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [editingWidget, setEditingWidget] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    
+
     // Deletion Modal State
     const [showDeleteModal, setShowDeleteModal] = useState(false);
     const [widgetToDelete, setWidgetToDelete] = useState(null);
@@ -81,14 +81,14 @@ export default function Dashboard() {
 
     const handleOrderChange = async (newOrder) => {
         // Optimistic update
-        const orderedWidgets = [...widgets].sort((a, b) => 
+        const orderedWidgets = [...widgets].sort((a, b) =>
             newOrder.indexOf(a.id) - newOrder.indexOf(b.id)
         );
         setWidgets(orderedWidgets);
 
         try {
             // Bulk update order (simplified for now as individual updates)
-            await Promise.all(newOrder.map((id, index) => 
+            await Promise.all(newOrder.map((id, index) =>
                 axios.put(route('dashboard.widgets.update', id), { order: index })
             ));
         } catch (error) {
@@ -116,39 +116,37 @@ export default function Dashboard() {
         >
             <Head title="Dashboard" />
 
-            <div className="py-6">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    {isLoading ? (
-                        <div className="flex flex-col items-center justify-center py-24 space-y-4">
-                            <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                            <p className="text-sm font-bold text-gray-400 italic">Initializing your premium workspace...</p>
+            <div className="mx-auto px-4 sm:px-6 lg:px-8">
+                {isLoading ? (
+                    <div className="flex flex-col items-center justify-center py-24 space-y-4">
+                        <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                        <p className="text-sm font-bold text-gray-400 italic">Initializing your premium workspace...</p>
+                    </div>
+                ) : widgets.length === 0 ? (
+                    <div className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-24 text-center">
+                        <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                            <Layout className="w-10 h-10" />
                         </div>
-                    ) : widgets.length === 0 ? (
-                        <div className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-24 text-center">
-                            <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                                <Layout className="w-10 h-10" />
-                            </div>
-                            <h3 className="text-xl font-bold text-gray-900">Your dashboard is empty</h3>
-                            <p className="mt-2 text-gray-500 max-w-sm mx-auto italic font-medium">
-                                Start by adding dynamic widgets to track your content types, aggregate data, and visualize trends!
-                            </p>
-                            <button
-                                onClick={handleAddWidget}
-                                className="mt-8 inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
-                            >
-                                <Plus className="w-5 h-5 mr-2" />
-                                Add Your First Widget
-                            </button>
-                        </div>
-                    ) : (
-                        <DashboardGrid 
-                            widgets={widgets} 
-                            onOrderChange={handleOrderChange}
-                            onEdit={handleEditWidget}
-                            onDelete={confirmDeleteWidget}
-                        />
-                    )}
-                </div>
+                        <h3 className="text-xl font-bold text-gray-900">Your dashboard is empty</h3>
+                        <p className="mt-2 text-gray-500 max-w-sm mx-auto italic font-medium">
+                            Start by adding dynamic widgets to track your content types, aggregate data, and visualize trends!
+                        </p>
+                        <button
+                            onClick={handleAddWidget}
+                            className="mt-8 inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
+                        >
+                            <Plus className="w-5 h-5 mr-2" />
+                            Add Your First Widget
+                        </button>
+                    </div>
+                ) : (
+                    <DashboardGrid
+                        widgets={widgets}
+                        onOrderChange={handleOrderChange}
+                        onEdit={handleEditWidget}
+                        onDelete={confirmDeleteWidget}
+                    />
+                )}
             </div>
 
             <WidgetEditor

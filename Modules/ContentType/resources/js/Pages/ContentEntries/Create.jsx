@@ -35,7 +35,7 @@ export default function Create({ contentType, slug, availableRelationships }) {
         const name = field.attribute_name;
         const { plugins } = usePage().props;
         const isSummernoteEnabled = plugins?.some(p => p.alias === 'editorsummernote');
-        
+
         switch (field.type) {
             case 'boolean':
                 return (
@@ -194,30 +194,28 @@ export default function Create({ contentType, slug, availableRelationships }) {
         >
             <Head title={`Add ${contentType.name}`} />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <form onSubmit={handleSubmit} className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 space-y-6 max-w-2xl mx-auto">
-                        {contentType.fields.map(field => (
-                            <div key={field.id}>
-                                {renderField(field)}
-                                {errors[field.name.toLowerCase().replace(/\s+/g, '_')] && (
-                                    <p className="mt-1 text-sm text-red-600">{errors[field.name.toLowerCase().replace(/\s+/g, '_')]}</p>
-                                )}
-                            </div>
-                        ))}
-
-                        <div className="flex justify-end pt-4">
-                            <button
-                                type="submit"
-                                disabled={processing}
-                                className="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                            >
-                                <Save className="w-5 h-5 mr-2" />
-                                Save Entry
-                            </button>
+            <div className="mx-auto sm:px-6 lg:px-8">
+                <form onSubmit={handleSubmit} className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 space-y-6 max-w-2xl mx-auto">
+                    {contentType.fields.map(field => (
+                        <div key={field.id}>
+                            {renderField(field)}
+                            {errors[field.name.toLowerCase().replace(/\s+/g, '_')] && (
+                                <p className="mt-1 text-sm text-red-600">{errors[field.name.toLowerCase().replace(/\s+/g, '_')]}</p>
+                            )}
                         </div>
-                    </form>
-                </div>
+                    ))}
+
+                    <div className="flex justify-end pt-4">
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                        >
+                            <Save className="w-5 h-5 mr-2" />
+                            Save Entry
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <MediaPickerModal
