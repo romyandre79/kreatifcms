@@ -14,12 +14,12 @@ const VideoCard = ({ video, columns = 3 }) => {
             <div className="group relative flex flex-col bg-gray-900 rounded-3xl overflow-hidden border border-gray-800 shadow-xl min-h-[320px] transition-all duration-300 hover:shadow-2xl hover:shadow-indigo-900/20">
                 {/* Locked Card Background */}
                 <div className="absolute inset-0 bg-cover bg-center opacity-20 grayscale blur-[2px] transition-transform duration-700 group-hover:scale-110" style={{ backgroundImage: video.poster ? `url(${video.poster})` : 'none' }}></div>
-                
+
                 <div className="relative z-10 p-8 flex flex-col items-center justify-center text-center h-full space-y-5">
                     <div className="w-14 h-14 bg-indigo-500/20 rounded-full flex items-center justify-center text-indigo-400 backdrop-blur-md border border-indigo-500/30 group-hover:scale-110 transition-transform duration-300 shadow-lg">
                         <Lock className="w-6 h-6" />
                     </div>
-                    
+
                     <div className="space-y-2">
                         <h3 className="text-xl font-bold text-white tracking-tight line-clamp-2">
                             {video.locked_title || video.title || 'Premium Content'}
@@ -68,7 +68,7 @@ const VideoCard = ({ video, columns = 3 }) => {
                 {hasUrl ? (
                     <>
                         {isYouTube ? (
-                            <iframe 
+                            <iframe
                                 src={getEmbedUrl(sanitizedUrl)}
                                 className="absolute inset-0 w-full h-full z-10 border-none"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -107,7 +107,7 @@ const VideoCard = ({ video, columns = 3 }) => {
                         {video.description}
                     </p>
                 )}
-                
+
                 <div className="mt-auto pt-4 flex items-center justify-between border-t border-gray-50">
                     {!isAllowed ? (
                         <Link href="/login" className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
@@ -157,7 +157,7 @@ const VideoGridBlock = ({ data = {}, contentTypes = [] }) => {
     }[columns] || 'grid-cols-1 md:grid-cols-3';
 
     return (
-        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
+        <section className={`py-10 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
             <div className="max-w-7xl mx-auto">
                 <BlockHeader data={data} />
 
@@ -168,7 +168,7 @@ const VideoGridBlock = ({ data = {}, contentTypes = [] }) => {
                         ))}
                     </div>
                 ) : (
-                    <div className="py-20 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-[40px] border-2 border-dashed border-gray-200">
+                    <div className="py-10 flex flex-col items-center justify-center text-gray-400 bg-gray-50 rounded-[40px] border-2 border-dashed border-gray-200">
                         <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4">
                             <Video className="w-8 h-8 text-gray-300" />
                         </div>

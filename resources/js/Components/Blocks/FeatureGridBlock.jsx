@@ -30,7 +30,7 @@ const FeatureGridBlock = ({ data = {} }) => {
     }[columns] || 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3';
 
     return (
-        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
+        <section className={`py-10 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
             <div className="max-w-7xl mx-auto">
                 <BlockHeader data={data} />
                 <div className={`grid ${gridClasses} gap-10`}>
@@ -38,9 +38,9 @@ const FeatureGridBlock = ({ data = {} }) => {
                         <div key={feature.id || i} className="p-8 rounded-3xl bg-gray-50 border border-transparent hover:border-indigo-100 hover:bg-white hover:shadow-2xl hover:shadow-indigo-50 transition-all group overflow-hidden">
                             <div className="w-16 h-16 bg-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 mb-6 group-hover:scale-110 transition-transform overflow-hidden relative">
                                 {feature.image ? (
-                                    <img 
-                                        src={feature.image} 
-                                        alt={feature.title} 
+                                    <img
+                                        src={feature.image}
+                                        alt={feature.title}
                                         className="w-full h-full object-cover"
                                     />
                                 ) : (

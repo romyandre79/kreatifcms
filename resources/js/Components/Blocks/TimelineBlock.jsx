@@ -46,7 +46,7 @@ const TimelineBlock = ({ data = {} }) => {
     }, [style]);
 
     return (
-        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
+        <section className={`py-10 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
             <div className="max-w-7xl mx-auto">
                 <BlockHeader data={data} />
 
@@ -60,16 +60,16 @@ const TimelineBlock = ({ data = {} }) => {
                                     {index < items.length - 1 && (
                                         <div className="absolute top-6 left-1/2 w-full h-0.5 bg-gray-200" style={{ zIndex: 0 }} />
                                     )}
-                                    
+
                                     <div className="relative z-10 flex flex-col items-center text-center">
                                         {/* Dot/Icon */}
-                                        <div 
+                                        <div
                                             className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg border-4 border-white transition-transform hover:scale-110 mb-4`}
                                             style={{ backgroundColor: item.color || '#4f46e5' }}
                                         >
                                             <IconRenderer name={item.icon || 'Clock'} className="w-5 h-5 text-white" />
                                         </div>
-                                        
+
                                         {item.image && (
                                             <div className="mb-4 w-full px-4">
                                                 <div className="aspect-video rounded-xl overflow-hidden shadow-sm border border-gray-100">
@@ -77,7 +77,7 @@ const TimelineBlock = ({ data = {} }) => {
                                                 </div>
                                             </div>
                                         )}
-                                        
+
                                         <div className="space-y-2">
                                             <span className="text-xs font-bold uppercase tracking-wider text-gray-400">{item.date}</span>
                                             <h3 className="text-lg font-bold text-gray-900">{item.title}</h3>
@@ -101,14 +101,14 @@ const TimelineBlock = ({ data = {} }) => {
                                 {items.map((item, index) => {
                                     const isEven = index % 2 === 0;
                                     const isLeft = alignment === 'left' || (alignment === 'alternating' && isEven);
-                                    
+
                                     return (
-                                        <div 
-                                            key={item.id || index} 
+                                        <div
+                                            key={item.id || index}
                                             className={`relative flex items-center ${alignment === 'left' ? 'flex-row' : (isLeft ? 'md:flex-row-reverse flex-row' : 'flex-row')}`}
                                         >
                                             {/* Dot/Icon in center/side */}
-                                            <div 
+                                            <div
                                                 className="absolute left-4 md:left-1/2 w-10 h-10 -ml-5 rounded-full flex items-center justify-center z-10 border-4 border-white shadow-md transition-all hover:scale-125 hover:rotate-12 cursor-pointer"
                                                 style={{ backgroundColor: item.color || '#4f46e5' }}
                                             >
@@ -117,7 +117,7 @@ const TimelineBlock = ({ data = {} }) => {
 
                                             {/* Content Card */}
                                             <div className={`w-full md:w-1/2 ${alignment === 'left' ? 'pl-16' : (isLeft ? 'md:pr-12 pl-16 md:pl-0' : 'pl-16 md:pl-12')}`}>
-                                                <div 
+                                                <div
                                                     className={`p-6 rounded-2xl shadow-sm border border-gray-100 transition-all hover:shadow-xl hover:-translate-y-1 ${style === 'glass' ? 'bg-white/40 backdrop-blur-md' : 'bg-white'}`}
                                                 >
                                                     {item.image && (
