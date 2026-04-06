@@ -27,7 +27,9 @@ class SystemUpdateController extends Controller
     {
         try {
             $this->checkConnectivity();
-            $this->runCommand(['git', 'fetch', 'origin', 'main']);
+            $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
+            if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
+            $this->runCommand(['git', 'fetch', $updateUrl, 'main']);
             return response()->json([
                 'success' => true,
                 'info' => $this->getUpdateInfo()
@@ -63,10 +65,13 @@ class SystemUpdateController extends Controller
             return $this->runZipUpdate();
         }
 
+        $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
+        if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
+
         $commands = [
-            'Fetching' => ['git', 'fetch', 'origin', 'main'],
+            'Fetching' => ['git', 'fetch', $updateUrl, 'main'],
             'Switching to Main' => ['git', 'checkout', 'main'],
-            'Pulling' => ['git', 'pull', 'origin', 'main'],
+            'Pulling' => ['git', 'pull', $updateUrl, 'main', '--no-rebase'],
             'Composer' => ['composer', 'install', '--no-interaction', '--prefer-dist', '--optimize-autoloader'],
             'Migrating' => ['php', 'artisan', 'migrate', '--force'],
             'Optimizing' => ['php', 'artisan', 'optimize:clear'],
@@ -107,7 +112,8 @@ class SystemUpdateController extends Controller
     {
         $log = [];
         try {
-            $zipUrl = "https://github.com/romyandre79/kreatifcms/archive/refs/heads/main.zip";
+            $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
+            $zipUrl = str_replace('.git', '', $updateUrl) . '/archive/refs/heads/main.zip';
             $tempPath = storage_path('app/temp/update_' . time());
             if (!is_dir($tempPath)) mkdir($tempPath, 0755, true);
             $zipFile = $tempPath . '/main.zip';
@@ -252,8 +258,8 @@ class SystemUpdateController extends Controller
             $currentDate = $this->runCommand(['git', 'log', '-1', '--format=%cd', '--date=relative']);
             $currentBranch = $this->runCommand(['git', 'branch', '--show-current']);
             
-            // Count commits behind origin/main
-            $diffCount = $this->runCommand(['git', 'rev-list', '--count', 'HEAD..origin/main']);
+            // Count commits behind core repository
+            $diffCount = $this->runCommand(['git', 'rev-list', '--count', 'HEAD..FETCH_HEAD']);
 
             return [
                 'current_commit' => trim($currentCommit),
