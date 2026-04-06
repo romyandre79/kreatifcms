@@ -36,8 +36,8 @@ class SystemUpdateController extends Controller
             $error = $e->getMessage();
             $suggestion = null;
 
-            if (str_contains($error, 'getaddrinfo') || str_contains($error, 'Could not resolve host')) {
-                $suggestion = 'Network Error: DNS resolution failed. Check your server\'s internet connection or DNS settings.';
+            if (str_contains($error, 'getaddrinfo') || str_contains($error, 'Could not resolve host') || str_contains($error, 'thread failed to start')) {
+                $suggestion = 'Network/System Error: DNS resolution or threading failed. This sometimes happens on Windows when the web server user lacks socket permissions. Check your server\'s internet connection, permissions, or antivirus settings.';
             } elseif (str_contains($error, 'Connection refused') || str_contains($error, 'timed out')) {
                 $suggestion = 'Network Error: Could not reach GitHub. Check your firewall or proxy settings.';
             }
@@ -60,6 +60,7 @@ class SystemUpdateController extends Controller
 
         $commands = [
             'Fetching' => ['git', 'fetch', 'origin', 'main'],
+            'Switching to Main' => ['git', 'checkout', 'main'],
             'Pulling' => ['git', 'pull', 'origin', 'main'],
             'Composer' => ['composer', 'install', '--no-interaction', '--prefer-dist', '--optimize-autoloader'],
             'Migrating' => ['php', 'artisan', 'migrate', '--force'],
@@ -92,6 +93,45 @@ class SystemUpdateController extends Controller
             'log' => $log,
             'info' => $this->getUpdateInfo()
         ]);
+    }
+
+    /**
+     * Get technical diagnostics about the environment.
+     */
+    public function diagnostics()
+    {
+        try {
+            $whoami = $this->runCommand(['whoami']);
+            $phpUser = get_current_user();
+            $os = PHP_OS;
+            
+            // Check basic DNS
+            $dnsOk = checkdnsrr('github.com', 'A');
+            
+            // Check proxy from env
+            $proxy = [
+                'http_proxy' => getenv('http_proxy') ?: getenv('HTTP_PROXY'),
+                'https_proxy' => getenv('https_proxy') ?: getenv('HTTPS_PROXY'),
+            ];
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'system_user' => trim($whoami),
+                    'php_user' => $phpUser,
+                    'os' => $os,
+                    'dns_github_ok' => $dnsOk,
+                    'proxy' => $proxy,
+                    'php_version' => PHP_VERSION,
+                    'git_version' => trim($this->runCommand(['git', '--version'])),
+                ]
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -141,6 +181,13 @@ class SystemUpdateController extends Controller
      */
     private function runCommand(array $command)
     {
+        // Optimize Git for Windows threading issues
+        if ($command[0] === 'git' && count($command) > 1) {
+            $optimizedCommand = ['git', '-c', 'core.preloadindex=false', '-c', 'core.fscache=false'];
+            array_shift($command); // Remove 'git'
+            $command = array_merge($optimizedCommand, $command);
+        }
+
         $process = new Process($command, base_path());
         $process->setTimeout(300); // 5 minutes
         $process->run();
