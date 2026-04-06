@@ -9,17 +9,17 @@ const PhotoCard = ({ item, onClick, columns = 3 }) => {
     const isAllowed = !item.is_paid || !!auth.user;
 
     return (
-        <div 
+        <div
             className="group relative bg-white rounded-2xl overflow-hidden border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer"
             onClick={() => isAllowed && onClick(item)}
         >
             <div className="relative aspect-square overflow-hidden bg-gray-100">
-                <img 
-                    src={item.image} 
-                    alt={item.title || ''} 
+                <img
+                    src={item.image}
+                    alt={item.title || ''}
                     className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${!isAllowed ? 'blur-sm grayscale' : ''}`}
                 />
-                
+
                 {!isAllowed && (
                     <div className="absolute inset-0 bg-gray-900/60 backdrop-blur-sm flex flex-col items-center justify-center p-4 text-center">
                         <Lock className="w-8 h-8 text-white/80 mb-3" />
@@ -54,11 +54,11 @@ const Lightbox = ({ item, onClose }) => {
     if (!item) return null;
 
     return (
-        <div 
+        <div
             className="fixed inset-0 z-[9999] flex items-center justify-center bg-gray-900/95 backdrop-blur-xl animate-in fade-in duration-300"
             onClick={onClose}
         >
-            <button 
+            <button
                 onClick={onClose}
                 className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 rounded-full text-white transition-all hover:rotate-90"
             >
@@ -67,13 +67,13 @@ const Lightbox = ({ item, onClose }) => {
 
             <div className="max-w-5xl w-full p-4 flex flex-col items-center justify-center" onClick={(e) => e.stopPropagation()}>
                 <div className="relative w-full max-h-[80vh] flex items-center justify-center rounded-2xl overflow-hidden shadow-2xl border border-white/10">
-                    <img 
-                        src={item.image} 
-                        alt={item.title || ''} 
+                    <img
+                        src={item.image}
+                        alt={item.title || ''}
                         className="max-w-full max-h-full object-contain animate-in zoom-in-95 duration-500"
                     />
                 </div>
-                
+
                 {(item.title || item.description) && (
                     <div className="mt-8 text-center max-w-2xl animate-in slide-in-from-bottom-4 duration-500">
                         {item.title && <h2 className="text-2xl font-bold text-white mb-2 uppercase tracking-tight">{item.title}</h2>}
@@ -118,16 +118,16 @@ const PhotoGridBlock = ({ data = {} }) => {
     }[columns] || 'grid-cols-1 md:grid-cols-3';
 
     return (
-        <section className={`py-20 px-6 ${data.bg_color ? '' : 'bg-white'} overflow-hidden`} style={{ backgroundColor: data.bg_color }}>
+        <section className={`py-10 px-6 ${data.bg_color ? '' : 'bg-white'} overflow-hidden`} style={{ backgroundColor: data.bg_color }}>
             <div className="max-w-7xl mx-auto">
                 <BlockHeader data={data} />
 
                 {displayItems.length > 0 ? (
                     <div className={`grid ${gridClasses} gap-6 sm:gap-8`}>
                         {displayItems.map((item, idx) => (
-                            <PhotoCard 
-                                key={item.id || idx} 
-                                item={item} 
+                            <PhotoCard
+                                key={item.id || idx}
+                                item={item}
                                 columns={columns}
                                 onClick={(p) => useLightbox && setSelectedPhoto(p)}
                             />
@@ -145,9 +145,9 @@ const PhotoGridBlock = ({ data = {} }) => {
             </div>
 
             {useLightbox && selectedPhoto && (
-                <Lightbox 
-                    item={selectedPhoto} 
-                    onClose={() => setSelectedPhoto(null)} 
+                <Lightbox
+                    item={selectedPhoto}
+                    onClose={() => setSelectedPhoto(null)}
                 />
             )}
         </section>

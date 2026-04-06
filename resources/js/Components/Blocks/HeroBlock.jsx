@@ -12,9 +12,10 @@ const HeroBlock = ({ data = {} }) => (
             <h1 className="text-5xl md:text-7xl font-extrabold tracking-tight mb-6 bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-200">
                 {data.title || ''}
             </h1>
-            <p className="text-xl md:text-2xl text-gray-100 mb-10 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-sm">
-                {data.subtitle || ''}
-            </p>
+            <p 
+                className="text-xl md:text-2xl text-gray-100 mb-10 max-w-2xl mx-auto font-normal leading-relaxed drop-shadow-sm"
+                dangerouslySetInnerHTML={{ __html: data.subtitle || '' }}
+            />
             {data.buttonText && data.buttonLink && (
                 <Link 
                     href={data.buttonLink} 

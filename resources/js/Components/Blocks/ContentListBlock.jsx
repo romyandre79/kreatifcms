@@ -19,12 +19,12 @@ const ContentListBlock = ({ data = {} }) => {
     }
 
     return (
-        <section className={`py-20 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
+        <section className={`py-10 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} style={{ backgroundColor: data.bg_color }}>
             <div className="max-w-7xl mx-auto">
                 {(data.title || data.subtitle || data.cta_text) && (
                     <div className={`mb-16 space-y-4 ${data.align === 'center' ? 'text-center' : data.align === 'right' ? 'text-right' : 'text-left'}`}>
                         {data.title && (
-                            <h2 
+                            <h2
                                 className="text-4xl font-black tracking-tight uppercase"
                                 style={{ color: data.title_color || '#111827' }}
                             >
@@ -32,7 +32,7 @@ const ContentListBlock = ({ data = {} }) => {
                             </h2>
                         )}
                         {data.subtitle && (
-                            <p 
+                            <p
                                 className={`text-lg leading-relaxed ${data.align === 'center' ? 'max-w-2xl mx-auto' : data.align === 'right' ? 'ml-auto max-w-2xl' : 'mr-auto max-w-2xl'}`}
                                 style={{ color: data.subtitle_color || '#6b7280' }}
                             >
@@ -41,7 +41,7 @@ const ContentListBlock = ({ data = {} }) => {
                         )}
                         {data.cta_text && data.cta_url && (
                             <div className="pt-2">
-                                <a 
+                                <a
                                     href={data.cta_url}
                                     className="inline-flex items-center px-6 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg hover:shadow-indigo-100 uppercase tracking-wider text-xs"
                                 >
