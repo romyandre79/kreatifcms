@@ -32,10 +32,13 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
     const [loading, setLoading] = useState(false);
     const [uploading, setUploading] = useState(false);
     const [search, setSearch] = useState('');
+    const [filterType, setFilterType] = useState('all'); // 'all', 'image', 'video'
     const fileInputRef = React.useRef(null);
 
     useEffect(() => {
         if (isOpen) {
+            setSearch('');
+            setFilterType('all');
             fetchMedia(true);
         }
     }, [isOpen]);
@@ -96,9 +99,14 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
         }
     };
 
-    const filteredMedia = media.filter(item => 
-        item.name.toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredMedia = media.filter(item => {
+        const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
+        if (!matchesSearch) return false;
+        
+        if (filterType === 'image') return item.mime_type?.startsWith('image/');
+        if (filterType === 'video') return item.mime_type?.startsWith('video/');
+        return true;
+    });
 
     if (!isOpen) return null;
 
@@ -111,47 +119,66 @@ export default function MediaPickerModal({ isOpen, onClose, onSelect }) {
                     </div>
                     <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
                     <div className="inline-block align-bottom bg-white rounded-xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle w-full max-w-4xl h-[80vh] flex flex-col">
-                        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gray-50/80">
-                            <h3 className="text-lg font-bold text-gray-900">Select Media</h3>
-                            <div className="flex items-center gap-4">
-                                <div className="relative w-64">
-                                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <div className="p-4 border-b border-gray-100 flex flex-col gap-4 bg-gray-50/80">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold text-gray-900">Select Media</h3>
+                                <div className="flex items-center gap-4">
+                                    <div className="relative w-64">
+                                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                        <input 
+                                            type="text"
+                                            placeholder="Search media..."
+                                            className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm transition-all"
+                                            value={search}
+                                            onChange={(e) => setSearch(e.target.value)}
+                                        />
+                                    </div>
                                     <input 
-                                        type="text"
-                                        placeholder="Search..."
-                                        className="w-full pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 shadow-sm transition-all"
-                                        value={search}
-                                        onChange={(e) => setSearch(e.target.value)}
+                                        type="file" 
+                                        multiple 
+                                        className="hidden" 
+                                        ref={fileInputRef} 
+                                        onChange={handleUpload}
+                                        accept="image/*,video/*"
                                     />
+                                    <button 
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading}
+                                        className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
+                                    >
+                                        {uploading ? (
+                                            <>
+                                                <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
+                                                <span>UPLOADING...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Plus className="w-4 h-4" />
+                                                <span>UPLOAD</span>
+                                            </>
+                                        )}
+                                    </button>
+                                    <button onClick={onClose} className="text-gray-400 hover:text-gray-500 bg-white border border-gray-200 rounded-lg p-2 shadow-sm transition-colors">
+                                        <X className="w-5 h-5" />
+                                    </button>
                                 </div>
-                                <input 
-                                    type="file" 
-                                    multiple 
-                                    className="hidden" 
-                                    ref={fileInputRef} 
-                                    onChange={handleUpload}
-                                    accept="image/*,video/*"
-                                />
-                                <button 
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={uploading}
-                                    className="px-4 py-2 bg-indigo-600 text-white text-sm font-bold rounded-lg hover:bg-indigo-700 shadow-sm transition-all disabled:opacity-50 flex items-center gap-2"
-                                >
-                                    {uploading ? (
-                                        <>
-                                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                                            <span>UPLOADING...</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Plus className="w-4 h-4" />
-                                            <span>UPLOAD</span>
-                                        </>
-                                    )}
-                                </button>
-                                <button onClick={onClose} className="text-gray-400 hover:text-gray-500 bg-white border border-gray-200 rounded-lg p-2 shadow-sm transition-colors">
-                                    <X className="w-5 h-5" />
-                                </button>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {[
+                                    { id: 'all', label: 'All Files', icon: FileText },
+                                    { id: 'image', label: 'Images', icon: ImageIcon },
+                                    { id: 'video', label: 'Videos', icon: Video }
+                                ].map(t => (
+                                    <button
+                                        key={t.id}
+                                        onClick={() => setFilterType(t.id)}
+                                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-2 ${filterType === t.id ? 'bg-indigo-600 text-white shadow-md' : 'bg-white text-gray-500 border border-gray-200 hover:border-indigo-300 hover:text-indigo-600'}`}
+                                    >
+                                        <t.icon className="w-3.5 h-3.5" />
+                                        {t.label}
+                                    </button>
+                                ))}
                             </div>
                         </div>
                         
