@@ -6,7 +6,7 @@ import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronUp, ChevronDown, ChevronRight, X,
     Monitor, LayoutTemplate, Bold, Italic, Link as LinkIcon, List, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette,
-    Menu, Globe, Code
+    Menu, Globe, Code, Settings, Shield, Users, ShieldCheck
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
@@ -34,7 +34,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 
 
-export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], themeData = {}, reusableBlocks = [], contentTypes = [] }) {
+export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlocks = [], themeData = {}, reusableBlocks = [], roles = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
     const blockPlugins = plugins.filter(p => p.type === 'block');
     const BLOCK_TYPES = blockPlugins.map(p => {
@@ -130,6 +130,12 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
     const [headerData, setHeaderData] = useState(initialHeader);
     const [footerData, setFooterData] = useState(initialFooter);
     const [theme, setTheme] = useState(themeData);
+    
+    // Layout settings state
+    const [layoutName, setLayoutName] = useState(layout.name || 'New Layout');
+    const [accessType, setAccessType] = useState(layout.access_type || 'general');
+    const [selectedRoles, setSelectedRoles] = useState(layout.roles || []);
+    const [isDefault, setIsDefault] = useState(layout.is_default || false);
 
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
@@ -157,7 +163,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
         setActiveTab(tab);
         if (tab === 'header') setBlocks(headerData);
         else if (tab === 'footer') setBlocks(footerData);
-        else setBlocks([]); // Clear blocks for theme tab
+        else setBlocks([]); // Settings or Theme tabs
 
         setActiveBlockId(null);
     };
@@ -371,18 +377,31 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
 
     const handleSave = () => {
         setSaving(true);
-        // Sync final states
-        const finalHeader = activeTab === 'header' ? blocks : headerData;
-        const finalFooter = activeTab === 'footer' ? blocks : footerData;
+        
+        // Final sync of current blocks
+        let finalHeader = headerData;
+        let finalFooter = footerData;
+        
+        if (activeTab === 'header') finalHeader = blocks;
+        if (activeTab === 'footer') finalFooter = blocks;
 
-        router.post(route('layouts.update'), {
-            header: finalHeader,
-            footer: finalFooter,
-            theme: theme
-        }, {
-            preserveScroll: true,
+        const data = {
+            name: layoutName,
+            header_blocks: finalHeader,
+            footer_blocks: finalFooter,
+            theme_data: theme,
+            access_type: accessType,
+            roles: selectedRoles,
+            is_default: isDefault
+        };
+
+        const routeName = layout.id ? route('layouts.update', layout.id) : route('layouts.store');
+        const method = layout.id ? (layout.id ? 'put' : 'post') : 'post';
+
+        router[method](routeName, data, {
             onSuccess: () => setSaving(false),
             onError: () => setSaving(false),
+            preserveScroll: true
         });
     };
 
@@ -2016,6 +2035,12 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                             >
                                 Theme
                             </button>
+                            <button
+                                onClick={() => switchTab('settings')}
+                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'settings' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Settings
+                            </button>
                         </div>
                     </div>
 
@@ -2233,6 +2258,85 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                             rows="8"
                                             className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 p-3 resize-none shadow-inner"
                                         />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : activeTab === 'settings' ? (
+                            <div className="space-y-6 pb-20">
+                                <div className="space-y-4">
+                                    <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                                        <Settings className="w-3.5 h-3.5" /> General Settings
+                                    </label>
+                                    <div className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Layout Name</label>
+                                            <input 
+                                                type="text" 
+                                                value={layoutName} 
+                                                onChange={e => setLayoutName(e.target.value)}
+                                                className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
+                                                placeholder="e.g. Landing Page Layout"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2">
+                                            <label className="text-xs font-bold text-gray-700">Set as Default</label>
+                                            <button 
+                                                onClick={() => setIsDefault(!isDefault)}
+                                                className={`w-10 h-5 rounded-full p-1 transition-colors ${isDefault ? 'bg-green-500' : 'bg-gray-300'}`}
+                                            >
+                                                <div className={`w-3 h-3 bg-white rounded-full transition-transform ${isDefault ? 'translate-x-5' : ''}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                                        <Shield className="w-3.5 h-3.5" /> Access Control
+                                    </label>
+                                    <div className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Who can see this layout?</label>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {[
+                                                    { id: 'general', label: 'General (Public)', icon: Globe },
+                                                    { id: 'authenticated', label: 'Authenticated Only', icon: Users },
+                                                    { id: 'role', label: 'Specific Roles', icon: ShieldCheck }
+                                                ].map(type => (
+                                                    <button
+                                                        key={type.id}
+                                                        onClick={() => setAccessType(type.id)}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${accessType === type.id ? 'bg-white border-indigo-200 shadow-sm text-indigo-600 ring-2 ring-indigo-50' : 'bg-transparent border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                                                    >
+                                                        <type.icon className="w-4 h-4" />
+                                                        <span className="text-xs font-bold">{type.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {accessType === 'role' && (
+                                            <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Select Roles</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(roles || []).map(role => (
+                                                        <button
+                                                            key={role}
+                                                            onClick={() => {
+                                                                if (selectedRoles.includes(role)) {
+                                                                    setSelectedRoles(selectedRoles.filter(r => r !== role));
+                                                                } else {
+                                                                    setSelectedRoles([...selectedRoles, role]);
+                                                                }
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${selectedRoles.includes(role) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-200 text-gray-400 hover:border-indigo-300'}`}
+                                                        >
+                                                            {role}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

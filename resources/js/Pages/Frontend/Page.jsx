@@ -77,10 +77,8 @@ export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
 
             {/* Footer */}
             {footerBlocks.length > 0 && (
-                <footer className="site-footer">
-                    <div className="site-footer-container">
-                        <DynamicPageRenderer blocks={footerBlocks} reusableBlocks={safeReusableBlocks} />
-                    </div>
+                <footer>
+                    <DynamicPageRenderer blocks={footerBlocks} reusableBlocks={safeReusableBlocks} />
                 </footer>
             )}
         </>

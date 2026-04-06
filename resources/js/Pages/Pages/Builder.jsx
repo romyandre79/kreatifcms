@@ -32,7 +32,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export default function Builder({ page, layout = {}, reusableBlocks = [], contentTypes = [] }) {
+export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
     const isContentTypeEnabled = plugins.some(p => p.alias === 'contenttype' && p.enabled !== false);
     const blockPlugins = plugins.filter(p => p.type === 'block');
@@ -173,6 +173,7 @@ export default function Builder({ page, layout = {}, reusableBlocks = [], conten
     const [title, setTitle] = useState(page.title);
     const [slug, setSlug] = useState(page.slug);
     const [isPublished, setIsPublished] = useState(page.is_published);
+    const [layoutId, setLayoutId] = useState(page.layout_id || '');
     
     // SEO State
     const [metaTitle, setMetaTitle] = useState(page.meta_title || '');
@@ -558,7 +559,8 @@ export default function Builder({ page, layout = {}, reusableBlocks = [], conten
             meta_title: metaTitle,
             meta_description: metaDescription,
             meta_keywords: metaKeywords,
-            og_image: ogImage
+            og_image: ogImage,
+            layout_id: layoutId || null
         }, {
             preserveScroll: true,
             onSuccess: () => setSaving(false),
@@ -3460,6 +3462,20 @@ export default function Builder({ page, layout = {}, reusableBlocks = [], conten
                                             <option value="false">Draft (Hidden)</option>
                                             <option value="true">Published (Live)</option>
                                         </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Page Layout</label>
+                                        <select 
+                                            value={layoutId} 
+                                            onChange={e => setLayoutId(e.target.value)} 
+                                            className="w-full text-xs font-semibold border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                        >
+                                            <option value="">-- Use Default Layout --</option>
+                                            {layouts.map(l => (
+                                                <option key={l.id} value={l.id}>{l.name} {l.is_default ? '(Default)' : ''}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-[10px] text-gray-400 mt-1">Choose which header/footer/theme to use for this page.</p>
                                     </div>
                                 </div>
                             </div>

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Setting;
 use App\Services\SchemaService;
 use Modules\ReusableBlock\Models\Block;
+use Modules\Layout\Models\Layout;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
@@ -13,65 +14,122 @@ class LayoutController extends Controller
 {
     public function index()
     {
-        $schemaService = app(SchemaService::class);
-        $header = Setting::where('module', 'layout')->where('key', 'header')->first();
-        $footer = Setting::where('module', 'layout')->where('key', 'footer')->first();
-        $theme = Setting::where('module', 'layout')->where('key', 'theme')->first();
+        return Inertia::render('Layout/Index', [
+            'layouts' => Layout::all()
+        ]);
+    }
 
-        $headerBlocks = $header ? json_decode($header->value, true) : [];
-        $footerBlocks = $footer ? json_decode($footer->value, true) : [];
-        $themeData = $theme ? json_decode($theme->value, true) : [
-            'primaryColor' => '#4f46e5',
-            'secondaryColor' => '#10b981',
-            'fontFamily' => 'Inter',
-            'fontSize' => '16'
-        ];
-
+    public function create()
+    {
         return Inertia::render('Layout/Editor', [
-            'headerBlocks' => $schemaService->hydrateDynamicBlocks($headerBlocks),
-            'footerBlocks' => $schemaService->hydrateDynamicBlocks($footerBlocks),
-            'themeData' => $themeData,
-            'reusableBlocks' => Block::all()->map(function($rb) use ($schemaService) {
-                if (isset($rb->data) && is_array($rb->data)) {
-                    $rb->data = $schemaService->hydrateDynamicBlocks($rb->data);
-                }
-                return $rb;
-            }),
+            'layout' => new Layout([
+                'name' => 'New Layout',
+                'header_blocks' => [],
+                'footer_blocks' => [],
+                'theme_data' => [
+                    'primaryColor' => '#4f46e5',
+                    'secondaryColor' => '#10b981',
+                    'fontFamily' => 'Inter',
+                    'fontSize' => '16'
+                ],
+                'access_type' => 'general',
+                'roles' => []
+            ]),
+            'reusableBlocks' => Block::all(),
+            'roles' => \DB::table('roles')->pluck('name'),
             'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
                 ? \Modules\ContentType\Models\ContentType::with('fields')->get()
                 : []
         ]);
     }
 
-    public function update(Request $request)
+    public function store(Request $request)
     {
-        $request->validate([
-            'header' => 'nullable|array',
-            'footer' => 'nullable|array',
-            'theme' => 'nullable|array',
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'header_blocks' => 'nullable|array',
+            'footer_blocks' => 'nullable|array',
+            'theme_data' => 'nullable|array',
+            'access_type' => 'required|in:general,authenticated,role',
+            'roles' => 'nullable|array',
+            'is_default' => 'boolean'
         ]);
 
-        if ($request->has('header')) {
-            Setting::updateOrCreate(
-                ['module' => 'layout', 'key' => 'header'],
-                ['value' => json_encode($request->input('header'))]
-            );
+        if ($validated['is_default'] ?? false) {
+            Layout::where('is_default', true)->update(['is_default' => false]);
         }
 
-        if ($request->has('footer')) {
-            Setting::updateOrCreate(
-                ['module' => 'layout', 'key' => 'footer'],
-                ['value' => json_encode($request->input('footer'))]
-            );
+        $layout = Layout::create([
+            'name' => $validated['name'],
+            'header_blocks' => $validated['header_blocks'] ?? [],
+            'footer_blocks' => $validated['footer_blocks'] ?? [],
+            'theme_data' => $validated['theme_data'] ?? [],
+            'access_type' => $validated['access_type'],
+            'roles' => $validated['roles'] ?? [],
+            'is_default' => $validated['is_default'] ?? false,
+        ]);
+
+        return redirect()->route('layouts.index')->with('success', 'Layout created successfully.');
+    }
+
+    public function edit(Layout $layout)
+    {
+        $schemaService = app(SchemaService::class);
+        
+        return Inertia::render('Layout/Editor', [
+            'layout' => $layout,
+            'headerBlocks' => $schemaService->hydrateDynamicBlocks($layout->header_blocks ?? []),
+            'footerBlocks' => $schemaService->hydrateDynamicBlocks($layout->footer_blocks ?? []),
+            'themeData' => $layout->theme_data ?? [],
+            'reusableBlocks' => Block::all()->map(function($rb) use ($schemaService) {
+                if (isset($rb->data) && is_array($rb->data)) {
+                    $rb->data = $schemaService->hydrateDynamicBlocks($rb->data);
+                }
+                return $rb;
+            }),
+            'roles' => \DB::table('roles')->pluck('name'),
+            'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
+                ? \Modules\ContentType\Models\ContentType::with('fields')->get()
+                : []
+        ]);
+    }
+
+    public function update(Request $request, Layout $layout)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'header_blocks' => 'nullable|array',
+            'footer_blocks' => 'nullable|array',
+            'theme_data' => 'nullable|array',
+            'access_type' => 'required|in:general,authenticated,role',
+            'roles' => 'nullable|array',
+            'is_default' => 'boolean'
+        ]);
+
+        if ($validated['is_default'] ?? false) {
+            Layout::where('is_default', true)->where('id', '!=', $layout->id)->update(['is_default' => false]);
         }
 
-        if ($request->has('theme')) {
-            Setting::updateOrCreate(
-                ['module' => 'layout', 'key' => 'theme'],
-                ['value' => json_encode($request->input('theme'))]
-            );
+        $layout->update([
+            'name' => $validated['name'],
+            'header_blocks' => $validated['header_blocks'] ?? [],
+            'footer_blocks' => $validated['footer_blocks'] ?? [],
+            'theme_data' => $validated['theme_data'] ?? [],
+            'access_type' => $validated['access_type'],
+            'roles' => $validated['roles'] ?? [],
+            'is_default' => $validated['is_default'] ?? false,
+        ]);
+
+        return redirect()->back()->with('success', 'Layout updated successfully.');
+    }
+
+    public function destroy(Layout $layout)
+    {
+        if ($layout->is_default) {
+            return redirect()->back()->with('error', 'Cannot delete the default layout.');
         }
 
-        return redirect()->back()->with('success', 'Global layout and theme updated successfully.');
+        $layout->delete();
+        return redirect()->route('layouts.index')->with('success', 'Layout deleted successfully.');
     }
 }
