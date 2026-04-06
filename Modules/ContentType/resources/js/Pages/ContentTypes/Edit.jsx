@@ -276,191 +276,189 @@ export default function Edit({ contentType, allContentTypes, isPhpEventHooksEnab
         >
             <Head title={`Edit ${contentType.name}`} />
 
-            <div className="py-12">
-                <div className="mx-auto max-w-7xl sm:px-6 lg:px-8">
-                    <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                        <div className="flex">
-                            <div className="ml-3">
-                                <p className="text-sm text-yellow-700">
-                                    Note: Existing fields cannot be renamed or deleted once the schema is created to prevent data loss. You can add new fields.
+            <div className="mx-auto sm:px-6 lg:px-8">
+                <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <div className="flex">
+                        <div className="ml-3">
+                            <p className="text-sm text-yellow-700">
+                                Note: Existing fields cannot be renamed or deleted once the schema is created to prevent data loss. You can add new fields.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="bg-white p-6 shadow sm:rounded-lg">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Display Name</label>
+                                <input
+                                    type="text"
+                                    value={data.name}
+                                    onChange={e => setData('name', e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                />
+                                {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Description</label>
+                                <input
+                                    type="text"
+                                    value={data.description}
+                                    onChange={e => setData('description', e.target.value)}
+                                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700">Type</label>
+                                <div className="mt-2 flex gap-4">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="radio"
+                                            name="type"
+                                            value="collection"
+                                            checked={data.type === 'collection'}
+                                            onChange={e => setData('type', e.target.value)}
+                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                        />
+                                        <span className={`text-sm font-medium ${data.type === 'collection' ? 'text-indigo-600' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                                            Collection Type
+                                        </span>
+                                    </label>
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <input
+                                            type="radio"
+                                            name="type"
+                                            value="single"
+                                            checked={data.type === 'single'}
+                                            onChange={e => setData('type', e.target.value)}
+                                            className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
+                                        />
+                                        <span className={`text-sm font-medium ${data.type === 'single' ? 'text-indigo-600' : 'text-gray-600 group-hover:text-gray-900'}`}>
+                                            Single Type
+                                        </span>
+                                    </label>
+                                </div>
+                                <p className="mt-1.5 text-xs text-gray-500 italic">
+                                    Note: Changing the type affects how the content is managed in the Data Manager.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <form onSubmit={handleSubmit} className="space-y-6">
-                        <div className="bg-white p-6 shadow sm:rounded-lg">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Display Name</label>
-                                    <input
-                                        type="text"
-                                        value={data.name}
-                                        onChange={e => setData('name', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    />
-                                    {errors.name && <p className="mt-1 text-sm text-red-600">{errors.name}</p>}
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Description</label>
-                                    <input
-                                        type="text"
-                                        value={data.description}
-                                        onChange={e => setData('description', e.target.value)}
-                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium text-gray-700">Type</label>
-                                    <div className="mt-2 flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input
-                                                type="radio"
-                                                name="type"
-                                                value="collection"
-                                                checked={data.type === 'collection'}
-                                                onChange={e => setData('type', e.target.value)}
-                                                className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                                            />
-                                            <span className={`text-sm font-medium ${data.type === 'collection' ? 'text-indigo-600' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                                                Collection Type
-                                            </span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer group">
-                                            <input
-                                                type="radio"
-                                                name="type"
-                                                value="single"
-                                                checked={data.type === 'single'}
-                                                onChange={e => setData('type', e.target.value)}
-                                                className="w-4 h-4 text-indigo-600 focus:ring-indigo-500 border-gray-300"
-                                            />
-                                            <span className={`text-sm font-medium ${data.type === 'single' ? 'text-indigo-600' : 'text-gray-600 group-hover:text-gray-900'}`}>
-                                                Single Type
-                                            </span>
-                                        </label>
-                                    </div>
-                                    <p className="mt-1.5 text-xs text-gray-500 italic">
-                                        Note: Changing the type affects how the content is managed in the Data Manager.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="bg-white p-6 shadow sm:rounded-lg">
-                            <div className="flex justify-between items-center mb-6">
-                                <h3 className="text-lg font-medium text-gray-900">Fields Configuration</h3>
-                                <button
-                                    type="button"
-                                    onClick={addField}
-                                    className="inline-flex items-center px-3 py-1.5 border border-indigo-600 text-indigo-600 rounded-md text-sm font-medium hover:bg-indigo-50 transition-colors"
-                                >
-                                    <Plus className="w-4 h-4 mr-2" />
-                                    Add New Field
-                                </button>
-                            </div>
-
-                            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                                <SortableContext items={data.fields.map(f => String(f.id))} strategy={verticalListSortingStrategy}>
-                                    {data.fields.map((field) => (
-                                        <SortableField
-                                            key={field.id}
-                                            field={field}
-                                            isNew={field.isNew}
-                                            onRemove={removeField}
-                                            onUpdate={updateField}
-                                            allContentTypes={allContentTypes}
-                                        />
-                                    ))}
-                                </SortableContext>
-                            </DndContext>
-                        </div>
-
-                        {/* PHP Hooks Section */}
-                        {isPhpHooksActive && (
-                            <div className="bg-white p-6 shadow sm:rounded-lg border-l-4 border-yellow-400">
-                                <div className="mb-6">
-                                    <h3 className="text-lg font-medium text-gray-900 font-premium flex items-center gap-2">
-                                        <Code className="w-5 h-5 text-yellow-500" />
-                                        PHP Event Hooks (Advanced)
-                                    </h3>
-                                    <p className="text-sm text-gray-500 mt-1">
-                                        Execute custom PHP code during the content entry lifecycle.
-                                        <strong> Use with extreme caution.</strong> Available variables: <code className="bg-gray-100 px-1 rounded text-pink-600">$data</code> (for writing hooks) and <code className="bg-gray-100 px-1 rounded text-pink-600">$entry</code> (for reading/updating existing).
-                                    </p>
-                                </div>
-
-                                <div className="space-y-6">
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Select</label>
-                                        <p className="text-xs text-gray-500 mb-2">Runs after an entry is retrieved. Modify <code className="bg-gray-50 px-1 rounded">$entry</code> attributes.</p>
-                                        <textarea
-                                            value={data.events?.onSelect || ''}
-                                            onChange={e => setData('events', { ...data.events, onSelect: e.target.value })}
-                                            placeholder="// e.g. $entry->title = strtoupper($entry->title);"
-                                            rows="3"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Insert</label>
-                                        <p className="text-xs text-gray-500 mb-2">Runs before a new entry is saved. Modify the <code className="bg-gray-50 px-1 rounded">$data</code> array.</p>
-                                        <textarea
-                                            value={data.events?.onInsert || ''}
-                                            onChange={e => setData('events', { ...data.events, onInsert: e.target.value })}
-                                            placeholder="// e.g. $data['slug'] = Str::slug($data['title']);"
-                                            rows="3"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Update</label>
-                                        <p className="text-xs text-gray-500 mb-2">Runs before an existing entry is updated. Access <code className="bg-gray-50 px-1 rounded">$data</code> array and <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
-                                        <textarea
-                                            value={data.events?.onUpdate || ''}
-                                            onChange={e => setData('events', { ...data.events, onUpdate: e.target.value })}
-                                            placeholder="// e.g. if (!isset($data['updated_by'])) $data['updated_by'] = auth()->id();"
-                                            rows="3"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Delete</label>
-                                        <p className="text-xs text-gray-500 mb-2">Runs before an entry is deleted. Access <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
-                                        <textarea
-                                            value={data.events?.onDelete || ''}
-                                            onChange={e => setData('events', { ...data.events, onDelete: e.target.value })}
-                                            placeholder="// e.g. Log::info('Deleting entry ' . $entry->id);"
-                                            rows="3"
-                                            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        <div className="flex justify-end gap-4">
-                            {!contentType.isNew && (
-                                <button
-                                    type="button"
-                                    onClick={() => setShowPushModal(true)}
-                                    className="inline-flex items-center px-6 py-3 bg-white border border-indigo-600 rounded-md font-semibold text-sm text-indigo-600 shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
-                                >
-                                    <Send className="w-5 h-5 mr-2" />
-                                    Push to Staging
-                                </button>
-                            )}
+                    <div className="bg-white p-6 shadow sm:rounded-lg">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-lg font-medium text-gray-900">Fields Configuration</h3>
                             <button
-                                type="submit"
-                                disabled={processing}
-                                className="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                                type="button"
+                                onClick={addField}
+                                className="inline-flex items-center px-3 py-1.5 border border-indigo-600 text-indigo-600 rounded-md text-sm font-medium hover:bg-indigo-50 transition-colors"
                             >
-                                <Save className="w-5 h-5 mr-2" />
-                                Update Content Type
+                                <Plus className="w-4 h-4 mr-2" />
+                                Add New Field
                             </button>
                         </div>
-                    </form>
-                </div>
+
+                        <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                            <SortableContext items={data.fields.map(f => String(f.id))} strategy={verticalListSortingStrategy}>
+                                {data.fields.map((field) => (
+                                    <SortableField
+                                        key={field.id}
+                                        field={field}
+                                        isNew={field.isNew}
+                                        onRemove={removeField}
+                                        onUpdate={updateField}
+                                        allContentTypes={allContentTypes}
+                                    />
+                                ))}
+                            </SortableContext>
+                        </DndContext>
+                    </div>
+
+                    {/* PHP Hooks Section */}
+                    {isPhpHooksActive && (
+                        <div className="bg-white p-6 shadow sm:rounded-lg border-l-4 border-yellow-400">
+                            <div className="mb-6">
+                                <h3 className="text-lg font-medium text-gray-900 font-premium flex items-center gap-2">
+                                    <Code className="w-5 h-5 text-yellow-500" />
+                                    PHP Event Hooks (Advanced)
+                                </h3>
+                                <p className="text-sm text-gray-500 mt-1">
+                                    Execute custom PHP code during the content entry lifecycle.
+                                    <strong> Use with extreme caution.</strong> Available variables: <code className="bg-gray-100 px-1 rounded text-pink-600">$data</code> (for writing hooks) and <code className="bg-gray-100 px-1 rounded text-pink-600">$entry</code> (for reading/updating existing).
+                                </p>
+                            </div>
+
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Select</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs after an entry is retrieved. Modify <code className="bg-gray-50 px-1 rounded">$entry</code> attributes.</p>
+                                    <textarea
+                                        value={data.events?.onSelect || ''}
+                                        onChange={e => setData('events', { ...data.events, onSelect: e.target.value })}
+                                        placeholder="// e.g. $entry->title = strtoupper($entry->title);"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Insert</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs before a new entry is saved. Modify the <code className="bg-gray-50 px-1 rounded">$data</code> array.</p>
+                                    <textarea
+                                        value={data.events?.onInsert || ''}
+                                        onChange={e => setData('events', { ...data.events, onInsert: e.target.value })}
+                                        placeholder="// e.g. $data['slug'] = Str::slug($data['title']);"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Update</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs before an existing entry is updated. Access <code className="bg-gray-50 px-1 rounded">$data</code> array and <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
+                                    <textarea
+                                        value={data.events?.onUpdate || ''}
+                                        onChange={e => setData('events', { ...data.events, onUpdate: e.target.value })}
+                                        placeholder="// e.g. if (!isset($data['updated_by'])) $data['updated_by'] = auth()->id();"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-700 uppercase tracking-wide mb-1">on Delete</label>
+                                    <p className="text-xs text-gray-500 mb-2">Runs before an entry is deleted. Access <code className="bg-gray-50 px-1 rounded">$entry</code> object.</p>
+                                    <textarea
+                                        value={data.events?.onDelete || ''}
+                                        onChange={e => setData('events', { ...data.events, onDelete: e.target.value })}
+                                        placeholder="// e.g. Log::info('Deleting entry ' . $entry->id);"
+                                        rows="3"
+                                        className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm font-mono bg-gray-50"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-4">
+                        {!contentType.isNew && (
+                            <button
+                                type="button"
+                                onClick={() => setShowPushModal(true)}
+                                className="inline-flex items-center px-6 py-3 bg-white border border-indigo-600 rounded-md font-semibold text-sm text-indigo-600 shadow-sm hover:bg-indigo-50 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                            >
+                                <Send className="w-5 h-5 mr-2" />
+                                Push to Staging
+                            </button>
+                        )}
+                        <button
+                            type="submit"
+                            disabled={processing}
+                            className="inline-flex items-center px-6 py-3 bg-indigo-600 border border-transparent rounded-md font-semibold text-sm text-white shadow-sm hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 transition ease-in-out duration-150"
+                        >
+                            <Save className="w-5 h-5 mr-2" />
+                            Update Content Type
+                        </button>
+                    </div>
+                </form>
             </div>
 
             <DeleteConfirmationModal
