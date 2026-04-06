@@ -12,6 +12,8 @@ const NavBarBlock = ({ data = {} }) => {
     const [hoveredLink, setHoveredLink] = useState(null);
     const [hoveredRect, setHoveredRect] = useState(null);
     const megaTimeoutRef = useRef(null);
+    const navbarRef = useRef(null);
+    const [navbarBottom, setNavbarBottom] = useState(0);
     const { auth } = usePage().props;
     const isLoggedIn = !!auth?.user;
     const links = Array.isArray(data.links) ? data.links : [];
@@ -46,6 +48,25 @@ const NavBarBlock = ({ data = {} }) => {
             }
         }
     };
+
+    // Track navbar position for portal alignment
+    useEffect(() => {
+        const updatePos = () => {
+            if (navbarRef.current) {
+                const rect = navbarRef.current.getBoundingClientRect();
+                setNavbarBottom(rect.bottom);
+            }
+        };
+        updatePos();
+        window.addEventListener('scroll', updatePos);
+        window.addEventListener('resize', updatePos);
+        // Also update when activeMega changes to catch height changes
+        updatePos();
+        return () => {
+            window.removeEventListener('scroll', updatePos);
+            window.removeEventListener('resize', updatePos);
+        };
+    }, [activeMega]);
 
     const baseComposition = Array.isArray(data.composition) ? data.composition : ['logo', 'links', 'buttons', 'social_links'];
     const composition = baseComposition;
@@ -452,6 +473,7 @@ const NavBarBlock = ({ data = {} }) => {
 
     return (
         <nav
+            ref={navbarRef}
             className={`w-full z-[99999] transition-all duration-300 ${data.sticky !== false ? 'sticky top-0' : 'relative'} ${data.glass !== false ? 'backdrop-blur-md border-b border-white/20 shadow-sm' : 'border-b border-gray-100'}`}
             style={{
                 backgroundColor: data.bg_color || (data.glass !== false ? 'rgba(255, 255, 255, 0.8)' : '#ffffff'),
@@ -503,8 +525,8 @@ const NavBarBlock = ({ data = {} }) => {
                 </div>
             </div>
 
-            {/* Desktop Mega Menu Dropdowns */}
-            {(() => {
+            {/* Desktop Mega Menu Dropdowns - PORTALLED to body to avoid clipping */}
+            {typeof document !== 'undefined' && (() => {
                 const mmSource = data.megamenu_source || 'static';
                 if (!composition.includes('megamenu') || !activeMega) return null;
 
@@ -512,10 +534,11 @@ const NavBarBlock = ({ data = {} }) => {
                     const mega_menus = Array.isArray(data.mega_menus) ? data.mega_menus : [];
                     const activeMenu = mega_menus.find(m => m.id === activeMega);
                     if (!activeMenu || (activeMenu.columns || []).length === 0) return null;
-                    return (
+                    return createPortal(
                         <div
-                            className="hidden md:block absolute left-0 right-0 z-[100]"
-                            onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); }}
+                            className="hidden md:block fixed left-0 right-0 z-[999999] pointer-events-auto"
+                            style={{ top: `${navbarBottom}px` }}
+                            onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); setActiveMega(activeMenu.id); }}
                             onMouseLeave={() => { megaTimeoutRef.current = setTimeout(() => setActiveMega(null), 200); }}
                         >
                             <div className="mx-auto px-4 sm:px-6 lg:px-8">
@@ -539,7 +562,8 @@ const NavBarBlock = ({ data = {} }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div>,
+                        document.body
                     );
                 } else {
                     const items = Array.isArray(data.mega_menus_dynamic_items) ? data.mega_menus_dynamic_items : [];
@@ -550,10 +574,11 @@ const NavBarBlock = ({ data = {} }) => {
                     const perCol = Math.ceil(items.length / columnsCount);
                     for (let i = 0; i < columnsCount; i++) chunked.push(items.slice(i * perCol, (i + 1) * perCol));
 
-                    return (
+                    return createPortal(
                         <div
-                            className="hidden md:block absolute left-0 right-0 z-[100]"
-                            onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); }}
+                            className="hidden md:block fixed left-0 right-0 z-[999999] pointer-events-auto"
+                            style={{ top: `${navbarBottom}px` }}
+                            onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); setActiveMega('dynamic'); }}
                             onMouseLeave={() => { megaTimeoutRef.current = setTimeout(() => setActiveMega(null), 200); }}
                         >
                             <div className="mx-auto px-4 sm:px-6 lg:px-8">
@@ -588,7 +613,8 @@ const NavBarBlock = ({ data = {} }) => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div>,
+                        document.body
                     );
                 }
             })()}
