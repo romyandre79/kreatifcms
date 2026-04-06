@@ -23,11 +23,11 @@ export default function Update({ info }) {
             const errorMsg = err.response?.data?.error || err.message;
             const suggestion = err.response?.data?.suggestion;
 
-            setLog(prev => [...prev, { 
-                step: 'Network Check', 
-                command: 'Checking GitHub Connection...', 
-                output: suggestion ? `${errorMsg}\n\n💡 Suggestion: ${suggestion}` : errorMsg, 
-                status: 'error' 
+            setLog(prev => [...prev, {
+                step: 'Network Check',
+                command: 'Checking GitHub Connection...',
+                output: suggestion ? `${errorMsg}\n\n💡 Suggestion: ${suggestion}` : errorMsg,
+                status: 'error'
             }]);
             setIsUpdating(false);
         });
@@ -35,7 +35,7 @@ export default function Update({ info }) {
 
     const runUpdate = (method = 'git') => {
         if (!confirm(`Are you sure you want to run the ${method} update? Local changes might be overwritten.`)) return;
-        
+
         setIsUpdating(true);
         setLog([{ step: 'Initializing', command: `Starting ${method} update process...`, output: 'Please wait...', status: 'success' }]);
 
@@ -47,11 +47,11 @@ export default function Update({ info }) {
             const errorMsg = err.response?.data?.error || err.message;
             const suggestion = err.response?.data?.suggestion;
 
-            setLog(prev => [...prev, { 
-                step: 'Error', 
-                command: 'System Update Failed', 
-                output: suggestion ? `${errorMsg}\n\n💡 Suggestion: ${suggestion}` : errorMsg, 
-                status: 'error' 
+            setLog(prev => [...prev, {
+                step: 'Error',
+                command: 'System Update Failed',
+                output: suggestion ? `${errorMsg}\n\n💡 Suggestion: ${suggestion}` : errorMsg,
+                status: 'error'
             }]);
             setIsUpdating(false);
         });
@@ -72,7 +72,7 @@ export default function Update({ info }) {
         >
             <Head title="System Update" />
 
-            <div className="max-w-7xl mx-auto space-y-6 pb-12">
+            <div className="mx-auto space-y-6 pb-12">
                 {/* Status Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center gap-4">
@@ -120,7 +120,7 @@ export default function Update({ info }) {
                                 <span className="flex items-center gap-1"><Clock className="w-3 h-3" /> Last Checked: {updateInfo.last_checked}</span>
                             </div>
                         </div>
-                        
+
                         <div className="flex flex-wrap gap-4">
                             <button
                                 onClick={runDiagnostics}
@@ -138,21 +138,20 @@ export default function Update({ info }) {
                                 <RefreshCcw className={`w-4 h-4 ${isUpdating ? 'animate-spin' : ''}`} />
                                 Check
                             </button>
-                            
+
                             <div className="flex flex-col gap-2">
                                 <button
                                     onClick={() => runUpdate('git')}
                                     disabled={isUpdating || (updateInfo.is_up_to_date && !updateInfo.error)}
-                                    className={`px-8 py-3 font-bold rounded-2xl shadow-xl transition-all flex items-center gap-2 ${
-                                        (updateInfo.is_up_to_date && !updateInfo.error)
-                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                        : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-indigo-200'
-                                    }`}
+                                    className={`px-8 py-3 font-bold rounded-2xl shadow-xl transition-all flex items-center gap-2 ${(updateInfo.is_up_to_date && !updateInfo.error)
+                                            ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                            : 'bg-indigo-600 text-white hover:bg-indigo-700 hover:shadow-indigo-200'
+                                        }`}
                                 >
                                     <Download className="w-5 h-5" />
                                     Git Update
                                 </button>
-                                
+
                                 <div className="flex flex-col items-center gap-1">
                                     <button
                                         onClick={() => runUpdate('zip')}
@@ -249,18 +248,16 @@ export default function Update({ info }) {
                                 {log.map((entry, idx) => (
                                     <div key={idx} className="group animate-in fade-in slide-in-from-left-4 duration-300">
                                         <div className="flex items-center gap-3 mb-1">
-                                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${
-                                                entry.status === 'success' ? 'bg-green-500/20 text-green-400' : 
-                                                entry.status === 'warning' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
-                                            }`}>
+                                            <span className={`px-1.5 py-0.5 rounded text-[8px] font-black uppercase tracking-tighter ${entry.status === 'success' ? 'bg-green-500/20 text-green-400' :
+                                                    entry.status === 'warning' ? 'bg-amber-500/20 text-amber-400' : 'bg-red-500/20 text-red-400'
+                                                }`}>
                                                 {entry.step}
                                             </span>
                                             <span className="text-gray-500">{entry.command}</span>
                                         </div>
-                                        <pre className={`whitespace-pre-wrap pl-6 border-l border-gray-800 ml-2 ${
-                                            entry.status === 'success' ? 'text-gray-400' : 
-                                            entry.status === 'warning' ? 'text-amber-400/80' : 'text-red-400'
-                                        }`}>
+                                        <pre className={`whitespace-pre-wrap pl-6 border-l border-gray-800 ml-2 ${entry.status === 'success' ? 'text-gray-400' :
+                                                entry.status === 'warning' ? 'text-amber-400/80' : 'text-red-400'
+                                            }`}>
                                             {entry.output}
                                         </pre>
                                     </div>

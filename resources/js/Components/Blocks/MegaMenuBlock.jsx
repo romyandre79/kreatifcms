@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, usePage } from '@inertiajs/react';
 import { ChevronDown, ChevronRight, Menu, X, Globe, ArrowRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -9,6 +10,24 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
     const [mobileExpanded, setMobileExpanded] = useState(null);
     const menuRef = useRef(null);
     const timeoutRef = useRef(null);
+    const [navbarBottom, setNavbarBottom] = useState(0);
+
+    // Track navbar position for portal alignment
+    useEffect(() => {
+        const updatePos = () => {
+            if (menuRef.current) {
+                const rect = menuRef.current.getBoundingClientRect();
+                setNavbarBottom(rect.bottom);
+            }
+        };
+        updatePos();
+        window.addEventListener('scroll', updatePos);
+        window.addEventListener('resize', updatePos);
+        return () => {
+            window.removeEventListener('scroll', updatePos);
+            window.removeEventListener('resize', updatePos);
+        };
+    }, [activeMenu]);
 
     const source = data.source || 'static';
     const menus = Array.isArray(data.menus) ? data.menus : [];
@@ -64,7 +83,7 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
             <ul className={`${isMobile ? 'pl-4 space-y-1' : (depth === 0 ? 'space-y-1' : 'absolute left-full top-0 ml-px w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover/recursive:opacity-100 group-hover/recursive:visible transition-all duration-200 z-[110]')}`}>
                 {links.map((link, i) => {
                     const hasChildren = Array.isArray(link.children) && link.children.length > 0;
-                    
+
                     if (isMobile) {
                         return (
                             <li key={link.id || i}>
@@ -187,14 +206,15 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
         const isActive = activeMenu === menu.id;
         if (!isActive) return null;
 
-        return (
+        return createPortal(
             <div
-                className="absolute left-0 right-0 top-full z-[100]"
+                className="hidden md:block fixed left-0 right-0 z-[999999] pointer-events-auto"
+                style={{ top: `${navbarBottom}px` }}
                 onMouseEnter={handlePanelMouseEnter}
                 onMouseLeave={handleMouseLeave}
             >
                 <div
-                    className="mx-auto max-w-7xl rounded-2xl shadow-2xl border overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
+                    className="mx-auto max-w-7xl rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200"
                     style={{
                         backgroundColor: panelBg,
                         borderColor: `${textColor}10`,
@@ -231,7 +251,8 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
                         </div>
                     )}
                 </div>
-            </div>
+            </div>,
+            document.body
         );
     };
 
@@ -306,14 +327,22 @@ const MegaMenuBlock = ({ data = {}, contentTypes = [] }) => {
     return (
         <nav
             ref={menuRef}
-            className={`w-full z-50 transition-all duration-300 ${data.sticky ? 'sticky top-0' : 'relative'} ${data.glass ? 'backdrop-blur-xl' : ''}`}
+            className={`w-full z-[99999] transition-all duration-300 ${data.sticky ? 'sticky top-0' : 'relative'} ${data.glass ? 'backdrop-blur-xl' : ''}`}
             style={{
                 backgroundColor: data.glass ? `${bgColor}CC` : bgColor,
                 borderBottom: `1px solid ${textColor}10`
             }}
         >
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .dynamic-page-content, 
+                .dynamic-page-content > div,
+                nav[style*="sticky"] {
+                    overflow: visible !important;
+                }
+            ` }} />
             {/* Desktop Menu Bar */}
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto px-4 sm:px-6 lg:px-8">
                 <div className="hidden md:flex items-center h-14 gap-1">
                     {/* Logo (optional) */}
                     {data.logo && (
