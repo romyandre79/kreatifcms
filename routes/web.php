@@ -93,6 +93,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/system/update', [App\Http\Controllers\SystemUpdateController::class, 'index'])->name('system.update.index');
         Route::post('/system/update/check', [App\Http\Controllers\SystemUpdateController::class, 'check'])->name('system.update.check');
         Route::post('/system/update/run', [App\Http\Controllers\SystemUpdateController::class, 'run'])->name('system.update.run');
+        Route::post('/system/update/diagnostics', [App\Http\Controllers\SystemUpdateController::class, 'diagnostics'])->name('system.update.diagnostics');
     });
 
     // Dashboard Widget Routes

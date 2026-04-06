@@ -27,7 +27,9 @@ class SystemUpdateController extends Controller
     {
         try {
             $this->checkConnectivity();
-            $this->runCommand(['git', 'fetch', 'origin', 'main']);
+            $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
+            if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
+            $this->runCommand(['git', 'fetch', $updateUrl, 'main']);
             return response()->json([
                 'success' => true,
                 'info' => $this->getUpdateInfo()
@@ -53,15 +55,27 @@ class SystemUpdateController extends Controller
     /**
      * Run the update process.
      */
-    public function run()
+    public function run(Request $request)
     {
         $log = [];
         $success = true;
+        $method = $request->input('method', 'git');
+
+        if ($method === 'zip') {
+            return $this->runZipUpdate();
+        }
+
+        if ($method === 'local') {
+            return $this->runLocalZipUpdate();
+        }
+
+        $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
+        if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
 
         $commands = [
-            'Fetching' => ['git', 'fetch', 'origin', 'main'],
+            'Fetching' => ['git', 'fetch', $updateUrl, 'main'],
             'Switching to Main' => ['git', 'checkout', 'main'],
-            'Pulling' => ['git', 'pull', 'origin', 'main'],
+            'Pulling' => ['git', 'pull', $updateUrl, 'main', '--no-rebase'],
             'Composer' => ['composer', 'install', '--no-interaction', '--prefer-dist', '--optimize-autoloader'],
             'Migrating' => ['php', 'artisan', 'migrate', '--force'],
             'Optimizing' => ['php', 'artisan', 'optimize:clear'],
@@ -93,6 +107,146 @@ class SystemUpdateController extends Controller
             'log' => $log,
             'info' => $this->getUpdateInfo()
         ]);
+    }
+
+    /**
+     * Fallback update via ZIP download from GitHub.
+     */
+    public function runZipUpdate()
+    {
+        $log = [];
+        try {
+            $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
+            $zipUrl = str_replace('.git', '', $updateUrl) . '/archive/refs/heads/main.zip';
+            $tempPath = storage_path('app/temp/update_' . time());
+            if (!is_dir($tempPath)) mkdir($tempPath, 0755, true);
+            $zipFile = $tempPath . '/main.zip';
+
+            // 1. Download
+            $log[] = ['step' => 'Download', 'command' => "GET {$zipUrl}", 'output' => "Downloading update package...", 'status' => 'success'];
+            $content = @file_get_contents($zipUrl);
+            if (!$content) throw new \Exception("Failed to download ZIP update from GitHub.");
+            file_put_contents($zipFile, $content);
+
+            return $this->applyZipUpdate($zipFile, $tempPath);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'log' => $log,
+                'error' => $e->getMessage()
+            ], 500);
+        } finally {
+            if (isset($tempPath)) $this->deleteTempDirectory($tempPath);
+        }
+    }
+
+    /**
+     * Offline update via manually placed ZIP file.
+     */
+    public function runLocalZipUpdate()
+    {
+        $log = [];
+        try {
+            $zipFile = storage_path('app/updates/update.zip');
+            if (!file_exists($zipFile)) throw new \Exception("Manual update file not found at storage/app/updates/update.zip");
+
+            $tempPath = storage_path('app/temp/update_local_' . time());
+            if (!is_dir($tempPath)) mkdir($tempPath, 0755, true);
+
+            $log[] = ['step' => 'Local File', 'command' => 'fs::check', 'output' => "Found local update package at " . basename($zipFile), 'status' => 'success'];
+
+            return $this->applyZipUpdate($zipFile, $tempPath);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'log' => $log,
+                'error' => $e->getMessage()
+            ], 500);
+        } finally {
+            if (isset($tempPath)) $this->deleteTempDirectory($tempPath);
+            // Optionally delete the local zip after success? User might want to keep it.
+        }
+    }
+
+    /**
+     * Extract and apply files from a ZIP archive.
+     */
+    private function applyZipUpdate($zipFile, $tempPath)
+    {
+        $log = [];
+
+        // 2. Extract
+        $log[] = ['step' => 'Extract', 'command' => "ZipArchive::extract", 'output' => "Extracting files...", 'status' => 'success'];
+        $zip = new \ZipArchive();
+        if ($zip->open($zipFile) === TRUE) {
+            $zip->extractTo($tempPath);
+            $zip->close();
+        } else {
+            throw new \Exception("Failed to open the ZIP file.");
+        }
+
+        // 3. Move Files (The github zip has a top-level dir, local might not)
+        $extractedDir = $tempPath;
+        $dirs = glob($tempPath . '/*', GLOB_ONLYDIR);
+        if (!empty($dirs)) $extractedDir = $dirs[0];
+
+        $log[] = ['step' => 'Install', 'command' => "filesystem::copy", 'output' => "Overwriting system files...", 'status' => 'success'];
+        $this->copyDirectory($extractedDir, base_path(), ['.env', 'storage', 'node_modules', 'vendor', '.git']);
+
+        // 4. Post-Update Commands
+        $commands = [
+            'Composer' => ['composer', 'install', '--no-interaction', '--prefer-dist', '--optimize-autoloader'],
+            'Migrating' => ['php', 'artisan', 'migrate', '--force'],
+            'Optimizing' => ['php', 'artisan', 'optimize:clear'],
+        ];
+
+        foreach ($commands as $step => $cmd) {
+            try {
+                $output = $this->runCommand($cmd);
+                $log[] = ['step' => $step, 'command' => implode(' ', $cmd), 'output' => $output, 'status' => 'success'];
+            } catch (\Exception $e) {
+                $log[] = ['step' => $step, 'command' => implode(' ', $cmd), 'output' => "Optional step failed: " . $e->getMessage(), 'status' => 'warning'];
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'log' => $log,
+            'info' => $this->getUpdateInfo()
+        ]);
+    }
+
+    /**
+     * Move files from one directory to another.
+     */
+    private function copyDirectory($src, $dst, $exclude = [])
+    {
+        $dir = opendir($src);
+        @mkdir($dst);
+        while (false !== ($file = readdir($dir))) {
+            if (($file != '.') && ($file != '..') && !in_array($file, $exclude)) {
+                if (is_dir($src . '/' . $file)) {
+                    $this->copyDirectory($src . '/' . $file, $dst . '/' . $file, $exclude);
+                } else {
+                    copy($src . '/' . $file, $dst . '/' . $file);
+                }
+            }
+        }
+        closedir($dir);
+    }
+
+    /**
+     * Recursive directory deletion.
+     */
+    private function deleteTempDirectory($dir) {
+        if (!is_dir($dir)) return;
+        $files = array_diff(scandir($dir), array('.','..'));
+        foreach ($files as $file) {
+            (is_dir("$dir/$file")) ? $this->deleteTempDirectory("$dir/$file") : unlink("$dir/$file");
+        }
+        return rmdir($dir);
     }
 
     /**
@@ -144,8 +298,11 @@ class SystemUpdateController extends Controller
             $currentDate = $this->runCommand(['git', 'log', '-1', '--format=%cd', '--date=relative']);
             $currentBranch = $this->runCommand(['git', 'branch', '--show-current']);
             
-            // Count commits behind origin/main
-            $diffCount = $this->runCommand(['git', 'rev-list', '--count', 'HEAD..origin/main']);
+            // Count commits behind core repository
+            $diffCount = $this->runCommand(['git', 'rev-list', '--count', 'HEAD..FETCH_HEAD']);
+
+            // Check for manual update file
+            $localZip = storage_path('app/updates/update.zip');
 
             return [
                 'current_commit' => trim($currentCommit),
@@ -153,12 +310,18 @@ class SystemUpdateController extends Controller
                 'current_branch' => trim($currentBranch),
                 'behind_count' => (int)trim($diffCount),
                 'is_up_to_date' => (int)trim($diffCount) === 0,
-                'last_checked' => now()->toDateTimeString()
+                'last_checked' => now()->toDateTimeString(),
+                'local_zip' => [
+                    'exists' => file_exists($localZip),
+                    'size' => file_exists($localZip) ? round(filesize($localZip) / 1024 / 1024, 2) . ' MB' : 0,
+                    'date' => file_exists($localZip) ? date("Y-m-d H:i:s", filemtime($localZip)) : null
+                ]
             ];
         } catch (\Exception $e) {
             return [
-                'error' => 'Git not available or repo not initialized: ' . $e->getMessage(),
-                'is_up_to_date' => true // Fallback
+                'error' => 'Git not available: ' . $e->getMessage(),
+                'is_up_to_date' => true,
+                'local_zip' => ['exists' => false]
             ];
         }
     }
