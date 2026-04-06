@@ -1,0 +1,18 @@
+{
+    "name": "VideoBlock",
+    "alias": "videoblock",
+    "description": "A flexible video player block for KreatifCMS with support for local files, YouTube, and Vimeo embeds, along with access control.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\VideoBlock\\Providers\\VideoBlockServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "video",
+        "name": "Video Player",
+        "icon": "Video",
+        "desc": "Responsive video player for local files or external embeds (YouTube/Vimeo)"
+    }
+}

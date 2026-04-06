@@ -10,11 +10,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "bacon/bacon-qr-code": "*",
         "inertiajs/inertia-laravel": "^2.0",
         "laravel/framework": "^12.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "nwidart/laravel-modules": "^12.0",
+        "pragmarx/google2fa-laravel": "*",
         "predis/predis": "^3.4",
         "tightenco/ziggy": "^2.0",
         "tymon/jwt-auth": "^2.3"
@@ -61,7 +63,14 @@
             "Modules\\CorporateTheme\\": "Modules/CorporateTheme/app/",
             "Modules\\Layout\\": "Modules/Layout/app/",
             "Modules\\ContentType\\": "Modules/ContentType/app/",
-            "Modules\\PhpEventHooks\\": "Modules/PhpEventHooks/app/"
+            "Modules\\PhpEventHooks\\": "Modules/PhpEventHooks/app/",
+            "Modules\\MegaMenu\\": "Modules/MegaMenu/app/",
+            "Modules\\TwoFactorAuth\\": "Modules/TwoFactorAuth/app/",
+            "Modules\\GeneralApi\\": "Modules/GeneralApi/app/",
+            "Modules\\VideoBlock\\": "Modules/VideoBlock/app/",
+            "Modules\\VideoGrid\\": "Modules/VideoGrid/app/",
+            "Modules\\Brevo\\": "Modules/Brevo/app/",
+            "Modules\\PhotoGrid\\": "Modules/PhotoGrid/app/"
         }
     },
     "autoload-dev": {

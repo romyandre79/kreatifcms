@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Link, usePage, router } from '@inertiajs/react';
-import { Globe, ChevronDown, Menu, X, Search, ShoppingCart } from 'lucide-react';
+import { Globe, ChevronDown, Menu, X, Search, ShoppingCart, Grid, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
+import SocialIcon from '@/Components/SocialIcon';
 
 const NavBarBlock = ({ data = {} }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [activeMega, setActiveMega] = useState(null);
+    const [mobileExpandedMega, setMobileExpandedMega] = useState(null);
+    const megaTimeoutRef = useRef(null);
     const { auth } = usePage().props;
     const isLoggedIn = !!auth?.user;
     const links = Array.isArray(data.links) ? data.links : [];
@@ -96,6 +100,46 @@ const NavBarBlock = ({ data = {} }) => {
         </Link>
     );
 
+    const RecursiveLinks = ({ links, isMobile = false, depth = 0 }) => {
+        if (!Array.isArray(links) || links.length === 0) return null;
+
+        return (
+            <ul className={`${isMobile ? 'pl-4 space-y-1' : (depth === 0 ? 'space-y-1' : 'absolute left-full top-0 ml-px w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover/recursive:opacity-100 group-hover/recursive:visible transition-all duration-200 z-[110]')}`}>
+                {links.map((link, i) => {
+                    const hasChildren = Array.isArray(link.children) && link.children.length > 0;
+                    
+                    if (isMobile) {
+                        return (
+                            <li key={link.id || i}>
+                                <div className="flex items-center justify-between py-2 px-3 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-lg">
+                                    <a href={link.url || '#'} className="flex-1">{link.label}</a>
+                                    {hasChildren && <ChevronDown className="w-3.5 h-3.5 opacity-50" />}
+                                </div>
+                                {hasChildren && <RecursiveLinks links={link.children} isMobile={true} depth={depth + 1} />}
+                            </li>
+                        );
+                    }
+
+                    return (
+                        <li key={link.id || i} className="relative group/recursive">
+                            <a
+                                href={link.url || '#'}
+                                className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all hover:bg-indigo-50 ${depth === 0 ? 'text-gray-800' : 'text-gray-700'}`}
+                            >
+                                <div className="flex-1 min-w-0">
+                                    <span className="font-semibold block group-hover:text-indigo-600">{link.label}</span>
+                                    {depth === 0 && link.description && <span className="text-xs text-gray-400 block mt-0.5 line-clamp-2">{link.description}</span>}
+                                </div>
+                                {hasChildren && <ChevronRight className="w-3.5 h-3.5 opacity-50 ml-2" />}
+                            </a>
+                            {hasChildren && <RecursiveLinks links={link.children} isMobile={false} depth={depth + 1} />}
+                        </li>
+                    );
+                })}
+            </ul>
+        );
+    };
+
     const renderDesktopSection = (key) => {
         const sectionId = `nav-section-${data.id || 'current'}-${key}`;
 
@@ -105,31 +149,23 @@ const NavBarBlock = ({ data = {} }) => {
                     return renderLogo(false);
                 case 'links':
                     return (
-                        <div className="flex items-center space-x-8">
+                        <div className="flex items-center space-x-1">
                             {links.map((link, i) => {
                                 const hasChildren = Array.isArray(link.children) && link.children.length > 0;
                                 return (
                                     <div key={`desktop-link-${i}`} className="relative group/nav">
                                         <a 
                                             href={link.url} 
-                                            className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors py-5 flex items-center gap-1"
+                                            className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors py-5 px-3 flex items-center gap-1"
                                         >
                                             {link.label}
                                             {hasChildren && <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover/nav:text-indigo-500 transition-colors" />}
                                         </a>
                                         
                                         {hasChildren && (
-                                            <div className="absolute left-0 top-full pt-0 w-48 opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[100]">
-                                                <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden py-2 translate-y-2 group-hover/nav:translate-y-0 transition-transform">
-                                                    {link.children.map((child, ci) => (
-                                                        <a 
-                                                            key={ci} 
-                                                            href={child.url} 
-                                                            className="block px-4 py-2.5 text-xs font-semibold text-gray-700 hover:bg-indigo-50 hover:text-indigo-700 transition-colors"
-                                                        >
-                                                            {child.label}
-                                                        </a>
-                                                    ))}
+                                            <div className="absolute left-0 top-full pt-0 min-w-[200px] opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[100]">
+                                                <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-visible py-2 translate-y-2 group-hover/nav:translate-y-0 transition-transform">
+                                                    <RecursiveLinks links={link.children} isMobile={false} depth={1} />
                                                 </div>
                                             </div>
                                         )}
@@ -161,7 +197,6 @@ const NavBarBlock = ({ data = {} }) => {
                     return Array.isArray(data.social_links) && data.social_links.length > 0 && (
                         <div key="social_links" className="flex items-center gap-4 ml-4 pl-4 border-l border-gray-200">
                             {data.social_links.map((link, i) => {
-                                const IconComponent = LucideIcons[link.icon] || LucideIcons.Globe;
                                 return (
                                     <a 
                                         key={link.id || i} 
@@ -172,7 +207,7 @@ const NavBarBlock = ({ data = {} }) => {
                                         style={{ color: data.text_color || '#9ca3af' }}
                                         title={link.icon}
                                     >
-                                        <IconComponent className="w-4 h-4" />
+                                        <SocialIcon name={link.icon} size={16} color="brand" />
                                     </a>
                                 );
                             })}
@@ -182,6 +217,61 @@ const NavBarBlock = ({ data = {} }) => {
                     return renderSearch(false);
                 case 'cart':
                     return renderCart(false);
+                case 'megamenu': {
+                    const mmSource = data.megamenu_source || 'static';
+                    if (mmSource === 'static') {
+                        const mega_menus = Array.isArray(data.mega_menus) ? data.mega_menus : [];
+                        if (mega_menus.length === 0) return null;
+                        return (
+                            <div className="flex items-center gap-1">
+                                {mega_menus.map((menu) => {
+                                    const hasContent = (menu.columns || []).length > 0;
+                                    const IconComponent = menu.icon ? (LucideIcons[menu.icon] || null) : null;
+                                    const isActive = activeMega === menu.id;
+                                    return (
+                                        <div
+                                            key={menu.id}
+                                            className="relative"
+                                            onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); setActiveMega(menu.id); }}
+                                            onMouseLeave={() => { megaTimeoutRef.current = setTimeout(() => setActiveMega(null), 200); }}
+                                        >
+                                            <button
+                                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:text-indigo-600'}`}
+                                                onClick={() => setActiveMega(isActive ? null : menu.id)}
+                                            >
+                                                {IconComponent && <IconComponent className="w-4 h-4" />}
+                                                {menu.label}
+                                                {hasContent && <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isActive ? 'rotate-180' : ''}`} style={{ opacity: 0.5 }} />}
+                                            </button>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        );
+                    } else {
+                        // Dynamic Mode
+                        const items = Array.isArray(data.mega_menus_dynamic_items) ? data.mega_menus_dynamic_items : [];
+                        if (items.length === 0 && !window.location.href.includes('editor')) return null;
+                        const label = data.megamenu_label || 'Browse';
+                        const isActive = activeMega === 'dynamic';
+                        return (
+                            <div
+                                className="relative"
+                                onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); setActiveMega('dynamic'); }}
+                                onMouseLeave={() => { megaTimeoutRef.current = setTimeout(() => setActiveMega(null), 200); }}
+                            >
+                                <button
+                                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium transition-all ${isActive ? 'bg-indigo-50 text-indigo-600' : 'text-gray-700 hover:text-indigo-600'}`}
+                                    onClick={() => setActiveMega(isActive ? null : 'dynamic')}
+                                >
+                                    <Grid className="w-4 h-4" />
+                                    {label}
+                                    <ChevronDown className={`w-3.5 h-3.5 transition-transform ${isActive ? 'rotate-180' : ''}`} style={{ opacity: 0.5 }} />
+                                </button>
+                            </div>
+                        );
+                    }
+                }
                 default:
                     return null;
             }
@@ -199,32 +289,7 @@ const NavBarBlock = ({ data = {} }) => {
             case 'logo':
                 return renderLogo(true);
             case 'links':
-                return links.map((link, i) => {
-                    const hasChildren = Array.isArray(link.children) && link.children.length > 0;
-                    return (
-                        <div key={`mobile-link-${i}`} className="py-1">
-                            <a
-                                href={link.url}
-                                className="flex items-center justify-between px-3 py-3 rounded-xl text-base font-semibold text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all font-outfit"
-                            >
-                                <span>{link.label}</span>
-                            </a>
-                            {hasChildren && (
-                                <div className="pl-6 space-y-1 mt-1 border-l-2 border-indigo-50 ml-3">
-                                    {link.children.map((child, ci) => (
-                                        <a 
-                                            key={ci} 
-                                            href={child.url} 
-                                            className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-lg"
-                                        >
-                                            {child.label}
-                                        </a>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                    );
-                });
+                return <RecursiveLinks links={links} isMobile={true} depth={0} />;
             case 'buttons':
                 return buttons.length > 0 && (
                     <div className="pt-4 pb-4 border-t border-gray-100 mt-2 space-y-2">
@@ -248,7 +313,6 @@ const NavBarBlock = ({ data = {} }) => {
                 return Array.isArray(data.social_links) && data.social_links.length > 0 && (
                     <div className="pt-4 border-t border-gray-100 mt-2 flex justify-center gap-6 pb-4">
                         {data.social_links.map((link, i) => {
-                            const IconComponent = LucideIcons[link.icon] || LucideIcons.Globe;
                             return (
                                 <a 
                                     key={link.id || i} 
@@ -257,7 +321,7 @@ const NavBarBlock = ({ data = {} }) => {
                                     rel="noopener noreferrer" 
                                     className="text-gray-400 hover:text-indigo-600 transition-colors"
                                 >
-                                    <IconComponent className="w-6 h-6" />
+                                    <SocialIcon name={link.icon} size={24} color="brand" />
                                 </a>
                             );
                         })}
@@ -267,6 +331,72 @@ const NavBarBlock = ({ data = {} }) => {
                 return renderSearch(true);
             case 'cart':
                 return renderCart(true);
+            case 'megamenu': {
+                const mmSource = data.megamenu_source || 'static';
+                if (mmSource === 'static') {
+                    const mega_menus = Array.isArray(data.mega_menus) ? data.mega_menus : [];
+                    if (mega_menus.length === 0) return null;
+                    return (
+                        <div className="border-t border-gray-100 mt-2 pt-2">
+                            {mega_menus.map((menu) => {
+                                const isExpanded = mobileExpandedMega === menu.id;
+                                const hasContent = (menu.columns || []).length > 0;
+                                const IconComponent = menu.icon ? (LucideIcons[menu.icon] || null) : null;
+                                return (
+                                    <div key={menu.id}>
+                                        <button
+                                            onClick={() => setMobileExpandedMega(isExpanded ? null : menu.id)}
+                                            className="flex items-center justify-between w-full px-3 py-3 rounded-xl text-base font-semibold text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                                        >
+                                            <div className="flex items-center gap-2">
+                                                {IconComponent && <IconComponent className="w-4 h-4" style={{ color: data.accent_color || '#4f46e5' }} />}
+                                                <span>{menu.label}</span>
+                                            </div>
+                                            {hasContent && <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
+                                        </button>
+                                        {isExpanded && hasContent && (
+                                            <div className="pl-6 pb-2 space-y-3 border-l-2 border-indigo-50 ml-3">
+                                                        <div key={col.id}>
+                                                            {col.title && <h4 className="text-[10px] font-bold uppercase tracking-widest text-gray-400 mb-1">{col.title}</h4>}
+                                                            <RecursiveLinks links={col.links} isMobile={true} depth={0} />
+                                                        </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    );
+                } else {
+                    const items = Array.isArray(data.mega_menus_dynamic_items) ? data.mega_menus_dynamic_items : [];
+                    const isExpanded = mobileExpandedMega === 'dynamic';
+                    const hasContent = items.length > 0;
+                    const mapping = data.megamenu_mapping || {};
+                    return (
+                        <div className="border-t border-gray-100 mt-2 pt-2">
+                            <button
+                                onClick={() => setMobileExpandedMega(isExpanded ? null : 'dynamic')}
+                                className="flex items-center justify-between w-full px-3 py-3 rounded-xl text-base font-semibold text-gray-700 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <Grid className="w-4 h-4" style={{ color: data.accent_color || '#4f46e5' }} />
+                                    <span>{data.megamenu_label || 'Browse'}</span>
+                                </div>
+                                {hasContent && <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />}
+                            </button>
+                            {isExpanded && hasContent && (
+                                <div className="pl-6 pb-2 space-y-2 border-l-2 border-indigo-50 ml-3">
+                                    {items.map((item, i) => (
+                                        <a key={item.id || i} href={`${mapping.link_prefix || '/content/'}${item.id}`} className="block px-3 py-2 text-sm font-medium text-gray-600 hover:text-indigo-600 rounded-lg">
+                                            {item[mapping.title] || item.title || 'Untitled'}
+                                        </a>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    );
+                }
+            }
             default:
                 return null;
         }
@@ -313,6 +443,96 @@ const NavBarBlock = ({ data = {} }) => {
                     </div>
                 </div>
             </div>
+
+            {/* Desktop Mega Menu Dropdowns */}
+            {(() => {
+                const mmSource = data.megamenu_source || 'static';
+                if (!composition.includes('megamenu') || !activeMega) return null;
+
+                if (mmSource === 'static') {
+                    const mega_menus = Array.isArray(data.mega_menus) ? data.mega_menus : [];
+                    const activeMenu = mega_menus.find(m => m.id === activeMega);
+                    if (!activeMenu || (activeMenu.columns || []).length === 0) return null;
+                    return (
+                        <div
+                            className="hidden md:block absolute left-0 right-0 z-[100]"
+                            onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); }}
+                            onMouseLeave={() => { megaTimeoutRef.current = setTimeout(() => setActiveMega(null), 200); }}
+                        >
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="p-6 flex gap-8">
+                                        {(activeMenu.columns || []).map(col => (
+                                            <div key={col.id} className="flex-1 min-w-0">
+                                                {col.title && (
+                                                    <h4 className="text-xs font-bold uppercase tracking-widest mb-3 pb-2 border-b" style={{ color: data.accent_color || '#4f46e5', borderColor: `${data.accent_color || '#4f46e5'}20` }}>
+                                                        {col.title}
+                                                    </h4>
+                                                )}
+                                                {col.image && (
+                                                    <div className="mb-3 rounded-xl overflow-hidden">
+                                                        <img src={col.image} alt={col.title || ''} className="w-full h-32 object-cover hover:scale-105 transition-transform duration-500" />
+                                                    </div>
+                                                )}
+                                                <RecursiveLinks links={col.links} isMobile={false} depth={0} />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                } else {
+                    const items = Array.isArray(data.mega_menus_dynamic_items) ? data.mega_menus_dynamic_items : [];
+                    if (activeMega !== 'dynamic' || items.length === 0) return null;
+                    const mapping = data.megamenu_mapping || {};
+                    const columnsCount = data.megamenu_columns || 4;
+                    const chunked = [];
+                    const perCol = Math.ceil(items.length / columnsCount);
+                    for (let i = 0; i < columnsCount; i++) chunked.push(items.slice(i * perCol, (i + 1) * perCol));
+
+                    return (
+                        <div
+                            className="hidden md:block absolute left-0 right-0 z-[100]"
+                            onMouseEnter={() => { if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current); }}
+                            onMouseLeave={() => { megaTimeoutRef.current = setTimeout(() => setActiveMega(null), 200); }}
+                        >
+                            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                                <div className="bg-white rounded-2xl shadow-2xl border border-gray-100 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                    <div className="p-6">
+                                        <div className="flex gap-6">
+                                            {chunked.map((column, colIdx) => (
+                                                <div key={colIdx} className="flex-1 min-w-0 space-y-2">
+                                                    {column.map((item, itemIdx) => {
+                                                        const itemTitle = item[mapping.title] || item.title || 'Untitled';
+                                                        const itemDesc = item[mapping.description] || item.description || '';
+                                                        const itemImage = item[mapping.image] || item.image || '';
+                                                        return (
+                                                            <a
+                                                                key={item.id || itemIdx}
+                                                                href={`${mapping.link_prefix || '/content/'}${item.id}`}
+                                                                className="group block p-3 rounded-xl transition-all hover:bg-indigo-50"
+                                                            >
+                                                                {itemImage && (
+                                                                    <div className="rounded-lg overflow-hidden mb-2">
+                                                                        <img src={itemImage} alt={itemTitle} className="w-full h-24 object-cover group-hover:scale-105 transition-transform duration-500" />
+                                                                    </div>
+                                                                )}
+                                                                <h5 className="text-sm font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">{itemTitle}</h5>
+                                                                {itemDesc && <p className="text-xs mt-1 text-gray-400 line-clamp-2">{itemDesc}</p>}
+                                                            </a>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    );
+                }
+            })()}
 
             {/* Mobile Menu - Dynamically Ordered */}
             <div className={`${isOpen ? 'block animate-in slide-in-from-top-2 duration-200' : 'hidden'} md:hidden bg-white border-t border-gray-100 overflow-hidden`}>

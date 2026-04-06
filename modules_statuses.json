@@ -25,5 +25,12 @@
     "TimelineBlock": true,
     "Layout": true,
     "ContentType": true,
-    "PhpEventHooks": true
+    "PhpEventHooks": true,
+    "MegaMenu": true,
+    "GeneralApi": true,
+    "TwoFactorAuth": true,
+    "VideoBlock": true,
+    "VideoGrid": true,
+    "Brevo": true,
+    "PhotoGrid": true
 }

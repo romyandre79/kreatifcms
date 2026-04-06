@@ -21,7 +21,9 @@ import {
     FileText,
     Mail,
     Image as ImageIcon,
-    Activity
+    Activity,
+    Globe,
+    Send
 } from 'lucide-react';
 import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
 
@@ -103,12 +105,28 @@ export default function AuthenticatedLayout({ header, children }) {
         filteredNavItems.splice(4, 0, { name: 'Layout Editor', href: safeRoute('layouts.index'), icon: Layout, active: isRouteActive('layouts.index') });
     }
 
+    if (hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'generalapi' && p.enabled !== false) && route().has('admin.general-api.index')) {
+        const pluginsIndex = filteredNavItems.findIndex(item => item.name === 'Plugins');
+        if (pluginsIndex !== -1) {
+            filteredNavItems.splice(pluginsIndex + 1, 0, { 
+                name: 'General API', 
+                href: safeRoute('admin.general-api.index'), 
+                icon: Puzzle, 
+                active: isRouteActive('admin.general-api.*') 
+            });
+        }
+    }
+
     if (hasPermission('databasemanager', 'read') && plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
         filteredNavItems.push({ name: 'Database', href: safeRoute('settings.database.index'), icon: HardDrive, active: isRouteActive('settings.database.*') });
     }
 
     if (hasPermission('email-templates', 'read') && plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
         filteredNavItems.push({ name: 'Email Templates', href: safeRoute('email-templates.index'), icon: Mail, active: isRouteActive('email-templates.*') });
+    }
+
+    if (plugins.some(p => p.alias === 'brevo' && p.enabled !== false) && route().has('brevo.index')) {
+        filteredNavItems.push({ name: 'Marketing', href: safeRoute('brevo.index'), icon: Send, active: isRouteActive('brevo.*') });
     }
 
     if (hasPermission('jobs', 'read') && plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {

@@ -1,0 +1,18 @@
+{
+    "name": "PhotoGrid",
+    "alias": "photogrid",
+    "description": "A responsive photo grid block for KreatifCMS with lightbox support and dynamic content sourcing.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\PhotoGrid\\Providers\\PhotoGridServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "photogrid",
+        "name": "Photo Grid",
+        "icon": "LayoutGrid",
+        "desc": "Responsive grid of images with titles and lightbox"
+    }
+}

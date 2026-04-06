@@ -12,6 +12,11 @@ const ContentListBlock = lazy(() => import('./Blocks/ContentListBlock'));
 const FormBlock = lazy(() => import('./Blocks/FormBlock'));
 const SocialMediaBlock = lazy(() => import('./Blocks/SocialMediaBlock'));
 const TimelineBlock = lazy(() => import('./Blocks/TimelineBlock'));
+const MegaMenuBlock = lazy(() => import('./Blocks/MegaMenuBlock'));
+const VideoBlock = lazy(() => import('./Blocks/VideoBlock'));
+const VideoGridBlock = lazy(() => import('./Blocks/VideoGridBlock'));
+const PhotoGridBlock = lazy(() => import('./Blocks/PhotoGridBlock'));
+
 
 
 const BlockComponents = {
@@ -24,7 +29,11 @@ const BlockComponents = {
     content_list: ContentListBlock,
     form: FormBlock,
     social_media: SocialMediaBlock,
-    timeline: TimelineBlock
+    timeline: TimelineBlock,
+    megamenu: MegaMenuBlock,
+    video: VideoBlock,
+    video_grid: VideoGridBlock,
+    photogrid: PhotoGridBlock
 };
 
 

@@ -1,0 +1,18 @@
+{
+    "name": "MegaMenu",
+    "alias": "megamenu",
+    "description": "A versatile mega menu block plugin for KreatifCMS. Create rich, multi-column dropdown navigation menus with static or dynamic content from Content Types. Perfect for complex site navigation, product catalogs, and service directories.",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\MegaMenu\\Providers\\MegaMenuServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "megamenu",
+        "name": "Mega Menu",
+        "icon": "LayoutGrid",
+        "desc": "Rich multi-column dropdown navigation with static or dynamic content"
+    }
+}

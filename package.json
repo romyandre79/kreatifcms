@@ -29,6 +29,7 @@
         "jquery": "^3.7.1",
         "lucide-react": "^0.577.0",
         "react-markdown": "^10.1.0",
+        "react-player": "^3.4.0",
         "recharts": "^3.8.0",
         "summernote": "^0.9.1"
     }

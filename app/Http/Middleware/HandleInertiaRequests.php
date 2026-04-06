@@ -104,7 +104,7 @@ class HandleInertiaRequests extends Middleware
                 return [
                     'header' => \App\Models\Setting::where('module', 'layout')->where('key', 'header')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'header')->first()->value, true) : [],
                     'footer' => \App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first()?->value ? json_decode(\App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first()->value, true) : [],
-                    'theme' => (() => {
+                    'theme' => (function() {
                         $existing = \App\Models\Setting::where('module', 'layout')->where('key', 'theme')->first()?->value;
                         $settings = $existing ? json_decode($existing, true) : [];
                         

@@ -1,0 +1,25 @@
+{
+    "name": "romyandre79/videoblock",
+    "description": "Flexible video player block for KreatifCMS.",
+    "authors": [
+        {
+            "name": "Romy Andre",
+            "email": "romy@kreatif.com"
+        }
+    ],
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Modules\\VideoBlock\\Providers\\VideoBlockServiceProvider"
+            ],
+            "aliases": {
+
+            }
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "Modules\\VideoBlock\\": "app/"
+        }
+    }
+}
