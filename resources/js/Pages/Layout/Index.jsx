@@ -1,13 +1,13 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, Link, router } from '@inertiajs/react';
-import { 
-    Layout as LayoutIcon, 
-    Plus, 
-    Edit, 
-    Trash2, 
-    Eye, 
-    CheckCircle, 
-    Shield, 
+import {
+    Layout as LayoutIcon,
+    Plus,
+    Edit,
+    Trash2,
+    Eye,
+    CheckCircle,
+    Shield,
     Users,
     Globe
 } from 'lucide-react';
@@ -42,7 +42,7 @@ export default function Index({ layouts = [] }) {
             <Head title="Layout Management" />
 
             <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div className="mx-auto sm:px-6 lg:px-8">
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {layouts.map((layout) => (
                             <div key={layout.id} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all group">

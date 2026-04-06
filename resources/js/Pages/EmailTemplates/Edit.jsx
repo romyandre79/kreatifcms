@@ -29,7 +29,7 @@ export default function Edit({ auth, template }) {
             <Head title="Edit Email Template" />
 
             <div className="py-12">
-                <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+                <div className="mx-auto sm:px-6 lg:px-8">
                     <div className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6">
                         <div className="mb-6 flex items-center justify-between">
                             <Link href={route('email-templates.index')} className="text-gray-500 hover:text-gray-800 flex items-center text-sm">

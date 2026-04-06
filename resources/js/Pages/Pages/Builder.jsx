@@ -590,10 +590,10 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             const newItems = [...newData[fieldName]];
                             if (newItems[index]) {
                                 const item = { ...newItems[index] };
-                                // Dynamically detect which field to update
-                                if (Object.prototype.hasOwnProperty.call(item, 'image')) {
+                                // Dynamically detect which field to update based on block type and item structure
+                                if (block.type === 'slideshow' || block.type === 'photogrid' || block.type === 'timeline' || block.type === 'feature_grid' || 'image' in item) {
                                     item.image = url;
-                                } else if (Object.prototype.hasOwnProperty.call(item, 'poster')) {
+                                } else if (block.type === 'video' || block.type === 'video_grid' || 'poster' in item) {
                                     item.poster = url;
                                 } else {
                                     item.url = url;
