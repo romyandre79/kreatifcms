@@ -53,10 +53,15 @@ class SystemUpdateController extends Controller
     /**
      * Run the update process.
      */
-    public function run()
+    public function run(Request $request)
     {
         $log = [];
         $success = true;
+        $useZip = $request->input('method') === 'zip';
+
+        if ($useZip) {
+            return $this->runZipUpdate();
+        }
 
         $commands = [
             'Fetching' => ['git', 'fetch', 'origin', 'main'],
@@ -93,6 +98,109 @@ class SystemUpdateController extends Controller
             'log' => $log,
             'info' => $this->getUpdateInfo()
         ]);
+    }
+
+    /**
+     * Fallback update via ZIP download from GitHub.
+     */
+    public function runZipUpdate()
+    {
+        $log = [];
+        try {
+            $zipUrl = "https://github.com/romyandre79/kreatifcms/archive/refs/heads/main.zip";
+            $tempPath = storage_path('app/temp/update_' . time());
+            if (!is_dir($tempPath)) mkdir($tempPath, 0755, true);
+            $zipFile = $tempPath . '/main.zip';
+
+            // 1. Download
+            $log[] = ['step' => 'Download', 'command' => "GET {$zipUrl}", 'output' => "Downloading update package...", 'status' => 'success'];
+            $content = @file_get_contents($zipUrl);
+            if (!$content) throw new \Exception("Failed to download ZIP update from GitHub.");
+            file_put_contents($zipFile, $content);
+
+            // 2. Extract
+            $log[] = ['step' => 'Extract', 'command' => "ZipArchive::extract", 'output' => "Extracting files...", 'status' => 'success'];
+            $zip = new \ZipArchive();
+            if ($zip->open($zipFile) === TRUE) {
+                $zip->extractTo($tempPath);
+                $zip->close();
+            } else {
+                throw new \Exception("Failed to open the downloaded ZIP file.");
+            }
+
+            // 3. Move Files (The zip will have a top-level dir: kreatifcms-main)
+            $extractedDir = $tempPath . '/kreatifcms-main';
+            if (!is_dir($extractedDir)) {
+                // Try to find the directory if name is different
+                $dirs = glob($tempPath . '/*', GLOB_ONLYDIR);
+                if (!empty($dirs)) $extractedDir = $dirs[0];
+            }
+
+            $log[] = ['step' => 'Install', 'command' => "filesystem::copy", 'output' => "Overwriting system files...", 'status' => 'success'];
+            $this->copyDirectory($extractedDir, base_path(), ['.env', 'storage', 'node_modules', 'vendor', '.git']);
+
+            // 4. Post-Update Commands
+            $commands = [
+                'Composer' => ['composer', 'install', '--no-interaction', '--prefer-dist', '--optimize-autoloader'],
+                'Migrating' => ['php', 'artisan', 'migrate', '--force'],
+                'Optimizing' => ['php', 'artisan', 'optimize:clear'],
+            ];
+
+            foreach ($commands as $step => $cmd) {
+                try {
+                    $output = $this->runCommand($cmd);
+                    $log[] = ['step' => $step, 'command' => implode(' ', $cmd), 'output' => $output, 'status' => 'success'];
+                } catch (\Exception $e) {
+                    $log[] = ['step' => $step, 'command' => implode(' ', $cmd), 'output' => "Optional step failed: " . $e->getMessage(), 'status' => 'warning'];
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'log' => $log,
+                'info' => $this->getUpdateInfo()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'log' => $log,
+                'error' => $e->getMessage()
+            ], 500);
+        } finally {
+            if (isset($tempPath)) $this->deleteTempDirectory($tempPath);
+        }
+    }
+
+    /**
+     * Move files from one directory to another.
+     */
+    private function copyDirectory($src, $dst, $exclude = [])
+    {
+        $dir = opendir($src);
+        @mkdir($dst);
+        while (false !== ($file = readdir($dir))) {
+            if (($file != '.') && ($file != '..') && !in_array($file, $exclude)) {
+                if (is_dir($src . '/' . $file)) {
+                    $this->copyDirectory($src . '/' . $file, $dst . '/' . $file, $exclude);
+                } else {
+                    copy($src . '/' . $file, $dst . '/' . $file);
+                }
+            }
+        }
+        closedir($dir);
+    }
+
+    /**
+     * Recursive directory deletion.
+     */
+    private function deleteTempDirectory($dir) {
+        if (!is_dir($dir)) return;
+        $files = array_diff(scandir($dir), array('.','..'));
+        foreach ($files as $file) {
+            (is_dir("$dir/$file")) ? $this->deleteTempDirectory("$dir/$file") : unlink("$dir/$file");
+        }
+        return rmdir($dir);
     }
 
     /**
