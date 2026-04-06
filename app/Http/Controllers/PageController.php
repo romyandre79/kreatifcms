@@ -6,6 +6,7 @@ use App\Models\Page;
 use App\Services\SchemaService;
 use App\Services\PermissionService;
 use Modules\ReusableBlock\Models\Block;
+use Modules\Layout\Models\Layout;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Inertia\Inertia;
@@ -56,8 +57,32 @@ class PageController extends Controller
             }),
             'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
                 ? \Modules\ContentType\Models\ContentType::with('fields')->get()
-                : []
+                : [],
+            'layout' => $this->getPageLayout($page, $schemaService),
+            'layouts' => Layout::select('id', 'name', 'is_default')->get()
         ]);
+    }
+
+    private function getPageLayout($page, $schemaService)
+    {
+        $layout = null;
+        if ($page->layout_id) {
+            $layout = Layout::find($page->layout_id);
+        }
+        
+        if (!$layout) {
+            $layout = Layout::where('is_default', true)->first() ?: Layout::first();
+        }
+        
+        if (!$layout) {
+            return ['header' => [], 'footer' => []];
+        }
+
+        return [
+            'header' => $schemaService->hydrateDynamicBlocks($layout->header_blocks ?: []),
+            'footer' => $schemaService->hydrateDynamicBlocks($layout->footer_blocks ?: []),
+            'theme' => $layout->theme_data ?: []
+        ];
     }
 
     public function update(Request $request, Page $page)
@@ -71,6 +96,7 @@ class PageController extends Controller
             'meta_description' => 'nullable|string',
             'meta_keywords' => 'nullable|string',
             'og_image' => 'nullable|string',
+            'layout_id' => 'nullable|exists:layouts,id',
         ]);
 
         if (isset($validated['slug'])) {

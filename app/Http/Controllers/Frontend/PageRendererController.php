@@ -27,7 +27,7 @@ class PageRendererController extends Controller
         return Inertia::render('Frontend/Page', [
             'page' => $pageData,
             'reusableBlocks' => $reusableBlocks,
-            'layout' => array_merge($this->getGlobalLayout($schemaService), [
+            'layout' => array_merge($this->getPageLayout($page, $schemaService), [
                 'seo' => $this->getGlobalSeo()
             ])
         ]);
@@ -54,7 +54,7 @@ class PageRendererController extends Controller
             return Inertia::render('Frontend/Page', [
                 'page' => $pageData,
                 'reusableBlocks' => $reusableBlocks,
-                'layout' => array_merge($this->getGlobalLayout($schemaService), [
+                'layout' => array_merge($this->getPageLayout($page, $schemaService), [
                     'seo' => $this->getGlobalSeo()
                 ])
             ]);
@@ -68,19 +68,57 @@ class PageRendererController extends Controller
         ]);
     }
 
-    private function getGlobalLayout($schemaService = null)
+    private function getPageLayout($page, $schemaService = null)
     {
         if (!$schemaService) $schemaService = app(\App\Services\SchemaService::class);
-        $header = \App\Models\Setting::where('module', 'layout')->where('key', 'header')->first();
-        $footer = \App\Models\Setting::where('module', 'layout')->where('key', 'footer')->first();
+        
+        $layout = null;
+        if ($page->layout_id) {
+            $layout = \Modules\Layout\Models\Layout::find($page->layout_id);
+            if ($layout && !$this->checkLayoutAccess($layout)) {
+                $layout = null; // Revert to default if no access
+            }
+        }
+        
+        if (!$layout) {
+            $layout = \Modules\Layout\Models\Layout::where('is_default', true)->first();
+            if ($layout && !$this->checkLayoutAccess($layout)) {
+                $layout = null;
+            }
+        }
 
-        $headerBlocks = $header ? json_decode($header->value, true) : [];
-        $footerBlocks = $footer ? json_decode($footer->value, true) : [];
+        if (!$layout) {
+            $layout = \Modules\Layout\Models\Layout::first();
+        }
+
+        if (!$layout) {
+            return ['header' => [], 'footer' => [], 'theme' => []];
+        }
 
         return [
-            'header' => $schemaService->hydrateDynamicBlocks($headerBlocks),
-            'footer' => $schemaService->hydrateDynamicBlocks($footerBlocks),
+            'header' => $schemaService->hydrateDynamicBlocks($layout->header_blocks ?: []),
+            'footer' => $schemaService->hydrateDynamicBlocks($layout->footer_blocks ?: []),
+            'theme' => $layout->theme_data ?: []
         ];
+    }
+
+    private function checkLayoutAccess($layout)
+    {
+        if ($layout->access_type === 'general') return true;
+        
+        if (!auth()->check()) return false;
+
+        if ($layout->access_type === 'authenticated') return true;
+
+        if ($layout->access_type === 'role') {
+            $user = auth()->user();
+            if (!$user->role) return false;
+            
+            $allowedRoles = $layout->roles ?: [];
+            return in_array($user->role->name, $allowedRoles);
+        }
+
+        return true;
     }
 
     private function getGlobalSeo()

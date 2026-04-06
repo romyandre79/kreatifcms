@@ -18,6 +18,7 @@ class LayoutServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        $this->loadMigrationsFrom(module_path($this->name, 'database/migrations'));
     }
 
     /**

@@ -6,12 +6,13 @@ import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronUp, ChevronDown, ChevronRight, X,
     Monitor, LayoutTemplate, Bold, Italic, Link as LinkIcon, List, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette,
-    Menu, Globe, Code
+    Menu, Globe, Code, Settings, Shield, Users, ShieldCheck
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
 import SocialIcon from '@/Components/SocialIcon';
 import MarkdownToolbar from '@/Components/MarkdownToolbar';
+import Summernote from '@/Components/Summernote';
 import {
     DndContext,
     closestCenter,
@@ -33,7 +34,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 
 
-export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], themeData = {}, reusableBlocks = [], contentTypes = [] }) {
+export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlocks = [], themeData = {}, reusableBlocks = [], roles = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
     const blockPlugins = plugins.filter(p => p.type === 'block');
     const BLOCK_TYPES = blockPlugins.map(p => {
@@ -129,6 +130,12 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
     const [headerData, setHeaderData] = useState(initialHeader);
     const [footerData, setFooterData] = useState(initialFooter);
     const [theme, setTheme] = useState(themeData);
+    
+    // Layout settings state
+    const [layoutName, setLayoutName] = useState(layout.name || 'New Layout');
+    const [accessType, setAccessType] = useState(layout.access_type || 'general');
+    const [selectedRoles, setSelectedRoles] = useState(layout.roles || []);
+    const [isDefault, setIsDefault] = useState(layout.is_default || false);
 
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
@@ -156,7 +163,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
         setActiveTab(tab);
         if (tab === 'header') setBlocks(headerData);
         else if (tab === 'footer') setBlocks(footerData);
-        else setBlocks([]); // Clear blocks for theme tab
+        else setBlocks([]); // Settings or Theme tabs
 
         setActiveBlockId(null);
     };
@@ -370,18 +377,31 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
 
     const handleSave = () => {
         setSaving(true);
-        // Sync final states
-        const finalHeader = activeTab === 'header' ? blocks : headerData;
-        const finalFooter = activeTab === 'footer' ? blocks : footerData;
+        
+        // Final sync of current blocks
+        let finalHeader = headerData;
+        let finalFooter = footerData;
+        
+        if (activeTab === 'header') finalHeader = blocks;
+        if (activeTab === 'footer') finalFooter = blocks;
 
-        router.post(route('layouts.update'), {
-            header: finalHeader,
-            footer: finalFooter,
-            theme: theme
-        }, {
-            preserveScroll: true,
+        const data = {
+            name: layoutName,
+            header_blocks: finalHeader,
+            footer_blocks: finalFooter,
+            theme_data: theme,
+            access_type: accessType,
+            roles: selectedRoles,
+            is_default: isDefault
+        };
+
+        const routeName = layout.id ? route('layouts.update', layout.id) : route('layouts.store');
+        const method = layout.id ? (layout.id ? 'put' : 'post') : 'post';
+
+        router[method](routeName, data, {
             onSuccess: () => setSaving(false),
             onError: () => setSaving(false),
+            preserveScroll: true
         });
     };
 
@@ -477,27 +497,132 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                 </div>
                             );
                         case 'links':
-                            return (
-                                <div key="links" className="space-y-3 pb-4 border-b border-gray-100">
-                                    {sectionHeader('Menu Links', () => {
-                                        const newLinks = [...links, { id: generateId(), label: 'New Link', url: '#' }];
-                                        updateBlockData(block.id, 'links', newLinks);
-                                    }, '+ ADD LINK')}
-                                    <div className="space-y-3">
-                                        {links.map((link, lIdx) => (
-                                            <div key={link.id || `l-${lIdx}`} className="p-3 border border-gray-100 rounded-xl bg-gray-50/50 relative group">
-                                                <div className="absolute top-2 right-2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity z-10">
-                                                    <button disabled={lIdx === 0} onClick={() => moveItem(links, lIdx, -1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronUp className="w-3 h-3" /></button>
-                                                    <button disabled={lIdx === links.length - 1} onClick={() => moveItem(links, lIdx, 1, 'links')} className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-30"><ChevronDown className="w-3 h-3" /></button>
-                                                    <button onClick={() => updateBlockData(block.id, 'links', links.filter((_, i) => i !== lIdx))} className="p-1 text-gray-400 hover:text-red-500"><X className="w-3.5 h-3.5" /></button>
+                            const moveNestedItem = (arr, index, direction, parentPath = []) => {
+                                const newLinks = [...links];
+                                let targetArr = newLinks;
+                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                const targetIndex = index + direction;
+                                if (targetIndex < 0 || targetIndex >= targetArr.length) return;
+                                [targetArr[index], targetArr[targetIndex]] = [targetArr[targetIndex], targetArr[index]];
+                                updateBlockData(block.id, 'links', newLinks);
+                            };
+
+                            const renderNestedLinks = (currentLinks, parentPath = [], depth = 0) => {
+                                if (depth > 2) return null; 
+
+                                return (
+                                    <div className={`space-y-4 ${depth > 0 ? 'ml-6 mt-4 pl-4 border-l-2 border-indigo-50 bg-indigo-50/5 rounded-br-2xl py-3' : ''}`}>
+                                        {currentLinks.map((link, lIdx) => (
+                                            <div key={link.id || lIdx} className="p-4 border border-gray-100 rounded-2xl bg-white shadow-sm relative group hover:border-indigo-200 transition-all">
+                                                {/* Actions Floating Menu */}
+                                                <div className="absolute -top-3 -right-2 flex items-center gap-1.5 z-20 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100">
+                                                    <div className="flex items-center bg-white shadow-md border border-gray-100 rounded-lg p-1 gap-1">
+                                                        <button 
+                                                            disabled={lIdx === 0} 
+                                                            onClick={() => moveNestedItem(currentLinks, lIdx, -1, parentPath)} 
+                                                            className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-20 rounded transition-colors"
+                                                            title="Move Up"
+                                                        >
+                                                            <ChevronUp className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <button 
+                                                            disabled={lIdx === currentLinks.length - 1} 
+                                                            onClick={() => moveNestedItem(currentLinks, lIdx, 1, parentPath)} 
+                                                            className="p-1 text-gray-400 hover:text-indigo-600 disabled:opacity-20 rounded transition-colors"
+                                                            title="Move Down"
+                                                        >
+                                                            <ChevronDown className="w-3.5 h-3.5" />
+                                                        </button>
+                                                        <div className="w-px h-4 bg-gray-100 mx-1" />
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr.splice(lIdx, 1);
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }}
+                                                            className="p-1 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded transition-colors"
+                                                            title="Delete"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    </div>
                                                 </div>
-                                                <div className="grid grid-cols-2 gap-2 mt-1">
-                                                    <input type="text" value={link.label || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="Label" className="w-full text-xs border-transparent bg-transparent focus:ring-0 font-bold text-gray-900 p-0" />
-                                                    <input type="text" value={link.url || ''} onChange={(e) => { const newLinks = [...links]; newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value }; updateBlockData(block.id, 'links', newLinks); }} placeholder="URL" className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 text-gray-400 p-0" />
+
+                                                <div className="space-y-3 mb-2">
+                                                    <div className="flex flex-col">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Menu Label</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.label || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], label: e.target.value };
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }} 
+                                                            placeholder="e.g. Services" 
+                                                            className="w-full text-xs border-gray-100 rounded-xl bg-gray-50/50 focus:ring-indigo-500 focus:bg-white font-bold" 
+                                                        />
+                                                    </div>
+                                                    <div className="flex flex-col">
+                                                        <label className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1 ml-1">Redirect URL</label>
+                                                        <input 
+                                                            type="text" 
+                                                            value={link.url || ''} 
+                                                            onChange={(e) => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], url: e.target.value };
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }} 
+                                                            placeholder="e.g. /services or #" 
+                                                            className="w-full text-[11px] border-gray-100 rounded-xl bg-gray-50/50 focus:ring-indigo-500 focus:bg-white text-gray-500" 
+                                                        />
+                                                    </div>
                                                 </div>
+                                                
+                                                {/* Add Sub Button at Bottom */}
+                                                <div className="mt-4 pt-3 border-t border-gray-50 flex items-center justify-between">
+                                                    <span className="text-[9px] text-gray-300 font-bold uppercase tracking-wider">Level {depth + 1}</span>
+                                                    {depth < 2 && (
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newLinks = [...links];
+                                                                let targetArr = newLinks;
+                                                                for (const segment of parentPath) { targetArr = targetArr[segment]; }
+                                                                
+                                                                const newSubLinks = Array.isArray(targetArr[lIdx].children) ? [...targetArr[lIdx].children] : [];
+                                                                newSubLinks.push({ id: generateId(), label: 'New Sub-link', url: '#' });
+                                                                targetArr[lIdx] = { ...targetArr[lIdx], children: newSubLinks };
+                                                                updateBlockData(block.id, 'links', newLinks);
+                                                            }}
+                                                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-lg text-[9px] font-bold uppercase tracking-widest transition-all shadow-sm"
+                                                        >
+                                                            <Plus className="w-3 h-3" />
+                                                            Add Sub-Menu
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                {/* Sub-menus */}
+                                                {link.children && link.children.length > 0 && renderNestedLinks(link.children, [...parentPath, lIdx, 'children'], depth + 1)}
                                             </div>
                                         ))}
                                     </div>
+                                );
+                            };
+
+                            return (
+                                <div key="links" className="space-y-4 pb-6 border-b border-gray-100">
+                                    {sectionHeader('Menu Links & Navigation Hierarchy', () => {
+                                        const newLinks = [...links, { id: generateId(), label: 'New Link', url: '#' }];
+                                        updateBlockData(block.id, 'links', newLinks);
+                                    }, '+ ADD MAIN LINK')}
+                                    {renderNestedLinks(links, [], 0)}
                                     {cssInput('links')}
                                 </div>
                             );
@@ -997,46 +1122,57 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                         </div>
                     </div>
                 );
-            case 'text':
+            case 'text': {
+                const isSummernoteEnabled = plugins.some(p => p.alias === 'editorsummernote' && p.enabled !== false);
                 return (
                     <div className="space-y-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Content Editor</label>
-                            <MarkdownToolbar
-                                onInsert={(syntax) => {
-                                    const textarea = document.getElementById(`text-editor-${block.id}`);
-                                    if (!textarea) return;
-                                    const start = textarea.selectionStart;
-                                    const end = textarea.selectionEnd;
-                                    const text = textarea.value;
-                                    const before = text.substring(0, start);
-                                    const selected = text.substring(start, end);
-                                    const after = text.substring(end);
+                            {isSummernoteEnabled ? (
+                                <Summernote 
+                                    value={data.content || ''} 
+                                    onChange={val => updateBlockData(block.id, 'content', val)}
+                                    placeholder="Type your content here..."
+                                />
+                            ) : (
+                                <>
+                                    <MarkdownToolbar
+                                        onInsert={(syntax) => {
+                                            const textarea = document.getElementById(`text-editor-${block.id}`);
+                                            if (!textarea) return;
+                                            const start = textarea.selectionStart;
+                                            const end = textarea.selectionEnd;
+                                            const text = textarea.value;
+                                            const before = text.substring(0, start);
+                                            const selected = text.substring(start, end);
+                                            const after = text.substring(end);
 
-                                    let replacement = '';
-                                    if (syntax === 'bold') replacement = `**${selected}**`;
-                                    else if (syntax === 'italic') replacement = `*${selected}*`;
-                                    else if (syntax === 'link') replacement = `[${selected}](https://)`;
-                                    else if (syntax === 'list') replacement = `\n- ${selected}`;
-                                    else if (syntax === 'h1') replacement = `\n# ${selected}`;
-                                    else if (syntax === 'h2') replacement = `\n## ${selected}`;
+                                            let replacement = '';
+                                            if (syntax === 'bold') replacement = `**${selected}**`;
+                                            else if (syntax === 'italic') replacement = `*${selected}*`;
+                                            else if (syntax === 'link') replacement = `[${selected}](https://)`;
+                                            else if (syntax === 'list') replacement = `\n- ${selected}`;
+                                            else if (syntax === 'h1') replacement = `\n# ${selected}`;
+                                            else if (syntax === 'h2') replacement = `\n## ${selected}`;
 
-                                    const newValue = before + replacement + after;
-                                    updateBlockData(block.id, 'content', newValue);
+                                            const newValue = before + replacement + after;
+                                            updateBlockData(block.id, 'content', newValue);
 
-                                    setTimeout(() => {
-                                        textarea.focus();
-                                        textarea.setSelectionRange(start + 2, start + 2 + selected.length);
-                                    }, 10);
-                                }}
-                            />
-                            <textarea
-                                id={`text-editor-${block.id}`}
-                                value={data.content || ''}
-                                onChange={e => updateBlockData(block.id, 'content', e.target.value)}
-                                rows="10"
-                                className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
-                            />
+                                            setTimeout(() => {
+                                                textarea.focus();
+                                                textarea.setSelectionRange(start + 2, start + 2 + selected.length);
+                                            }, 10);
+                                        }}
+                                    />
+                                    <textarea
+                                        id={`text-editor-${block.id}`}
+                                        value={data.content || ''}
+                                        onChange={e => updateBlockData(block.id, 'content', e.target.value)}
+                                        rows="10"
+                                        className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
+                                    />
+                                </>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -1103,6 +1239,7 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                         </div>
                     </div>
                 );
+            }
             case 'slideshow': {
                 const source = data.source || 'manual';
                 const items = Array.isArray(data.items) ? data.items : [];
@@ -1898,6 +2035,12 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                             >
                                 Theme
                             </button>
+                            <button
+                                onClick={() => switchTab('settings')}
+                                className={`flex-1 py-1.5 text-xs font-bold rounded-lg transition-all ${activeTab === 'settings' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                            >
+                                Settings
+                            </button>
                         </div>
                     </div>
 
@@ -2115,6 +2258,85 @@ export default function LayoutEditor({ headerBlocks = [], footerBlocks = [], the
                                             rows="8"
                                             className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 p-3 resize-none shadow-inner"
                                         />
+                                    </div>
+                                </div>
+                            </div>
+                        ) : activeTab === 'settings' ? (
+                            <div className="space-y-6 pb-20">
+                                <div className="space-y-4">
+                                    <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                                        <Settings className="w-3.5 h-3.5" /> General Settings
+                                    </label>
+                                    <div className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Layout Name</label>
+                                            <input 
+                                                type="text" 
+                                                value={layoutName} 
+                                                onChange={e => setLayoutName(e.target.value)}
+                                                className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
+                                                placeholder="e.g. Landing Page Layout"
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between pt-2">
+                                            <label className="text-xs font-bold text-gray-700">Set as Default</label>
+                                            <button 
+                                                onClick={() => setIsDefault(!isDefault)}
+                                                className={`w-10 h-5 rounded-full p-1 transition-colors ${isDefault ? 'bg-green-500' : 'bg-gray-300'}`}
+                                            >
+                                                <div className={`w-3 h-3 bg-white rounded-full transition-transform ${isDefault ? 'translate-x-5' : ''}`} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <label className="block text-xs font-bold text-indigo-600 uppercase tracking-wider flex items-center gap-2">
+                                        <Shield className="w-3.5 h-3.5" /> Access Control
+                                    </label>
+                                    <div className="space-y-4 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                                        <div>
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Who can see this layout?</label>
+                                            <div className="grid grid-cols-1 gap-2">
+                                                {[
+                                                    { id: 'general', label: 'General (Public)', icon: Globe },
+                                                    { id: 'authenticated', label: 'Authenticated Only', icon: Users },
+                                                    { id: 'role', label: 'Specific Roles', icon: ShieldCheck }
+                                                ].map(type => (
+                                                    <button
+                                                        key={type.id}
+                                                        onClick={() => setAccessType(type.id)}
+                                                        className={`flex items-center gap-3 p-3 rounded-xl border transition-all text-left ${accessType === type.id ? 'bg-white border-indigo-200 shadow-sm text-indigo-600 ring-2 ring-indigo-50' : 'bg-transparent border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                                                    >
+                                                        <type.icon className="w-4 h-4" />
+                                                        <span className="text-xs font-bold">{type.label}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+
+                                        {accessType === 'role' && (
+                                            <div className="pt-2 animate-in fade-in slide-in-from-top-2 duration-300">
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Select Roles</label>
+                                                <div className="flex flex-wrap gap-2">
+                                                    {(roles || []).map(role => (
+                                                        <button
+                                                            key={role}
+                                                            onClick={() => {
+                                                                if (selectedRoles.includes(role)) {
+                                                                    setSelectedRoles(selectedRoles.filter(r => r !== role));
+                                                                } else {
+                                                                    setSelectedRoles([...selectedRoles, role]);
+                                                                }
+                                                            }}
+                                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold border transition-all ${selectedRoles.includes(role) ? 'bg-indigo-600 border-indigo-600 text-white' : 'bg-white border-gray-200 text-gray-400 hover:border-indigo-300'}`}
+                                                        >
+                                                            {role}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

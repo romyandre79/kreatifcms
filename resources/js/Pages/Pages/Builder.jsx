@@ -12,6 +12,7 @@ import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
 import SocialIcon from '@/Components/SocialIcon';
 import MarkdownToolbar from '@/Components/MarkdownToolbar';
+import Summernote from '@/Components/Summernote';
 import {
     DndContext,
     closestCenter,
@@ -31,7 +32,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export default function Builder({ page, reusableBlocks = [], contentTypes = [] }) {
+export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [] }) {
     const { plugins = [] } = usePage().props;
     const isContentTypeEnabled = plugins.some(p => p.alias === 'contenttype' && p.enabled !== false);
     const blockPlugins = plugins.filter(p => p.type === 'block');
@@ -64,12 +65,29 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
         'Facebook', 'Instagram', 'Twitter', 'X', 'Linkedin', 'Youtube', 'Github', 'Tiktok', 'Globe', 'Mail', 'Smartphone', 'Video', 'MessageSquare', 'Send', 'Share2', 'Link2'
     ];
 
-    const renderLinks = (links, path, updateFn, depth = 0) => {
+    const moveNestedItem = (allLinks, currentLinks, index, direction, parentPath = [], updateFn) => {
+        const newAllLinks = [...allLinks];
+        let targetArr = newAllLinks;
+        
+        for (const segment of parentPath) {
+            targetArr = targetArr[segment];
+        }
+
+        const targetIndex = index + direction;
+        if (targetIndex < 0 || targetIndex >= targetArr.length) return;
+        
+        [targetArr[index], targetArr[targetIndex]] = [targetArr[targetIndex], targetArr[index]];
+        updateFn(newAllLinks, []);
+    };
+
+    const renderLinks = (links, path, updateFn, depth = 0, allLinks = []) => {
+        const currentAllLinks = allLinks.length > 0 ? allLinks : links;
         return (
             <div className={`space-y-1 ${depth > 0 ? 'ml-4 mt-2 border-l-2 border-indigo-50/50 pl-2' : ''}`}>
                 {(links || []).map((link, lIdx) => (
                     <div key={link.id} className="group/link">
                         <div className="flex items-center gap-1 group/item">
+                        <div className="flex flex-col flex-1 min-w-0 gap-1.5 py-1">
                             <input
                                 type="text"
                                 value={link.label || ''}
@@ -79,7 +97,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                     updateFn(newLinks, path);
                                 }}
                                 placeholder="Label"
-                                className="flex-1 text-[10px] border-transparent bg-transparent focus:ring-0 p-0 font-medium"
+                                className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 p-0 font-bold text-gray-700"
                             />
                             <input
                                 type="text"
@@ -90,9 +108,28 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                     updateFn(newLinks, path);
                                 }}
                                 placeholder="URL"
-                                className="w-16 text-[9px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400"
+                                className="w-full text-[8px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400 font-mono"
                             />
+                        </div>
                             <div className="flex items-center opacity-0 group-hover/link:opacity-100 transition-opacity">
+                                <div className="flex items-center border-r border-gray-100 pr-1 mr-1">
+                                    <button 
+                                        disabled={lIdx === 0} 
+                                        onClick={() => moveNestedItem(currentAllLinks, links, lIdx, -1, path, updateFn)} 
+                                        className="p-0.5 text-gray-400 hover:text-indigo-600 disabled:opacity-20"
+                                        title="Move Up"
+                                    >
+                                        <ChevronUp className="w-2.5 h-2.5" />
+                                    </button>
+                                    <button 
+                                        disabled={lIdx === links.length - 1} 
+                                        onClick={() => moveNestedItem(currentAllLinks, links, lIdx, 1, path, updateFn)} 
+                                        className="p-0.5 text-gray-400 hover:text-indigo-600 disabled:opacity-20"
+                                        title="Move Down"
+                                    >
+                                        <ChevronDown className="w-2.5 h-2.5" />
+                                    </button>
+                                </div>
                                 <button
                                     onClick={() => {
                                         const newLinks = [...links];
@@ -119,7 +156,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 </button>
                             </div>
                         </div>
-                        {link.children && link.children.length > 0 && renderLinks(link.children, [...path, lIdx, 'children'], updateFn, depth + 1)}
+                        {link.children && link.children.length > 0 && renderLinks(link.children, [...path, lIdx, 'children'], updateFn, depth + 1, currentAllLinks)}
                     </div>
                 ))}
             </div>
@@ -136,6 +173,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
     const [title, setTitle] = useState(page.title);
     const [slug, setSlug] = useState(page.slug);
     const [isPublished, setIsPublished] = useState(page.is_published);
+    const [layoutId, setLayoutId] = useState(page.layout_id || '');
     
     // SEO State
     const [metaTitle, setMetaTitle] = useState(page.meta_title || '');
@@ -521,7 +559,8 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
             meta_title: metaTitle,
             meta_description: metaDescription,
             meta_keywords: metaKeywords,
-            og_image: ogImage
+            og_image: ogImage,
+            layout_id: layoutId || null
         }, {
             preserveScroll: true,
             onSuccess: () => setSaving(false),
@@ -1323,48 +1362,59 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                     </div>
                 );
             }
-            case 'text':
+            case 'text': {
+                const isSummernoteEnabled = plugins.some(p => p.alias === 'editorsummernote' && p.enabled !== false);
                 return (
                     <div className="space-y-6">
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Content Editor</label>
-                            <MarkdownToolbar 
-                                onInsert={(syntax) => {
-                                    const textarea = document.getElementById(`text-editor-${block.id}`);
-                                    if (!textarea) return;
-                                    const start = textarea.selectionStart;
-                                    const end = textarea.selectionEnd;
-                                    const text = textarea.value;
-                                    const before = text.substring(0, start);
-                                    const selected = text.substring(start, end);
-                                    const after = text.substring(end);
-                                    
-                                    let replacement = '';
-                                    if (syntax === 'bold') replacement = `**${selected || 'bold text'}**`;
-                                    else if (syntax === 'italic') replacement = `*${selected || 'italic text'}*`;
-                                    else if (syntax === 'link') replacement = `[${selected || 'link text'}](https://)`;
-                                    else if (syntax === 'list') replacement = `\n- ${selected || 'list item'}`;
-                                    else if (syntax === 'h1') replacement = `\n# ${selected || 'heading 1'}`;
-                                    else if (syntax === 'h2') replacement = `\n## ${selected || 'heading 2'}`;
+                            {isSummernoteEnabled ? (
+                                <Summernote 
+                                    value={data.content || ''} 
+                                    onChange={val => updateBlockData(block.id, 'content', val)}
+                                    placeholder="Type your content here..."
+                                />
+                            ) : (
+                                <>
+                                    <MarkdownToolbar 
+                                        onInsert={(syntax) => {
+                                            const textarea = document.getElementById(`text-editor-${block.id}`);
+                                            if (!textarea) return;
+                                            const start = textarea.selectionStart;
+                                            const end = textarea.selectionEnd;
+                                            const text = textarea.value;
+                                            const before = text.substring(0, start);
+                                            const selected = text.substring(start, end);
+                                            const after = text.substring(end);
+                                            
+                                            let replacement = '';
+                                            if (syntax === 'bold') replacement = `**${selected || 'bold text'}**`;
+                                            else if (syntax === 'italic') replacement = `*${selected || 'italic text'}*`;
+                                            else if (syntax === 'link') replacement = `[${selected || 'link text'}](https://)`;
+                                            else if (syntax === 'list') replacement = `\n- ${selected || 'list item'}`;
+                                            else if (syntax === 'h1') replacement = `\n# ${selected || 'heading 1'}`;
+                                            else if (syntax === 'h2') replacement = `\n## ${selected || 'heading 2'}`;
 
-                                    const newValue = before + replacement + after;
-                                    updateBlockData(block.id, 'content', newValue);
-                                    
-                                    // Refocus and set selection (approximate)
-                                    setTimeout(() => {
-                                        textarea.focus();
-                                        textarea.setSelectionRange(start + 2, start + 2 + (selected.length || 9));
-                                    }, 10);
-                                }}
-                            />
-                            <textarea 
-                                id={`text-editor-${block.id}`}
-                                value={data.content || ''} 
-                                onChange={e => updateBlockData(block.id, 'content', e.target.value)} 
-                                rows="10" 
-                                className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
-                                placeholder="Type your content here..."
-                            />
+                                            const newValue = before + replacement + after;
+                                            updateBlockData(block.id, 'content', newValue);
+                                            
+                                            // Refocus and set selection (approximate)
+                                            setTimeout(() => {
+                                                textarea.focus();
+                                                textarea.setSelectionRange(start + 2, start + 2 + (selected.length || 9));
+                                            }, 10);
+                                        }}
+                                    />
+                                    <textarea 
+                                        id={`text-editor-${block.id}`}
+                                        value={data.content || ''} 
+                                        onChange={e => updateBlockData(block.id, 'content', e.target.value)} 
+                                        rows="10" 
+                                        className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
+                                        placeholder="Type your content here..."
+                                    />
+                                </>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-2 gap-4">
@@ -1431,6 +1481,7 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                         </div>
                     </div>
                 );
+            }
             case 'social_media': {
                 const links = Array.isArray(data.links) ? data.links : [];
                 return (
@@ -3412,6 +3463,20 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                             <option value="true">Published (Live)</option>
                                         </select>
                                     </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Page Layout</label>
+                                        <select 
+                                            value={layoutId} 
+                                            onChange={e => setLayoutId(e.target.value)} 
+                                            className="w-full text-xs font-semibold border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                        >
+                                            <option value="">-- Use Default Layout --</option>
+                                            {layouts.map(l => (
+                                                <option key={l.id} value={l.id}>{l.name} {l.is_default ? '(Default)' : ''}</option>
+                                            ))}
+                                        </select>
+                                        <p className="text-[10px] text-gray-400 mt-1">Choose which header/footer/theme to use for this page.</p>
+                                    </div>
                                 </div>
                             </div>
                         )}
@@ -3546,7 +3611,19 @@ export default function Builder({ page, reusableBlocks = [], contentTypes = [] }
                                 <div className="flex-1 overflow-y-auto w-full">
                                     {/* Enable interactions in preview */}
                                     <div className="w-full h-full origin-top">
+                                        {layout.header && layout.header.length > 0 && (
+                                            <header className="site-header">
+                                                <DynamicPageRenderer blocks={layout.header} reusableBlocks={reusableBlocks} />
+                                            </header>
+                                        )}
                                         <DynamicPageRenderer blocks={blocks} reusableBlocks={reusableBlocks} />
+                                        {layout.footer && layout.footer.length > 0 && (
+                                            <footer className="site-footer">
+                                                <div className="site-footer-container">
+                                                    <DynamicPageRenderer blocks={layout.footer} reusableBlocks={reusableBlocks} />
+                                                </div>
+                                            </footer>
+                                        )}
                                     </div>
                                 </div>
                             )}

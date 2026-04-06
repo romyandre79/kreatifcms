@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, usePage, router } from '@inertiajs/react';
 import { Globe, ChevronDown, Menu, X, Search, ShoppingCart, Grid, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
@@ -8,6 +9,8 @@ const NavBarBlock = ({ data = {} }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [activeMega, setActiveMega] = useState(null);
     const [mobileExpandedMega, setMobileExpandedMega] = useState(null);
+    const [hoveredLink, setHoveredLink] = useState(null);
+    const [hoveredRect, setHoveredRect] = useState(null);
     const megaTimeoutRef = useRef(null);
     const { auth } = usePage().props;
     const isLoggedIn = !!auth?.user;
@@ -103,8 +106,14 @@ const NavBarBlock = ({ data = {} }) => {
     const RecursiveLinks = ({ links, isMobile = false, depth = 0 }) => {
         if (!Array.isArray(links) || links.length === 0) return null;
 
+        // Desktop: depth 1 is the first vertical list in the dropdown. 
+        // depth > 1 are fly-out sub-menus.
+        const desktopClasses = depth <= 1 
+            ? 'space-y-1 p-1' 
+            : 'absolute left-full top-0 ml-px w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover/recursive:opacity-100 group-hover/recursive:visible transition-all duration-200 z-[110]';
+
         return (
-            <ul className={`${isMobile ? 'pl-4 space-y-1' : (depth === 0 ? 'space-y-1' : 'absolute left-full top-0 ml-px w-48 bg-white rounded-xl shadow-xl border border-gray-100 py-2 opacity-0 invisible group-hover/recursive:opacity-100 group-hover/recursive:visible transition-all duration-200 z-[110]')}`}>
+            <ul className={`${isMobile ? 'pl-4 space-y-1' : desktopClasses}`}>
                 {links.map((link, i) => {
                     const hasChildren = Array.isArray(link.children) && link.children.length > 0;
                     
@@ -124,13 +133,13 @@ const NavBarBlock = ({ data = {} }) => {
                         <li key={link.id || i} className="relative group/recursive">
                             <a
                                 href={link.url || '#'}
-                                className={`group flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all hover:bg-indigo-50 ${depth === 0 ? 'text-gray-800' : 'text-gray-700'}`}
+                                className={`group/item flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-all hover:bg-indigo-50 ${depth <= 1 ? 'text-gray-800' : 'text-gray-700'}`}
                             >
-                                <div className="flex-1 min-w-0">
-                                    <span className="font-semibold block group-hover:text-indigo-600">{link.label}</span>
-                                    {depth === 0 && link.description && <span className="text-xs text-gray-400 block mt-0.5 line-clamp-2">{link.description}</span>}
+                                <div className="flex-1 min-w-0 pr-2">
+                                    <span className="font-semibold block group-hover/item:text-indigo-600">{link.label}</span>
+                                    {depth <= 1 && link.description && <span className="text-[10px] text-gray-400 block mt-0.5 line-clamp-1">{link.description}</span>}
                                 </div>
-                                {hasChildren && <ChevronRight className="w-3.5 h-3.5 opacity-50 ml-2" />}
+                                {hasChildren && <ChevronRight className="w-3.5 h-3.5 opacity-40 ml-auto" />}
                             </a>
                             {hasChildren && <RecursiveLinks links={link.children} isMobile={false} depth={depth + 1} />}
                         </li>
@@ -152,8 +161,28 @@ const NavBarBlock = ({ data = {} }) => {
                         <div className="flex items-center space-x-1">
                             {links.map((link, i) => {
                                 const hasChildren = Array.isArray(link.children) && link.children.length > 0;
+                                const isHovered = hoveredLink === i;
                                 return (
-                                    <div key={`desktop-link-${i}`} className="relative group/nav">
+                                    <div 
+                                        key={`desktop-link-${i}`} 
+                                        className="relative group/nav"
+                                        onMouseEnter={(e) => {
+                                            if (hasChildren) {
+                                                const rect = e.currentTarget.getBoundingClientRect();
+                                                setHoveredLink(i);
+                                                setHoveredRect(rect);
+                                                if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current);
+                                            }
+                                        }}
+                                        onMouseLeave={() => {
+                                            if (hasChildren) {
+                                                megaTimeoutRef.current = setTimeout(() => {
+                                                    setHoveredLink(null);
+                                                    setHoveredRect(null);
+                                                }, 150);
+                                            }
+                                        }}
+                                    >
                                         <a 
                                             href={link.url} 
                                             className="text-sm font-medium text-gray-700 hover:text-indigo-600 transition-colors py-5 px-3 flex items-center gap-1"
@@ -162,12 +191,31 @@ const NavBarBlock = ({ data = {} }) => {
                                             {hasChildren && <ChevronDown className="w-3.5 h-3.5 text-gray-400 group-hover/nav:text-indigo-500 transition-colors" />}
                                         </a>
                                         
-                                        {hasChildren && (
-                                            <div className="absolute left-0 top-full pt-0 min-w-[200px] opacity-0 invisible group-hover/nav:opacity-100 group-hover/nav:visible transition-all duration-200 z-[100]">
-                                                <div className="bg-white rounded-xl shadow-xl border border-gray-100 overflow-visible py-2 translate-y-2 group-hover/nav:translate-y-0 transition-transform">
+                                        {hasChildren && isHovered && hoveredRect && createPortal(
+                                            <div 
+                                                className="fixed z-[999999] opacity-0 invisible animate-in fade-in zoom-in-95 duration-200 fill-mode-forwards"
+                                                style={{ 
+                                                    top: `${hoveredRect.bottom}px`, 
+                                                    left: `${hoveredRect.left}px`,
+                                                    minWidth: '220px',
+                                                    opacity: 1,
+                                                    visibility: 'visible'
+                                                }}
+                                                onMouseEnter={() => {
+                                                    if (megaTimeoutRef.current) clearTimeout(megaTimeoutRef.current);
+                                                }}
+                                                onMouseLeave={() => {
+                                                    megaTimeoutRef.current = setTimeout(() => {
+                                                        setHoveredLink(null);
+                                                        setHoveredRect(null);
+                                                    }, 150);
+                                                }}
+                                            >
+                                                <div className="bg-white rounded-xl shadow-2xl border border-gray-100 overflow-visible py-2 translate-y-2 transition-transform">
                                                     <RecursiveLinks links={link.children} isMobile={false} depth={1} />
                                                 </div>
-                                            </div>
+                                            </div>,
+                                            document.body
                                         )}
                                     </div>
                                 );
@@ -404,10 +452,11 @@ const NavBarBlock = ({ data = {} }) => {
 
     return (
         <nav 
-            className={`w-full z-50 transition-all duration-300 ${data.sticky !== false ? 'sticky top-0' : 'relative'} ${data.glass !== false ? 'backdrop-blur-md border-b border-white/20 shadow-sm' : 'border-b border-gray-100'}`}
+            className={`w-full z-[99999] transition-all duration-300 ${data.sticky !== false ? 'sticky top-0' : 'relative'} ${data.glass !== false ? 'backdrop-blur-md border-b border-white/20 shadow-sm' : 'border-b border-gray-100'}`}
             style={{ 
                 backgroundColor: data.bg_color || (data.glass !== false ? 'rgba(255, 255, 255, 0.8)' : '#ffffff'),
-                borderColor: data.bg_color ? 'rgba(255, 255, 255, 0.1)' : undefined
+                borderColor: data.bg_color ? 'rgba(255, 255, 255, 0.1)' : undefined,
+                overflow: 'visible !important'
             }}
         >
             <style dangerouslySetInnerHTML={{ __html: `
@@ -421,11 +470,20 @@ const NavBarBlock = ({ data = {} }) => {
                         ${data[`${key}_css`]}
                     }
                 ` : '').join('')}
+                #nav-section-${data.id || 'current'}-links {
+                    overflow: visible !important;
+                }
+                /* Definitive clipping fix */
+                .dynamic-page-content, 
+                .dynamic-page-content > div,
+                nav[style*="sticky"] {
+                    overflow: visible !important;
+                }
             ` }} />
-            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex justify-between h-16 items-center">
-                    <div className="flex-1 hidden md:flex items-center">
-                        <div className="flex items-center w-full relative">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8" style={{ overflow: 'visible !important' }}>
+                <div className="flex justify-between h-16 items-center" style={{ overflow: 'visible !important' }}>
+                    <div className="flex-1 hidden md:flex items-center" style={{ overflow: 'visible !important' }}>
+                        <div className="flex items-center w-full relative" style={{ overflow: 'visible !important' }}>
                             {composition.map(key => renderDesktopSection(key))}
                         </div>
                     </div>
