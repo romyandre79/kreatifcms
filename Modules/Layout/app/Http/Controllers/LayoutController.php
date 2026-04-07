@@ -39,7 +39,8 @@ class LayoutController extends Controller
             'roles' => \DB::table('roles')->pluck('name'),
             'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
                 ? \Modules\ContentType\Models\ContentType::with('fields')->get()
-                : []
+                : [],
+            'availableFonts' => $this->getAvailableFonts()
         ]);
     }
 
@@ -69,6 +70,9 @@ class LayoutController extends Controller
             'is_default' => $validated['is_default'] ?? false,
         ]);
 
+        // Create and update CSS file for this layout
+        $this->updateCssFile($layout);
+
         return redirect()->route('layouts.index')->with('success', 'Layout created successfully.');
     }
 
@@ -90,7 +94,8 @@ class LayoutController extends Controller
             'roles' => \DB::table('roles')->pluck('name'),
             'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
                 ? \Modules\ContentType\Models\ContentType::with('fields')->get()
-                : []
+                : [],
+            'availableFonts' => $this->getAvailableFonts()
         ]);
     }
 
@@ -120,6 +125,8 @@ class LayoutController extends Controller
             'is_default' => $validated['is_default'] ?? false,
         ]);
 
+        $this->updateCssFile($layout);
+
         return redirect()->back()->with('success', 'Layout updated successfully.');
     }
 
@@ -129,7 +136,121 @@ class LayoutController extends Controller
             return redirect()->back()->with('error', 'Cannot delete the default layout.');
         }
 
+        // Delete associated CSS file
+        $cssFile = public_path("layouts/layout-{$layout->id}.css");
+        if (file_exists($cssFile)) {
+            unlink($cssFile);
+        }
+
         $layout->delete();
         return redirect()->route('layouts.index')->with('success', 'Layout deleted successfully.');
+    }
+
+    public function uploadFont(Request $request)
+    {
+        $request->validate([
+            'font' => 'required|file|mimes:ttf,woff,woff2|max:5120', // Max 5MB
+        ]);
+
+        if ($request->hasFile('font')) {
+            $file = $request->file('font');
+            $fileName = $file->getClientOriginalName();
+            $path = public_path('fonts/custom');
+
+            if (!file_exists($path)) {
+                mkdir($path, 0755, true);
+            }
+
+            $file->move($path, $fileName);
+            return redirect()->back()->with('success', 'Font uploaded successfully.');
+        }
+
+        return redirect()->back()->with('error', 'Font upload failed.');
+    }
+
+    private function getAvailableFonts()
+    {
+        $defaultFonts = [
+            ['name' => 'Inter', 'file' => null],
+            ['name' => 'Roboto', 'file' => null],
+            ['name' => 'Outfit', 'file' => null],
+            ['name' => 'Playfair Display', 'file' => null],
+            ['name' => 'Montserrat', 'file' => null],
+            ['name' => 'System', 'file' => null],
+        ];
+
+        $customFontsPath = public_path('fonts/custom');
+        $customFonts = [];
+
+        if (file_exists($customFontsPath)) {
+            $files = scandir($customFontsPath);
+            foreach ($files as $file) {
+                $ext = pathinfo($file, PATHINFO_EXTENSION);
+                if (in_array($ext, ['ttf', 'woff', 'woff2'])) {
+                    $fontName = pathinfo($file, PATHINFO_FILENAME);
+                    $customFonts[] = [
+                        'name' => $fontName,
+                        'file' => $file,
+                        'url' => asset("fonts/custom/{$file}")
+                    ];
+                }
+            }
+        }
+
+        return array_merge($defaultFonts, $customFonts);
+    }
+
+    private function updateCssFile(Layout $layout)
+    {
+        $theme = $layout->theme_data ?? [];
+        $css = "/* Layout CSS: {$layout->name} */\n\n";
+
+        // Inject font-faces
+        $fonts = $this->getAvailableFonts();
+        foreach ($fonts as $font) {
+            if ($font['file']) {
+                $ext = pathinfo($font['file'], PATHINFO_EXTENSION);
+                $format = $ext === 'woff2' ? 'woff2' : ($ext === 'woff' ? 'woff' : 'truetype');
+                $url = asset("fonts/custom/{$font['file']}");
+                $css .= "@font-face {\n";
+                $css .= "    font-family: '{$font['name']}';\n";
+                $css .= "    src: url('{$url}') format('{$format}');\n";
+                $css .= "    font-weight: normal;\n";
+                $css .= "    font-style: normal;\n";
+                $css .= "    font-display: swap;\n";
+                $css .= "}\n\n";
+            }
+        }
+
+        // Global styles
+        $fontFamily = $theme['fontFamily'] ?? 'Inter';
+        $fontSize = $theme['fontSize'] ?? '16';
+        $primary = $theme['primaryColor'] ?? '#4f46e5';
+        $secondary = $theme['secondaryColor'] ?? '#10b981';
+
+        $css .= ":root {\n";
+        $css .= "    --primary-color: {$primary};\n";
+        $css .= "    --secondary-color: {$secondary};\n";
+        $css .= "    --base-font-size: {$fontSize}px;\n";
+        $css .= "    --font-family: '{$fontFamily}', sans-serif;\n";
+        $css .= "}\n\n";
+
+        $css .= "body {\n";
+        $css .= "    font-family: var(--font-family);\n";
+        $css .= "    font-size: var(--base-font-size);\n";
+        $css .= "}\n";
+
+        // Custom CSS
+        if (!empty($theme['customCss'])) {
+            $css .= "\n/* Custom CSS */\n";
+            $css .= $theme['customCss'] . "\n";
+        }
+
+        $cssDir = public_path('layouts');
+        if (!file_exists($cssDir)) {
+            mkdir($cssDir, 0755, true);
+        }
+        $cssFile = $cssDir . "/layout-{$layout->id}.css";
+        file_put_contents($cssFile, $css);
     }
 }

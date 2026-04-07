@@ -1,0 +1,13 @@
+/* Layout CSS: Default Layout */
+
+:root {
+    --primary-color: #4f46e5;
+    --secondary-color: #10b981;
+    --base-font-size: 20px;
+    --font-family: 'Inter', sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--base-font-size);
+}

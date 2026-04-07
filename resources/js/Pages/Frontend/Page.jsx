@@ -45,6 +45,10 @@ export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
                 <meta property="og:title" content={`${title}${separator}${siteName}`} />
                 <meta property="og:type" content="website" />
                 
+                {layout?.id && (
+                    <link rel="stylesheet" href={`/layouts/layout-${layout.id}.css`} />
+                )}
+
                 {fontQuery && (
                     <link href={`https://fonts.bunny.net/css?${fontQuery}&display=swap`} rel="stylesheet" />
                 )}
@@ -55,7 +59,7 @@ export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
                         --secondary-color: ${theme.secondaryColor || '#10b981'};
                     }
                     body {
-                        font-family: '${theme.fontFamily || 'Inter'}', sans-serif;
+                        font-family: '${theme.fontFamily || 'Inter'}', sans-serif !important;
                         font-size: ${theme.fontSize || 16}px;
                     }
                     ${dynamicStyles}

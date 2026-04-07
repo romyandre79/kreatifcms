@@ -6,7 +6,7 @@ import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronUp, ChevronDown, ChevronRight, X,
     Monitor, LayoutTemplate, Bold, Italic, Link as LinkIcon, List, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette,
-    Menu, Globe, Code, Settings, Shield, Users, ShieldCheck
+    Menu, Globe, Code, Settings, Shield, Users, ShieldCheck, Upload, Loader2
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
@@ -34,7 +34,7 @@ import { CSS } from '@dnd-kit/utilities';
 
 
 
-export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlocks = [], themeData = {}, reusableBlocks = [], roles = [], contentTypes = [] }) {
+export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlocks = [], themeData = {}, reusableBlocks = [], roles = [], contentTypes = [], availableFonts = [] }) {
     const { plugins = [] } = usePage().props;
     const blockPlugins = plugins.filter(p => p.type === 'block');
     const BLOCK_TYPES = blockPlugins.map(p => {
@@ -154,6 +154,34 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
 
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
+    const [fontUploading, setFontUploading] = useState(false);
+
+    const handleFontUpload = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('font', file);
+
+        setFontUploading(true);
+        router.post(route('layouts.fonts.upload'), formData, {
+            onSuccess: () => setFontUploading(false),
+            onError: () => setFontUploading(false),
+            preserveScroll: true
+        });
+    };
+
+    const fontStyles = availableFonts
+        .filter(font => font.file)
+        .map(font => `
+            @font-face {
+                font-family: '${font.name}';
+                src: url('${font.url}') format('${font.file.endsWith('woff2') ? 'woff2' : (font.file.endsWith('woff') ? 'woff' : 'truetype')}');
+                font-weight: normal;
+                font-style: normal;
+                font-display: swap;
+            }
+        `).join('\n');
 
     const switchTab = (tab) => {
         // Save current blocks to the respective temporary state
@@ -2009,7 +2037,9 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
 
     return (
         <AuthenticatedLayout>
-            <Head title="Global Layout Editor" />
+            <Head title="Global Layout Editor">
+                <style dangerouslySetInnerHTML={{ __html: fontStyles }} />
+            </Head>
 
             <div className="flex h-[calc(100vh-64px)] overflow-hidden bg-gray-100">
                 {/* Sidebar */}
@@ -2064,13 +2094,32 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
                                                 onChange={e => setTheme({ ...theme, fontFamily: e.target.value })}
                                                 className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                             >
-                                                <option value="Inter">Inter (Sans-serif)</option>
-                                                <option value="Roboto">Roboto (Clean Sans)</option>
-                                                <option value="Outfit">Outfit (Geometric)</option>
-                                                <option value="Playfair Display">Playfair Display (Serif)</option>
-                                                <option value="Montserrat">Montserrat (Classic)</option>
-                                                <option value="System">System Default</option>
+                                                {availableFonts.map(font => (
+                                                    <option key={font.name} value={font.name}>{font.name}</option>
+                                                ))}
                                             </select>
+                                        </div>
+                                        <div className="pt-2 border-t border-gray-100 mt-2">
+                                            <label className="block text-[10px] text-indigo-400 font-bold uppercase mb-2">Upload Custom Font (.ttf, .woff2)</label>
+                                            <div className="relative">
+                                                <input
+                                                    type="file"
+                                                    accept=".ttf,.woff,.woff2"
+                                                    onChange={handleFontUpload}
+                                                    className="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-10"
+                                                    disabled={fontUploading}
+                                                />
+                                                <div className="flex items-center justify-center gap-2 p-3 border-2 border-dashed border-gray-200 rounded-xl bg-white hover:border-indigo-400 hover:bg-indigo-50 transition-all">
+                                                    {fontUploading ? (
+                                                        <Loader2 className="w-4 h-4 text-indigo-600 animate-spin" />
+                                                    ) : (
+                                                        <Upload className="w-4 h-4 text-indigo-400" />
+                                                    )}
+                                                    <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">
+                                                        {fontUploading ? 'Uploading...' : 'Click to Upload Font'}
+                                                    </span>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div>
                                             <span className="block text-[10px] text-gray-400 font-bold uppercase mb-1.5">Base Font Size (px)</span>
@@ -2191,11 +2240,9 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
                                                             className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                                         >
                                                             <option value="">Global Default</option>
-                                                            <option value="Inter">Inter</option>
-                                                            <option value="Roboto">Roboto</option>
-                                                            <option value="Outfit">Outfit</option>
-                                                            <option value="Playfair Display">Playfair Display</option>
-                                                            <option value="Montserrat">Montserrat</option>
+                                                            {availableFonts.map(font => (
+                                                                <option key={font.name} value={font.name}>{font.name}</option>
+                                                            ))}
                                                         </select>
                                                     </div>
                                                     <div>
