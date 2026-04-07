@@ -149,7 +149,7 @@ class LayoutController extends Controller
     public function uploadFont(Request $request)
     {
         $request->validate([
-            'font' => 'required|file|mimes:ttf,woff,woff2|max:5120', // Max 5MB
+            'font' => 'required|file|extensions:ttf,woff,woff2|max:5120', // Max 5MB
         ]);
 
         if ($request->hasFile('font')) {
