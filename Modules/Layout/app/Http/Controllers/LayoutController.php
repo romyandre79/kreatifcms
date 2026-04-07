@@ -236,7 +236,7 @@ class LayoutController extends Controller
         $css .= "}\n\n";
 
         $css .= "body {\n";
-        $css .= "    font-family: var(--font-family);\n";
+        $css .= "    font-family: var(--font-family) !important;\n";
         $css .= "    font-size: var(--base-font-size);\n";
         $css .= "}\n";
 
