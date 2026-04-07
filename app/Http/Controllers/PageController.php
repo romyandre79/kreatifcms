@@ -79,6 +79,7 @@ class PageController extends Controller
         }
 
         return [
+            'id' => $layout->id,
             'header' => $schemaService->hydrateDynamicBlocks($layout->header_blocks ?: []),
             'footer' => $schemaService->hydrateDynamicBlocks($layout->footer_blocks ?: []),
             'theme' => $layout->theme_data ?: []

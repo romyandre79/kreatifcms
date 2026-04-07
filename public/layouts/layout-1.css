@@ -1,0 +1,21 @@
+/* Layout CSS: Default Layout */
+
+@font-face {
+    font-family: 'StencilPtxSprayedDemo-j9MAM';
+    src: url('http://localhost:8000/fonts/custom/StencilPtxSprayedDemo-j9MAM.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --primary-color: #4f46e5;
+    --secondary-color: #10b981;
+    --base-font-size: 20px;
+    --font-family: 'StencilPtxSprayedDemo-j9MAM', sans-serif;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: var(--base-font-size);
+}
