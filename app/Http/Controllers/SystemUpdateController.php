@@ -72,13 +72,16 @@ class SystemUpdateController extends Controller
         $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
         if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
 
+        $php = PHP_BINARY;
+        $composer = $this->getComposerBinary();
+
         $commands = [
             'Fetching' => ['git', 'fetch', $updateUrl, 'main'],
             'Switching to Main' => ['git', 'checkout', 'main'],
             'Pulling' => ['git', 'pull', $updateUrl, 'main', '--no-rebase'],
-            'Composer' => ['composer', 'install', '--no-interaction', '--prefer-dist', '--optimize-autoloader'],
-            'Migrating' => ['php', 'artisan', 'migrate', '--force'],
-            'Optimizing' => ['php', 'artisan', 'optimize:clear'],
+            'Composer' => array_merge($composer, ['install', '--no-interaction', '--prefer-dist', '--optimize-autoloader']),
+            'Migrating' => [$php, 'artisan', 'migrate', '--force'],
+            'Optimizing' => [$php, 'artisan', 'optimize:clear'],
         ];
 
         foreach ($commands as $step => $cmd) {
@@ -199,11 +202,14 @@ class SystemUpdateController extends Controller
         $log[] = ['step' => 'Composer Sync', 'command' => "composer::merge", 'output' => "Merging core dependencies...", 'status' => 'success'];
         $this->syncComposerJson($extractedDir . '/composer.json', base_path('composer.json'));
 
+        $php = PHP_BINARY;
+        $composer = $this->getComposerBinary();
+
         // 4. Post-Update Commands
         $commands = [
-            'Composer' => ['composer', 'install', '--no-interaction', '--prefer-dist', '--optimize-autoloader'],
-            'Migrating' => ['php', 'artisan', 'migrate', '--force'],
-            'Optimizing' => ['php', 'artisan', 'optimize:clear'],
+            'Composer' => array_merge($composer, ['install', '--no-interaction', '--prefer-dist', '--optimize-autoloader']),
+            'Migrating' => [$php, 'artisan', 'migrate', '--force'],
+            'Optimizing' => [$php, 'artisan', 'optimize:clear'],
         ];
 
         foreach ($commands as $step => $cmd) {
@@ -398,5 +404,40 @@ class SystemUpdateController extends Controller
         }
 
         return $process->getOutput();
+    }
+
+    /**
+     * Get the absolute path to the composer binary.
+     */
+    private function getComposerBinary()
+    {
+        // 1. Check for composer.phar in root
+        if (file_exists(base_path('composer.phar'))) {
+            return [PHP_BINARY, base_path('composer.phar')];
+        }
+
+        // 2. Seek global composer via 'where' on Windows or 'which' on Unix
+        $command = PHP_OS_FAMILY === 'Windows' ? 'where composer' : 'which composer';
+        $path = @shell_exec($command);
+        
+        if ($path) {
+            $fullPath = trim(explode("\n", $path)[0]);
+            if (file_exists($fullPath)) {
+                return [$fullPath];
+            }
+        }
+
+        // 3. Common Windows paths if 'where' fails (common in web server contexts)
+        $commonPaths = [
+            'C:\ProgramData\ComposerSetup\bin\composer.bat',
+            'C:\lara\bin\composer\composer.bat',
+            'C:\bin\composer.bat'
+        ];
+        foreach ($commonPaths as $cp) {
+            if (file_exists($cp)) return [$cp];
+        }
+
+        // 4. Final fallback
+        return ['composer'];
     }
 }
