@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
@@ -171,17 +171,21 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
         });
     };
 
-    const fontStyles = availableFonts
-        .filter(font => font.file)
-        .map(font => `
-            @font-face {
-                font-family: '${font.name}';
-                src: url('${font.url}') format('${font.file.endsWith('woff2') ? 'woff2' : (font.file.endsWith('woff') ? 'woff' : 'truetype')}');
-                font-weight: normal;
-                font-style: normal;
-                font-display: swap;
-            }
-        `).join('\n');
+    const fontStyles = useMemo(() => {
+        const faces = availableFonts
+            .filter(font => font.file)
+            .map(font => `
+                @font-face {
+                    font-family: '${font.name}';
+                    src: url('${font.url}') format('${font.file?.endsWith('woff2') ? 'woff2' : (font.file?.endsWith('woff') ? 'woff' : 'truetype')}');
+                    font-weight: normal;
+                    font-style: normal;
+                    font-display: swap;
+                }
+            `).join('\n');
+
+        return `${faces}\n\nbody, .editor-preview, .preview-container { font-family: '${theme.fontFamily || 'Inter'}', sans-serif !important; }`;
+    }, [availableFonts, theme.fontFamily]);
 
     const switchTab = (tab) => {
         // Save current blocks to the respective temporary state
