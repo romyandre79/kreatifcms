@@ -27,9 +27,15 @@ class SystemUpdateController extends Controller
     {
         try {
             $this->checkConnectivity();
+            $isWindows = PHP_OS_FAMILY === 'Windows';
             $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
             if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
-            $this->runCommand(['git', 'fetch', $updateUrl, 'main']);
+            
+            $fetchCmd = ['git'];
+            if ($isWindows) $fetchCmd = array_merge($fetchCmd, ['-c', 'core.threads=1', '-c', 'core.preloadindex=false']);
+            $fetchCmd = array_merge($fetchCmd, ['fetch', $updateUrl, 'main']);
+
+            $this->runCommand($fetchCmd);
             return response()->json([
                 'success' => true,
                 'info' => $this->getUpdateInfo()
@@ -69,6 +75,7 @@ class SystemUpdateController extends Controller
             return $this->runLocalZipUpdate();
         }
 
+        $isWindows = PHP_OS_FAMILY === 'Windows';
         $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms.git');
         if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
 
@@ -80,10 +87,25 @@ class SystemUpdateController extends Controller
 
         $composer = $this->getComposerBinary($phpBase);
 
+        // Build Git Commands based on OS
+        $gitFetch = ['git'];
+        $gitPull = ['git'];
+        $gitName = env('SYSTEM_UPDATE_GIT_NAME', 'KreatifCMS Updater');
+        $gitEmail = env('SYSTEM_UPDATE_GIT_EMAIL', 'updater@kreatifcms.com');
+
+        if ($isWindows) {
+            $gitFetch = array_merge($gitFetch, ['-c', 'core.threads=1', '-c', 'core.preloadindex=false']);
+            $gitPull = array_merge($gitPull, ['-c', 'core.threads=1', '-c', 'core.preloadindex=false', '-c', "user.name=$gitName", '-c', "user.email=$gitEmail"]);
+        } else {
+            $gitPull = array_merge($gitPull, ['-c', "user.name=$gitName", '-c', "user.email=$gitEmail"]);
+        }
+        $gitFetch = array_merge($gitFetch, ['fetch', $updateUrl, 'main']);
+        $gitPull = array_merge($gitPull, ['pull', $updateUrl, 'main', '--no-rebase']);
+
         $commands = [
-            'Fetching' => ['git', 'fetch', $updateUrl, 'main'],
+            'Fetching' => $gitFetch,
             'Switching to Main' => ['git', 'checkout', 'main'],
-            'Pulling' => ['git', 'pull', $updateUrl, 'main', '--no-rebase'],
+            'Pulling' => $gitPull,
             'Composer' => array_merge($composer, ['install', '--no-interaction', '--prefer-dist', '--optimize-autoloader']),
             'Migrating' => array_merge($phpBase, ['artisan', 'migrate', '--force']),
             'Optimizing' => array_merge($phpBase, ['artisan', 'optimize:clear']),
@@ -391,43 +413,58 @@ class SystemUpdateController extends Controller
     {
         $currentCommit = null;
         $currentDate = null;
+        $currentVersion = '0.0.0';
+        $latestVersion = '0.0.0';
         $currentBranch = 'main';
         $behindCount = 0;
         $isUpToDate = true;
         $error = null;
 
-        // 1. Try Git first
+        // 1. Identify Local Version
+        if (file_exists(base_path('version.json'))) {
+            $vLocal = json_decode(file_get_contents(base_path('version.json')), true);
+            $currentVersion = $vLocal['version'] ?? '0.0.0';
+        }
+
+        // 2. Identify Git Status (Optional fallback)
         try {
             $currentCommit = trim($this->runCommand(['git', 'rev-parse', 'HEAD']));
             $currentDate = trim($this->runCommand(['git', 'log', '-1', '--format=%cd', '--date=relative']));
             $currentBranch = trim($this->runCommand(['git', 'branch', '--show-current'])) ?: 'main';
         } catch (\Exception $e) {
             // Git failed (common after ZIP update or on servers without git)
-            // 2. Fallback to .version file
             if (file_exists(base_path('.version'))) {
                 $vData = json_decode(file_get_contents(base_path('.version')), true);
                 $currentCommit = $vData['commit'] ?? null;
                 $currentDate = ($vData['date'] ?? null) . ' (via update)';
-            } else {
-                $error = 'Version info not available (Git/Version file missing).';
             }
         }
 
-        // 3. Compare with Remote (API for ZIP, Fetch for Git)
+        // 3. Identify Remote Version (Semantic via version.json)
         try {
-            $remoteSha = $this->getRemoteLatestCommit();
-            if ($remoteSha && $currentCommit) {
-                $isUpToDate = (substr($remoteSha, 0, 7) === substr($currentCommit, 0, 7));
-                $behindCount = $isUpToDate ? 0 : 1; // Simplified count for API-based check
+            $latestVersion = $this->getRemoteLatestVersion();
+            if ($latestVersion) {
+                $isUpToDate = version_compare($currentVersion, $latestVersion, '>=');
+                $behindCount = $isUpToDate ? 0 : 1; 
+            } else {
+                // Fallback to Commit SHA if version.json is missing on GitHub
+                $remoteSha = $this->getRemoteLatestCommit();
+                if ($remoteSha && $currentCommit) {
+                    $latestVersion = 'v' . substr($remoteSha, 0, 7);
+                    $isUpToDate = (substr($remoteSha, 0, 7) === substr($currentCommit, 0, 7));
+                    $behindCount = $isUpToDate ? 0 : 1;
+                }
             }
         } catch (\Exception $e) {
-            // Update check failed, assume up to date for now
+            // Update check failed
         }
 
         // Check for manual update file
         $localZip = storage_path('app/updates/update.zip');
 
         return [
+            'current_version' => $currentVersion,
+            'latest_version' => $latestVersion,
             'current_commit' => $currentCommit ? substr($currentCommit, 0, 7) : 'Unknown',
             'current_date' => $currentDate ?: 'Unknown',
             'current_branch' => $currentBranch,
@@ -441,6 +478,45 @@ class SystemUpdateController extends Controller
                 'date' => file_exists($localZip) ? date("Y-m-d H:i:s", filemtime($localZip)) : null
             ]
         ];
+    }
+
+    /**
+     * Get the latest version string from GitHub Releases, falling back to version.json.
+     */
+    private function getRemoteLatestVersion()
+    {
+        try {
+            $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms');
+            $repo = str_replace(['https://github.com/', '.git'], '', $updateUrl);
+            
+            // 1. Try GitHub Releases first (Most official source)
+            $apiUrl = "https://api.github.com/repos/{$repo}/releases/latest";
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "User-Agent: KreatifCMS-Updater\r\n",
+                    'timeout' => 5
+                ]
+            ]);
+
+            $response = @file_get_contents($apiUrl, false, $context);
+            if ($response) {
+                $data = json_decode($response, true);
+                if (isset($data['tag_name'])) {
+                    return ltrim($data['tag_name'], 'v'); // Normalize 1.0.2 or v1.0.2
+                }
+            }
+
+            // 2. Fallback to raw version.json if no releases exist
+            $rawUrl = "https://raw.githubusercontent.com/{$repo}/main/version.json";
+            $response = @file_get_contents($rawUrl, false, $context);
+            if ($response) {
+                $data = json_decode($response, true);
+                return $data['version'] ?? null;
+            }
+        } catch (\Exception $e) {
+            Log::warning("GitHub version check failed: " . $e->getMessage());
+        }
+        return null;
     }
 
     /**
@@ -489,8 +565,22 @@ class SystemUpdateController extends Controller
      */
     private function runCommand(array $command)
     {
-        // Pass environment variables required by Composer and sub-processes on Windows
         $env = $_SERVER;
+
+        if (PHP_OS_FAMILY === 'Windows') {
+            // Critical Windows System variables (often missing in PHP subprocesses)
+            $systemVars = ['SystemRoot', 'SystemDrive', 'WINDIR', 'PATH', 'TEMP', 'TMP'];
+            foreach ($systemVars as $var) {
+                if (!isset($env[$var]) && getenv($var)) {
+                    $env[$var] = getenv($var);
+                }
+            }
+            
+            // Fallback defaults for common Windows setups if still missing
+            if (!isset($env['SystemRoot'])) $env['SystemRoot'] = 'C:\Windows';
+            if (!isset($env['WINDIR'])) $env['WINDIR'] = 'C:\Windows';
+        }
+
         $composerHome = storage_path('app/composer_home');
         if (!is_dir($composerHome)) @mkdir($composerHome, 0755, true);
         

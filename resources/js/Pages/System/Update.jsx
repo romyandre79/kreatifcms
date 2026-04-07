@@ -77,21 +77,21 @@ export default function Update({ info }) {
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center gap-4">
                         <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600">
-                            <GitBranch className="w-6 h-6" />
+                            <CheckCircle2 className="w-6 h-6" />
                         </div>
                         <div>
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Branch</p>
-                            <p className="text-lg font-bold text-gray-900">{updateInfo.current_branch || 'main'}</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Local Version</p>
+                            <p className="text-lg font-bold text-gray-900">{updateInfo.current_version || '0.0.0'}</p>
                         </div>
                     </div>
 
                     <div className="bg-white rounded-3xl p-6 shadow-sm border border-gray-100 flex items-center gap-4">
                         <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
-                            <Hash className="w-6 h-6" />
+                            <RefreshCcw className="w-6 h-6" />
                         </div>
                         <div className="overflow-hidden">
-                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Current Commit</p>
-                            <p className="text-sm font-mono font-bold text-gray-900 truncate">{updateInfo.current_commit?.substring(0, 10)}</p>
+                            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Latest Version</p>
+                            <p className="text-lg font-bold text-gray-900">{updateInfo.latest_version || 'Checking...'}</p>
                         </div>
                     </div>
 
@@ -102,7 +102,7 @@ export default function Update({ info }) {
                         <div>
                             <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">Status</p>
                             <p className="text-lg font-bold text-gray-900">
-                                {updateInfo.is_up_to_date ? 'Up to Date' : `${updateInfo.behind_count} Commits Behind`}
+                                {updateInfo.is_up_to_date ? 'Up to Date' : `New Update Available`}
                             </p>
                         </div>
                     </div>
