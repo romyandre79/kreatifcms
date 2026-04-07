@@ -86,6 +86,22 @@ class SystemUpdateController extends Controller
 
         foreach ($commands as $step => $cmd) {
             try {
+                if ($step === 'Migrating' || $step === 'Optimizing') {
+                    $artisanCmd = ($step === 'Migrating') ? 'migrate' : 'optimize:clear';
+                    $artisanParams = ($step === 'Migrating') ? ['--force' => true] : [];
+                    
+                    Artisan::call($artisanCmd, $artisanParams);
+                    $output = Artisan::output();
+                    
+                    $log[] = [
+                        'step' => $step,
+                        'command' => "Artisan::call({$artisanCmd})",
+                        'output' => $output,
+                        'status' => 'success'
+                    ];
+                    continue;
+                }
+
                 $output = $this->runCommand($cmd);
                 $log[] = [
                     'step' => $step,
@@ -97,7 +113,7 @@ class SystemUpdateController extends Controller
                 $success = false;
                 $log[] = [
                     'step' => $step,
-                    'command' => implode(' ', $cmd),
+                    'command' => is_array($cmd) ? implode(' ', $cmd) : "Internal Command",
                     'output' => $e->getMessage(),
                     'status' => 'error'
                 ];
@@ -214,10 +230,26 @@ class SystemUpdateController extends Controller
 
         foreach ($commands as $step => $cmd) {
             try {
+                if ($step === 'Migrating' || $step === 'Optimizing') {
+                    $artisanCmd = ($step === 'Migrating') ? 'migrate' : 'optimize:clear';
+                    $artisanParams = ($step === 'Migrating') ? ['--force' => true] : [];
+                    
+                    Artisan::call($artisanCmd, $artisanParams);
+                    $output = Artisan::output();
+                    
+                    $log[] = [
+                        'step' => $step,
+                        'command' => "Artisan::call({$artisanCmd})",
+                        'output' => $output,
+                        'status' => 'success'
+                    ];
+                    continue;
+                }
+
                 $output = $this->runCommand($cmd);
                 $log[] = ['step' => $step, 'command' => implode(' ', $cmd), 'output' => $output, 'status' => 'success'];
             } catch (\Exception $e) {
-                $log[] = ['step' => $step, 'command' => implode(' ', $cmd), 'output' => "Optional step failed: " . $e->getMessage(), 'status' => 'warning'];
+                $log[] = ['step' => $step, 'command' => is_array($cmd) ? implode(' ', $cmd) : "Internal Command", 'output' => "Optional step failed: " . $e->getMessage(), 'status' => 'warning'];
             }
         }
 
