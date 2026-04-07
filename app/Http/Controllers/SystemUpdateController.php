@@ -73,15 +73,20 @@ class SystemUpdateController extends Controller
         if (!str_ends_with($updateUrl, '.git')) $updateUrl .= '.git';
 
         $php = PHP_BINARY;
-        $composer = $this->getComposerBinary();
+        $ini = php_ini_loaded_file();
+        $tempDir = storage_path('app/temp');
+        if (!is_dir($tempDir)) @mkdir($tempDir, 0755, true);
+        $phpBase = array_merge([$php], ($ini ? ['-c', $ini] : []), ["-d", "sys_temp_dir=$tempDir"]);
+
+        $composer = $this->getComposerBinary($phpBase);
 
         $commands = [
             'Fetching' => ['git', 'fetch', $updateUrl, 'main'],
             'Switching to Main' => ['git', 'checkout', 'main'],
             'Pulling' => ['git', 'pull', $updateUrl, 'main', '--no-rebase'],
             'Composer' => array_merge($composer, ['install', '--no-interaction', '--prefer-dist', '--optimize-autoloader']),
-            'Migrating' => [$php, 'artisan', 'migrate', '--force'],
-            'Optimizing' => [$php, 'artisan', 'optimize:clear'],
+            'Migrating' => array_merge($phpBase, ['artisan', 'migrate', '--force']),
+            'Optimizing' => array_merge($phpBase, ['artisan', 'optimize:clear']),
         ];
 
         foreach ($commands as $step => $cmd) {
@@ -146,6 +151,16 @@ class SystemUpdateController extends Controller
             $content = @file_get_contents($zipUrl);
             if (!$content) throw new \Exception("Failed to download ZIP update from GitHub.");
             file_put_contents($zipFile, $content);
+
+            // 1.1 Store version info
+            $latestSha = $this->getRemoteLatestCommit();
+            if ($latestSha) {
+                file_put_contents(base_path('.version'), json_encode([
+                    'commit' => $latestSha,
+                    'date' => now()->toDateTimeString(),
+                    'method' => 'zip'
+                ]));
+            }
 
             return $this->applyZipUpdate($zipFile, $tempPath);
 
@@ -219,13 +234,18 @@ class SystemUpdateController extends Controller
         $this->syncComposerJson($extractedDir . '/composer.json', base_path('composer.json'));
 
         $php = PHP_BINARY;
-        $composer = $this->getComposerBinary();
+        $ini = php_ini_loaded_file();
+        $tempDir = storage_path('app/temp');
+        if (!is_dir($tempDir)) @mkdir($tempDir, 0755, true);
+        $phpBase = array_merge([$php], ($ini ? ['-c', $ini] : []), ["-d", "sys_temp_dir=$tempDir"]);
+
+        $composer = $this->getComposerBinary($phpBase);
 
         // 4. Post-Update Commands
         $commands = [
             'Composer' => array_merge($composer, ['install', '--no-interaction', '--prefer-dist', '--optimize-autoloader']),
-            'Migrating' => [$php, 'artisan', 'migrate', '--force'],
-            'Optimizing' => [$php, 'artisan', 'optimize:clear'],
+            'Migrating' => array_merge($phpBase, ['artisan', 'migrate', '--force']),
+            'Optimizing' => array_merge($phpBase, ['artisan', 'optimize:clear']),
         ];
 
         foreach ($commands as $step => $cmd) {
@@ -369,37 +389,86 @@ class SystemUpdateController extends Controller
      */
     private function getUpdateInfo()
     {
+        $currentCommit = null;
+        $currentDate = null;
+        $currentBranch = 'main';
+        $behindCount = 0;
+        $isUpToDate = true;
+        $error = null;
+
+        // 1. Try Git first
         try {
-            $currentCommit = $this->runCommand(['git', 'rev-parse', 'HEAD']);
-            $currentDate = $this->runCommand(['git', 'log', '-1', '--format=%cd', '--date=relative']);
-            $currentBranch = $this->runCommand(['git', 'branch', '--show-current']);
-            
-            // Count commits behind core repository
-            $diffCount = $this->runCommand(['git', 'rev-list', '--count', 'HEAD..FETCH_HEAD']);
-
-            // Check for manual update file
-            $localZip = storage_path('app/updates/update.zip');
-
-            return [
-                'current_commit' => trim($currentCommit),
-                'current_date' => trim($currentDate),
-                'current_branch' => trim($currentBranch),
-                'behind_count' => (int)trim($diffCount),
-                'is_up_to_date' => (int)trim($diffCount) === 0,
-                'last_checked' => now()->toDateTimeString(),
-                'local_zip' => [
-                    'exists' => file_exists($localZip),
-                    'size' => file_exists($localZip) ? round(filesize($localZip) / 1024 / 1024, 2) . ' MB' : 0,
-                    'date' => file_exists($localZip) ? date("Y-m-d H:i:s", filemtime($localZip)) : null
-                ]
-            ];
+            $currentCommit = trim($this->runCommand(['git', 'rev-parse', 'HEAD']));
+            $currentDate = trim($this->runCommand(['git', 'log', '-1', '--format=%cd', '--date=relative']));
+            $currentBranch = trim($this->runCommand(['git', 'branch', '--show-current'])) ?: 'main';
         } catch (\Exception $e) {
-            return [
-                'error' => 'Git not available: ' . $e->getMessage(),
-                'is_up_to_date' => true,
-                'local_zip' => ['exists' => false]
-            ];
+            // Git failed (common after ZIP update or on servers without git)
+            // 2. Fallback to .version file
+            if (file_exists(base_path('.version'))) {
+                $vData = json_decode(file_get_contents(base_path('.version')), true);
+                $currentCommit = $vData['commit'] ?? null;
+                $currentDate = ($vData['date'] ?? null) . ' (via update)';
+            } else {
+                $error = 'Version info not available (Git/Version file missing).';
+            }
         }
+
+        // 3. Compare with Remote (API for ZIP, Fetch for Git)
+        try {
+            $remoteSha = $this->getRemoteLatestCommit();
+            if ($remoteSha && $currentCommit) {
+                $isUpToDate = (substr($remoteSha, 0, 7) === substr($currentCommit, 0, 7));
+                $behindCount = $isUpToDate ? 0 : 1; // Simplified count for API-based check
+            }
+        } catch (\Exception $e) {
+            // Update check failed, assume up to date for now
+        }
+
+        // Check for manual update file
+        $localZip = storage_path('app/updates/update.zip');
+
+        return [
+            'current_commit' => $currentCommit ? substr($currentCommit, 0, 7) : 'Unknown',
+            'current_date' => $currentDate ?: 'Unknown',
+            'current_branch' => $currentBranch,
+            'behind_count' => $behindCount,
+            'is_up_to_date' => $isUpToDate,
+            'last_checked' => now()->toDateTimeString(),
+            'error' => $error,
+            'local_zip' => [
+                'exists' => file_exists($localZip),
+                'size' => file_exists($localZip) ? round(filesize($localZip) / 1024 / 1024, 2) . ' MB' : 0,
+                'date' => file_exists($localZip) ? date("Y-m-d H:i:s", filemtime($localZip)) : null
+            ]
+        ];
+    }
+
+    /**
+     * Get the latest commit SHA from the GitHub repository API.
+     */
+    private function getRemoteLatestCommit()
+    {
+        try {
+            $updateUrl = env('SYSTEM_UPDATE_URL', 'https://github.com/romyandre79/kreatifcms');
+            $repo = str_replace(['https://github.com/', '.git'], '', $updateUrl);
+            $apiUrl = "https://api.github.com/repos/{$repo}/commits/main";
+
+            $context = stream_context_create([
+                'http' => [
+                    'header' => "User-Agent: KreatifCMS-Updater\r\n",
+                    'timeout' => 5
+                ]
+            ]);
+
+            $response = @file_get_contents($apiUrl, false, $context);
+            if ($response) {
+                $data = json_decode($response, true);
+                return $data['sha'] ?? null;
+            }
+        } catch (\Exception $e) {
+            Log::warning("GitHub API check failed: " . $e->getMessage());
+        }
+        return null;
     }
 
     /**
@@ -420,19 +489,22 @@ class SystemUpdateController extends Controller
      */
     private function runCommand(array $command)
     {
-        // Optimize Git for Windows threading issues
-        if ($command[0] === 'git' && count($command) > 1) {
-            $optimizedCommand = ['git', '-c', 'core.preloadindex=false', '-c', 'core.fscache=false'];
-            array_shift($command); // Remove 'git'
-            $command = array_merge($optimizedCommand, $command);
-        }
+        // Pass environment variables required by Composer and sub-processes on Windows
+        $env = $_SERVER;
+        $composerHome = storage_path('app/composer_home');
+        if (!is_dir($composerHome)) @mkdir($composerHome, 0755, true);
+        
+        $env['COMPOSER_HOME'] = $composerHome;
+        $env['APPDATA'] = $composerHome;
+        $env['HOME'] = $composerHome;
 
-        $process = new Process($command, base_path());
-        $process->setTimeout(300); // 5 minutes
+        $process = new Process($command, base_path(), $env);
+        $process->setTimeout(600); // Increased to 10 minutes for Composer
         $process->run();
 
         if (!$process->isSuccessful()) {
-            throw new \RuntimeException($process->getErrorOutput() ?: $process->getOutput());
+            $error = $process->getOutput() . "\n" . $process->getErrorOutput();
+            throw new \RuntimeException($error);
         }
 
         return $process->getOutput();
@@ -441,35 +513,28 @@ class SystemUpdateController extends Controller
     /**
      * Get the absolute path to the composer binary.
      */
-    private function getComposerBinary()
+    private function getComposerBinary(array $phpBase = [])
     {
+        if (empty($phpBase)) {
+            $php = PHP_BINARY;
+            $ini = php_ini_loaded_file();
+            $tempDir = storage_path('app/temp');
+            if (!is_dir($tempDir)) @mkdir($tempDir, 0755, true);
+            $phpBase = array_merge([$php], ($ini ? ['-c', $ini] : []), ["-d", "sys_temp_dir=$tempDir"]);
+        }
+
         // 1. Check for composer.phar in root
         if (file_exists(base_path('composer.phar'))) {
-            return [PHP_BINARY, base_path('composer.phar')];
+            return array_merge($phpBase, [base_path('composer.phar')]);
         }
 
-        // 2. Seek global composer via 'where' on Windows or 'which' on Unix
-        $command = PHP_OS_FAMILY === 'Windows' ? 'where composer' : 'which composer';
-        $path = @shell_exec($command);
-        
-        if ($path) {
-            $fullPath = trim(explode("\n", $path)[0]);
-            if (file_exists($fullPath)) {
-                return [$fullPath];
-            }
+        // 2. Look for composer.phar near the composer.bat we found earlier
+        $commonWindowsPath = 'C:\lara\bin\composer\composer.phar';
+        if (file_exists($commonWindowsPath)) {
+            return array_merge($phpBase, [$commonWindowsPath]);
         }
 
-        // 3. Common Windows paths if 'where' fails (common in web server contexts)
-        $commonPaths = [
-            'C:\ProgramData\ComposerSetup\bin\composer.bat',
-            'C:\lara\bin\composer\composer.bat',
-            'C:\bin\composer.bat'
-        ];
-        foreach ($commonPaths as $cp) {
-            if (file_exists($cp)) return [$cp];
-        }
-
-        // 4. Final fallback
+        // 3. Fallback to just 'composer' if all else fails
         return ['composer'];
     }
 }
