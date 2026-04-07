@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('pages', function (Blueprint $table) {
-            $table->foreignId('layout_id')->nullable()->constrained('layouts')->onDelete('set null');
-        });
+        if (!Schema::hasColumn('pages', 'layout_id')) {
+            Schema::table('pages', function (Blueprint $table) {
+                $table->foreignId('layout_id')->nullable()->constrained('layouts')->onDelete('set null');
+            });
+        }
     }
 
     /**
