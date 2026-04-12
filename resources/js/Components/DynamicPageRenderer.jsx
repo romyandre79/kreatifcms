@@ -16,6 +16,8 @@ const MegaMenuBlock = lazy(() => import('./Blocks/MegaMenuBlock'));
 const VideoBlock = lazy(() => import('./Blocks/VideoBlock'));
 const VideoGridBlock = lazy(() => import('./Blocks/VideoGridBlock'));
 const PhotoGridBlock = lazy(() => import('./Blocks/PhotoGridBlock'));
+const DataGridBlock = lazy(() => import('./Blocks/DataGridBlock'));
+
 
 
 
@@ -33,8 +35,10 @@ const BlockComponents = {
     megamenu: MegaMenuBlock,
     video: VideoBlock,
     video_grid: VideoGridBlock,
-    photogrid: PhotoGridBlock
+    photogrid: PhotoGridBlock,
+    datagrid: DataGridBlock
 };
+
 
 
 

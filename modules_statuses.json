@@ -32,5 +32,6 @@
     "VideoBlock": true,
     "VideoGrid": true,
     "Brevo": true,
-    "PhotoGrid": true
+    "PhotoGrid": true,
+    "DataGrid": true
 }

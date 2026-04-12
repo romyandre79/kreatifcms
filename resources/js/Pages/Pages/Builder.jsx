@@ -32,7 +32,8 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [] }) {
+export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [], dataGrids = [] }) {
+
     const { plugins = [] } = usePage().props;
     const isContentTypeEnabled = plugins.some(p => p.alias === 'contenttype' && p.enabled !== false);
     const blockPlugins = plugins.filter(p => p.type === 'block');
@@ -457,7 +458,22 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     paid_message: 'paid_message'
                 }
             };
+        } else if (type === 'datagrid') {
+            newBlock.data = {
+                content_type: '',
+                columns: [],
+                buttons: [],
+                title: 'Data Table',
+                subtitle: 'Manage and explore data with ease.',
+                bg_color: '#ffffff',
+                title_color: '#111827',
+                align: 'left',
+                per_page: 15,
+                server_side: true
+            };
         }
+
+
 
 
         setBlocks([...blocks, newBlock]);
@@ -1362,7 +1378,169 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     </div>
                 );
             }
+            case 'datagrid': {
+                const currentContentType = contentTypes.find(ct => ct.slug === data.content_type);
+                
+                const handleToggleColumn = (field) => {
+                    const existing = data.columns || [];
+                    const isVisible = existing.some(c => c.key === field.name);
+                    let newColumns;
+                    if (isVisible) {
+                        newColumns = existing.filter(c => c.key !== field.name);
+                    } else {
+                        newColumns = [...existing, { key: field.name, label: field.name, visible: true }];
+                    }
+                    updateBlockData(block.id, 'columns', newColumns);
+                };
+
+                const handleUpdateColumnLabel = (key, label) => {
+                    const newColumns = (data.columns || []).map(c => c.key === key ? { ...c, label } : c);
+                    updateBlockData(block.id, 'columns', newColumns);
+                };
+
+                return (
+                    <div className="space-y-6">
+                        {renderHeaderConfig(block)}
+                        
+                        <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-4">
+                            <div>
+                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Data Source</label>
+                                <select 
+                                    value={data.content_type || ''} 
+                                    onChange={e => {
+                                        const value = e.target.value;
+                                        const ct = contentTypes.find(c => c.slug === value);
+                                        const newData = { ...data, content_type: value };
+                                        if (ct && (!data.columns || data.columns.length === 0)) {
+                                            newData.columns = (ct.fields || []).slice(0, 5).map(f => ({ key: f.name, label: f.name, visible: true }));
+                                        }
+                                        setBlocks(prevBlocks => prevBlocks.map(b => {
+                                            if (b.id === block.id) return { ...b, data: newData };
+                                            return b;
+                                        }));
+                                    }}
+                                    className="w-full text-xs border-gray-200 rounded-lg bg-white h-9 px-3 focus:ring-indigo-500"
+                                >
+                                    <option value="">-- Select Content Type --</option>
+                                    {(contentTypes || []).map(ct => (
+                                        <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {data.content_type && (
+                                <div className="space-y-4 pt-4 border-t border-gray-100">
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Columns Management</label>
+                                    <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
+                                        {(currentContentType?.fields || []).map(field => {
+                                            const col = (data.columns || []).find(c => c.key === field.name);
+                                            const EyeIcon = LucideIcons?.Eye || (() => null);
+                                            const EyeOffIcon = LucideIcons?.EyeOff || (() => null);
+
+                                            return (
+                                                <div key={field.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
+                                                    <button 
+                                                        onClick={() => handleToggleColumn(field)}
+                                                        className={`p-1 rounded ${col ? 'text-indigo-600 bg-indigo-50' : 'text-gray-300 bg-gray-50'}`}
+                                                    >
+                                                        {col ? <EyeIcon size={14} /> : <EyeOffIcon size={14} />}
+                                                    </button>
+                                                    <div className="flex-1">
+                                                        {col ? (
+                                                            <input 
+                                                                type="text" 
+                                                                value={col.label} 
+                                                                onChange={e => handleUpdateColumnLabel(field.name, e.target.value)}
+                                                                className="w-full text-[11px] border-none p-0 focus:ring-0 font-medium"
+                                                                placeholder={field.name}
+                                                            />
+                                                        ) : (
+                                                            <span className="text-[11px] text-gray-400 italic">{field.name}</span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-[9px] text-gray-300 font-mono uppercase">{field.type}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+
+                                    <div className="pt-4 border-t border-gray-100">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Actions / Buttons</label>
+                                        <div className="space-y-2">
+                                            {(data.buttons || []).map((btn, idx) => (
+                                                <div key={idx} className="p-3 bg-white rounded-xl border border-gray-100 shadow-sm space-y-2">
+                                                    <div className="flex items-center justify-between">
+                                                        <input 
+                                                            type="text" 
+                                                            value={btn.label} 
+                                                            onChange={e => {
+                                                                const newBtns = [...data.buttons];
+                                                                newBtns[idx].label = e.target.value;
+                                                                updateBlockData(block.id, 'buttons', newBtns);
+                                                            }}
+                                                            className="text-xs font-bold border-none p-0 focus:ring-0 w-2/3"
+                                                            placeholder="Button Label"
+                                                        />
+                                                        <button 
+                                                            onClick={() => {
+                                                                const newBtns = (data.buttons || []).filter((_, i) => i !== idx);
+                                                                updateBlockData(block.id, 'buttons', newBtns);
+                                                            }}
+                                                            className="text-red-400 hover:text-red-600"
+                                                        >
+                                                            <LucideIcons.Trash2 size={14} />
+                                                        </button>
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-2">
+                                                        <input 
+                                                            type="text" 
+                                                            value={btn.action_id || ''} 
+                                                            onChange={e => {
+                                                                const newBtns = [...data.buttons];
+                                                                newBtns[idx].action_id = e.target.value;
+                                                                updateBlockData(block.id, 'buttons', newBtns);
+                                                            }}
+                                                            className="text-[10px] border-gray-100 rounded bg-gray-50 h-7"
+                                                            placeholder="Action ID (e.g. edit)"
+                                                        />
+                                                        <select
+                                                            value={btn.variant || 'indigo'}
+                                                            onChange={e => {
+                                                                const newBtns = [...data.buttons];
+                                                                newBtns[idx].variant = e.target.value;
+                                                                updateBlockData(block.id, 'buttons', newBtns);
+                                                            }}
+                                                            className="text-[10px] border-gray-100 rounded bg-gray-50 h-7"
+                                                        >
+                                                            <option value="indigo">Indigo</option>
+                                                            <option value="red">Red</option>
+                                                            <option value="emerald">Emerald</option>
+                                                            <option value="amber">Amber</option>
+                                                        </select>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                            <button 
+                                                onClick={() => {
+                                                    const newBtns = [...(data.buttons || []), { label: 'New Action', action_id: 'view', variant: 'indigo' }];
+                                                    updateBlockData(block.id, 'buttons', newBtns);
+                                                }}
+                                                className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-[10px] font-bold text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-all flex items-center justify-center gap-2"
+                                            >
+                                                <LucideIcons.Plus size={12} /> Add Custom Button
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            }
+
+
             case 'text': {
+
                 const isSummernoteEnabled = plugins.some(p => p.alias === 'editorsummernote' && p.enabled !== false);
                 return (
                     <div className="space-y-6">
