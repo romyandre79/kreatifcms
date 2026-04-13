@@ -1,12 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
     Layout, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronUp, ChevronDown, ChevronRight, X,
     Monitor, LayoutTemplate, Bold, Italic, Link as LinkIcon, List, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette,
-    Menu, Globe
+    Menu, Globe, Download, Upload
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
@@ -188,6 +188,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
     const [activeDragId, setActiveDragId] = useState(null);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
     const [saving, setSaving] = useState(false);
+    const fileInputRef = useRef(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -562,6 +563,57 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
     const removeBlock = (id) => {
         setBlocks(blocks.filter(b => b.id !== id));
         if (activeBlockId === id) setActiveBlockId(null);
+    };
+
+    const handleExport = () => {
+        const exportData = {
+            title,
+            slug,
+            blocks,
+            meta_title: metaTitle,
+            meta_description: metaDescription,
+            meta_keywords: metaKeywords,
+            og_image: ogImage,
+            layout_id: layoutId
+        };
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `layout-${slug || 'page'}-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImport = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                if (importedData.blocks) setBlocks(ensureIds(importedData.blocks));
+                if (importedData.title) setTitle(importedData.title);
+                if (importedData.slug) setSlug(importedData.slug);
+                if (importedData.meta_title !== undefined) setMetaTitle(importedData.meta_title);
+                if (importedData.meta_description !== undefined) setMetaDescription(importedData.meta_description);
+                if (importedData.meta_keywords !== undefined) setMetaKeywords(importedData.meta_keywords);
+                if (importedData.og_image !== undefined) setOgImage(importedData.og_image);
+                if (importedData.layout_id !== undefined) setLayoutId(importedData.layout_id || '');
+
+                alert('Layout imported successfully!');
+            } catch (err) {
+                console.error('Import error:', err);
+                alert('Failed to import layout. Please ensure the file is a valid JSON exported from this editor.');
+            }
+        };
+        reader.readAsText(file);
+        // Reset input value to allow re-importing the same file
+        event.target.value = '';
     };
 
 
@@ -4066,7 +4118,32 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         )}
                     </div>
 
-                    <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                    <div className="p-4 border-t border-gray-100 bg-gray-50/50 space-y-3">
+                        <div className="flex gap-2">
+                            <button
+                                onClick={handleExport}
+                                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                                title="Export current layout to JSON"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                Export
+                            </button>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                                title="Import layout from JSON"
+                            >
+                                <Upload className="w-3.5 h-3.5" />
+                                Import
+                            </button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleImport} 
+                                accept=".json" 
+                                className="hidden" 
+                            />
+                        </div>
                         <button
                             onClick={handleSave}
                             disabled={saving}

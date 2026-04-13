@@ -75,7 +75,7 @@ export default function Dashboard({ auth, campaigns, inboundEmails, account, ema
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                     {stats.map((stat, i) => (
                         <div key={i} className="bg-white overflow-hidden shadow-sm sm:rounded-lg p-6 border border-gray-100">
-                            <div className="flex items-center justify-between">
+                            <div className="flex items-center justify-between gap-7">
                                 <div>
                                     <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{stat.label}</p>
                                     <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>

@@ -24,9 +24,40 @@ export default function FormBlock({ data, contentTypes = [] }) {
 
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
+    const [isFetching, setIsFetching] = useState(false);
     const [error, setError] = useState(null);
     const [formData, setFormData] = useState({});
     const [isOpen, setIsOpen] = useState(false);
+
+    // Fetch full record data when an ID is available (Synched or Session)
+    React.useEffect(() => {
+        const entryId = formData.id || formData.ID; // Handle casing
+        if (!entryId || !contentTypeSlug || mode !== 'dynamic') return;
+
+        // Skip if we already have many fields (heuristic: more than just metadata)
+        // Or we could always fetch to be sure we have the latest/complete data
+        const rowKeys = Object.keys(formData).filter(k => !k.startsWith('_'));
+        if (rowKeys.length > 5) return; // If more than 5 fields, assume it's already "detailed enough" (optional)
+
+        const fetchFullData = async () => {
+            setIsFetching(true);
+            try {
+                // Using the new route we just added: /content/{slug}/{id}/data
+                const response = await axios.get(`/content/${contentTypeSlug}/${entryId}/data`);
+                if (response.data) {
+                    setFormData(prev => ({ ...prev, ...response.data }));
+                }
+            } catch (err) {
+                console.error('[FormBlock] Failed to fetch detailed data:', err);
+                // Optionally show error or just fallback to what we have
+            } finally {
+                setIsFetching(false);
+            }
+        };
+
+        fetchFullData();
+    }, [formData.id, formData.ID, contentTypeSlug, mode]);
+
 
     // Cross-page data pre-filling (e.g. from sessionStorage after redirect)
     React.useEffect(() => {
@@ -155,7 +186,15 @@ export default function FormBlock({ data, contentTypes = [] }) {
     const alignmentClass = align === 'center' ? 'text-center mx-auto' : (align === 'right' ? 'text-right ml-auto' : 'text-left');
 
     const formContent = (
-        <div className={`py-12 px-6 ${display_mode === 'modal' ? '' : 'max-w-2xl'} ${alignmentClass}`}>
+        <div className={`py-12 px-6 ${display_mode === 'modal' ? '' : 'max-w-2xl'} ${alignmentClass} relative`}>
+            {isFetching && (
+                <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1px] flex items-center justify-center rounded-3xl animate-in fade-in duration-200">
+                    <div className="flex flex-col items-center gap-2">
+                        <div className="w-8 h-8 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
+                        <span className="text-xs font-bold text-indigo-600 uppercase tracking-widest">Fetching Details...</span>
+                    </div>
+                </div>
+            )}
             {(title || description) && (
                 <div className="mb-8">
                     {title && <h2 className="text-3xl font-extrabold text-gray-900 mb-2">{title}</h2>}
