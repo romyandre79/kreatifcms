@@ -3,6 +3,7 @@ import Dropdown from '@/Components/Dropdown';
 import { Link, usePage } from '@inertiajs/react';
 import { useState } from 'react';
 import {
+    Grid,
     LayoutDashboard,
     Layout,
     Database,
@@ -25,6 +26,7 @@ import {
     Globe,
     Send
 } from 'lucide-react';
+
 import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
 
 export default function AuthenticatedLayout({ header, children }) {

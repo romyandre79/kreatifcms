@@ -70,8 +70,10 @@
             "Modules\\VideoBlock\\": "Modules/VideoBlock/app/",
             "Modules\\VideoGrid\\": "Modules/VideoGrid/app/",
             "Modules\\Brevo\\": "Modules/Brevo/app/",
-            "Modules\\PhotoGrid\\": "Modules/PhotoGrid/app/"
+            "Modules\\PhotoGrid\\": "Modules/PhotoGrid/app/",
+            "Modules\\DataGrid\\": "Modules/DataGrid/app/"
         }
+
     },
     "autoload-dev": {
         "psr-4": {

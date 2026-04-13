@@ -27,6 +27,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::get('/{slug}', [ContentEntryController::class, 'index'])->name('index');
         Route::get('/{slug}/create', [ContentEntryController::class, 'create'])->name('create');
         Route::post('/{slug}', [ContentEntryController::class, 'store'])->name('store');
+        Route::get('/{slug}/{id}/data', [ContentEntryController::class, 'show'])->name('data');
         Route::get('/{slug}/{id}/edit', [ContentEntryController::class, 'edit'])->name('edit');
         Route::put('/{slug}/{id}', [ContentEntryController::class, 'update'])->name('update');
         Route::get('/{slug}/{id}/history', [ContentEntryController::class, 'history'])->name('history');

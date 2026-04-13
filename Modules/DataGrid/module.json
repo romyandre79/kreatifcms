@@ -1,0 +1,19 @@
+{
+    "name": "DataGrid",
+    "alias": "datagrid",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\DataGrid\\Providers\\DataGridServiceProvider"
+    ],
+    "files": [],
+    "plugin_type": "block",
+    "block_meta": {
+        "id": "datagrid",
+        "name": "Advanced DataGrid",
+        "icon": "LayoutGrid",
+        "desc": "Display an advanced interactive datagrid on your pages."
+    }
+}
+

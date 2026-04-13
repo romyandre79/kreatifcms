@@ -58,9 +58,14 @@ class PageController extends Controller
             'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
                 ? \Modules\ContentType\Models\ContentType::with('fields')->get()
                 : [],
+            'dataGrids' => (class_exists('Modules\DataGrid\Models\DataGrid') && \Nwidart\Modules\Facades\Module::isEnabled('DataGrid'))
+                ? \Modules\DataGrid\Models\DataGrid::all()
+                : [],
             'layout' => $this->getPageLayout($page, $schemaService),
-            'layouts' => Layout::select('id', 'name', 'is_default')->get()
+            'layouts' => Layout::select('id', 'name', 'is_default')->get(),
+            'availableRoles' => \App\Models\Role::select('id', 'name')->get()
         ]);
+
     }
 
     private function getPageLayout($page, $schemaService)

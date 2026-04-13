@@ -1,12 +1,12 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useRef } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
     Plus, Save, ArrowLeft, Trash2, GripVertical, ChevronUp, ChevronDown, ChevronRight, X,
     Monitor, LayoutTemplate, Bold, Italic, Link as LinkIcon, List, Heading1, Heading2, AlignLeft, AlignCenter, AlignRight, Palette,
-    Menu, Globe, Code, Settings, Shield, Users, ShieldCheck, Upload, Loader2
+    Menu, Globe, Code, Settings, Shield, Users, ShieldCheck, Upload, Loader2, Download
 } from 'lucide-react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
@@ -140,6 +140,7 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
     const [activeBlockId, setActiveBlockId] = useState(null);
     const [showBlockMenu, setShowBlockMenu] = useState(false);
     const [saving, setSaving] = useState(false);
+    const fileInputRef = useRef(null);
 
     const sensors = useSensors(
         useSensor(PointerSensor, {
@@ -404,6 +405,77 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
     const removeBlock = (id) => {
         setBlocks(blocks.filter(b => b.id !== id));
         if (activeBlockId === id) setActiveBlockId(null);
+    };
+
+    const handleExport = () => {
+        // Final sync of current blocks before exporting
+        let finalHeader = headerData;
+        let finalFooter = footerData;
+        if (activeTab === 'header') finalHeader = blocks;
+        if (activeTab === 'footer') finalFooter = blocks;
+
+        const exportData = {
+            name: layoutName,
+            header_blocks: finalHeader,
+            footer_blocks: finalFooter,
+            theme_data: theme,
+            access_type: accessType,
+            roles: selectedRoles,
+            is_default: isDefault
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `layout-${layoutName.replace(/\s+/g, '-').toLowerCase()}-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleImport = (event) => {
+        const file = event.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedData = JSON.parse(e.target.result);
+                
+                if (importedData.header_blocks) {
+                    const hBlocks = ensureIds(importedData.header_blocks);
+                    setHeaderData(hBlocks);
+                    // If we're on header tab, update current blocks too
+                    if (activeTab === 'header') setBlocks(hBlocks);
+                }
+                if (importedData.footer_blocks) {
+                    const fBlocks = ensureIds(importedData.footer_blocks);
+                    setFooterData(fBlocks);
+                    // If we're on footer tab, update current blocks too
+                    if (activeTab === 'footer') setBlocks(fBlocks);
+                }
+                if (importedData.theme_data) setTheme(importedData.theme_data);
+                if (importedData.name) setLayoutName(importedData.name);
+                if (importedData.access_type) setAccessType(importedData.access_type);
+                if (importedData.roles) setSelectedRoles(importedData.roles);
+                if (importedData.is_default !== undefined) setIsDefault(importedData.is_default);
+
+                // Auto switch to header tab if blocks were imported
+                if (importedData.header_blocks) {
+                    setActiveTab('header');
+                    setBlocks(ensureIds(importedData.header_blocks));
+                }
+
+                alert('Layout configuration imported successfully!');
+            } catch (err) {
+                console.error('Import error:', err);
+                alert('Failed to import layout. Please ensure the file is a valid JSON exported from this editor.');
+            }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
     };
 
 
@@ -2435,7 +2507,32 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
                         )}
                     </div>
 
-                    <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+                    <div className="p-4 border-t border-gray-100 bg-gray-50/50 space-y-3">
+                        <div className="flex gap-2">
+                             <button
+                                onClick={handleExport}
+                                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                                title="Export layout config"
+                            >
+                                <Download className="w-3.5 h-3.5" />
+                                Export
+                            </button>
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                className="flex-1 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl text-xs font-bold hover:bg-gray-50 flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                                title="Import layout config"
+                            >
+                                <Upload className="w-3.5 h-3.5" />
+                                Import
+                            </button>
+                            <input 
+                                type="file" 
+                                ref={fileInputRef} 
+                                onChange={handleImport} 
+                                accept=".json" 
+                                className="hidden" 
+                            />
+                        </div>
                         <button
                             onClick={handleSave}
                             disabled={saving}

@@ -3,8 +3,8 @@
 namespace Modules\FormBlock\Http\Controllers;
 
 use App\Http\Controllers\Controller;
-use App\Models\ContentType;
-use App\Http\Controllers\ContentEntryController;
+use Modules\ContentType\Models\ContentType;
+use Modules\ContentType\Http\Controllers\ContentEntryController;
 use App\Services\SchemaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;

@@ -113,6 +113,17 @@ function SortableField({ field, onRemove, onUpdate, isNew, allContentTypes }) {
                                         className="block w-24 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
                                     />
                                 )}
+                                {field.type === 'integer' && (
+                                    <input
+                                        type="number"
+                                        placeholder="Decimals (e.g. 2)"
+                                        value={field.options?.decimals || 0}
+                                        onChange={(e) => onUpdate(field.id, { options: { ...field.options, decimals: e.target.value } })}
+                                        className="block w-24 rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+                                        min="0"
+                                        max="10"
+                                    />
+                                )}
                                 <input
                                     type="text"
                                     placeholder="Describe this field..."
