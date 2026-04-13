@@ -12,7 +12,10 @@ import {
     Shield, 
     Eye, 
     EyeOff,
-    Search
+    Search,
+    AlignLeft,
+    AlignCenter,
+    AlignRight
 } from 'lucide-react';
 import TextInput from '@/Components/TextInput';
 import InputLabel from '@/Components/InputLabel';
@@ -75,6 +78,18 @@ export default function Editor({ dataGrid, contentTypes, roles }) {
         setData('settings', { ...data.settings, columns: newCols });
     };
 
+    const updateColumnSummaryType = (index, type) => {
+        const newCols = [...data.settings.columns];
+        newCols[index].summary_type = type;
+        setData('settings', { ...data.settings, columns: newCols });
+    };
+
+    const updateColumnAlignment = (index, align) => {
+        const newCols = [...data.settings.columns];
+        newCols[index].align = align;
+        setData('settings', { ...data.settings, columns: newCols });
+    };
+
     const addButton = () => {
         const newButtons = [...data.buttons, { 
             label: 'New Action', 
@@ -129,7 +144,7 @@ export default function Editor({ dataGrid, contentTypes, roles }) {
                             <Settings className="w-5 h-5 mr-3 text-indigo-500" />
                             General Information
                         </h3>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             <div>
                                 <InputLabel htmlFor="name" value="Grid Name" />
                                 <TextInput
@@ -151,6 +166,26 @@ export default function Editor({ dataGrid, contentTypes, roles }) {
                                     placeholder="e.g., sales-table"
                                 />
                                 <InputError message={errors.slug} className="mt-2" />
+                            </div>
+                            <div>
+                                <InputLabel htmlFor="icon" value="Grid Icon (Lucide Name)" />
+                                <TextInput
+                                    id="icon"
+                                    className="mt-1 block w-full font-mono text-xs"
+                                    value={data.settings.icon || ''}
+                                    onChange={(e) => setData('settings', { ...data.settings, icon: e.target.value })}
+                                    placeholder="e.g., Users, LayoutGrid, Package"
+                                />
+                            </div>
+                            <div>
+                                <InputLabel htmlFor="footer_text" value="Records Found Label" />
+                                <TextInput
+                                    id="footer_text"
+                                    className="mt-1 block w-full"
+                                    value={data.settings.footer_text || ''}
+                                    onChange={(e) => setData('settings', { ...data.settings, footer_text: e.target.value })}
+                                    placeholder="e.g., Records Found, Items Total"
+                                />
                             </div>
                             <div>
                                 <InputLabel htmlFor="content_type_id" value="Source Content Type" />
@@ -186,6 +221,8 @@ export default function Editor({ dataGrid, contentTypes, roles }) {
                                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Display Label</th>
                                             <th className="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Visible</th>
                                             <th className="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Type</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Summary</th>
+                                            <th className="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Align</th>
                                         </tr>
                                     </thead>
                                     <tbody className="bg-white divide-y divide-gray-100">
@@ -209,6 +246,38 @@ export default function Editor({ dataGrid, contentTypes, roles }) {
                                                     </button>
                                                 </td>
                                                 <td className="px-6 py-4 text-xs font-bold text-gray-400 uppercase tracking-widest">{col.type}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <select
+                                                        className="w-full text-sm border-gray-300 rounded-md shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                                        value={col.summary_type || 'none'}
+                                                        onChange={(e) => updateColumnSummaryType(idx, e.target.value)}
+                                                    >
+                                                        <option value="none">None</option>
+                                                        <option value="sum">Sum</option>
+                                                        <option value="avg">Avg</option>
+                                                        <option value="count">Count</option>
+                                                        <option value="min">Min</option>
+                                                        <option value="max">Max</option>
+                                                    </select>
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <div className="flex items-center gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+                                                        {[
+                                                            { val: 'left', icon: AlignLeft },
+                                                            { val: 'center', icon: AlignCenter },
+                                                            { val: 'right', icon: AlignRight },
+                                                        ].map(opt => (
+                                                            <button
+                                                                key={opt.val}
+                                                                type="button"
+                                                                onClick={() => updateColumnAlignment(idx, opt.val)}
+                                                                className={`p-1.5 rounded-md transition-all ${(!col.align && opt.val === 'left') || col.align === opt.val ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                                            >
+                                                                <opt.icon size={14} />
+                                                            </button>
+                                                        ))}
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                     </tbody>

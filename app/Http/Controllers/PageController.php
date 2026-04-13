@@ -62,7 +62,8 @@ class PageController extends Controller
                 ? \Modules\DataGrid\Models\DataGrid::all()
                 : [],
             'layout' => $this->getPageLayout($page, $schemaService),
-            'layouts' => Layout::select('id', 'name', 'is_default')->get()
+            'layouts' => Layout::select('id', 'name', 'is_default')->get(),
+            'availableRoles' => \App\Models\Role::select('id', 'name')->get()
         ]);
 
     }

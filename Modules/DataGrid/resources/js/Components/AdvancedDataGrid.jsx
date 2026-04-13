@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { usePage } from '@inertiajs/react';
 import { 
     DndContext, 
     closestCenter,
@@ -7,6 +8,7 @@ import {
     useSensor,
     useSensors,
     DragOverlay,
+    rectIntersection,
     defaultDropAnimationSideEffects
 } from '@dnd-kit/core';
 import {
@@ -33,8 +35,38 @@ import {
     Layers,
     FileSpreadsheet,
     Printer,
-    Download
+    Download,
+    Zap,
+    Square,
+    CheckSquare,
+    Trash2,
+    Info,
+    Users,
+    BarChart,
+    ClipboardList,
+    Package,
+    Home,
+    Globe,
+    Shield,
+    Activity,
+    Database,
+    Tag,
+    Briefcase
 } from 'lucide-react';
+
+const iconMap = {
+    GripVertical, ChevronDown, ChevronRight, ArrowUp, ArrowDown, 
+    Settings, Columns, LayoutGrid, FileJson, Loader2, X, Layers, 
+    FileSpreadsheet, Printer, Download, Zap, Square, CheckSquare, 
+    Trash2, Info, Users, BarChart, ClipboardList, Package, Home, 
+    Globe, Shield, Activity, Database, Tag, Briefcase
+};
+
+const DynamicIcon = ({ name, ...props }) => {
+    const Icon = iconMap[name] || LayoutGrid;
+    return <Icon {...props} />;
+};
+
 
 import axios from 'axios';
 
@@ -44,7 +76,7 @@ import {
 
 
 // --- Sortable Column Header Component ---
-const SortableHeader = ({ id, label, isSorted, sortDesc, onSort, isGrouped, width, onResize }) => {
+const SortableHeader = ({ id, label, isSorted, sortDesc, onSort, isGrouped, width, onResize, align = 'left' }) => {
     const {
         attributes,
         listeners,
@@ -67,9 +99,9 @@ const SortableHeader = ({ id, label, isSorted, sortDesc, onSort, isGrouped, widt
         <th
             ref={setNodeRef}
             style={style}
-            className={`px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 relative group select-none ${isGrouped ? 'opacity-0 w-0 p-0 overflow-hidden' : ''}`}
+            className={`px-6 py-3 ${align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left'} text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200 relative group select-none ${isGrouped ? 'opacity-0 w-0 p-0 overflow-hidden' : ''}`}
         >
-            <div className="flex items-center space-x-2">
+            <div className={`flex items-center space-x-2 ${align === 'right' ? 'justify-end' : align === 'center' ? 'justify-center' : ''}`}>
                 <div {...attributes} {...listeners} className="cursor-grab active:cursor-grabbing text-gray-300 hover:text-gray-600 transition-colors">
                     <GripVertical className="w-4 h-4" />
                 </div>
@@ -97,10 +129,39 @@ const SortableHeader = ({ id, label, isSorted, sortDesc, onSort, isGrouped, widt
 
 
 // --- Droppable Grouping Zone ---
-const GroupingZone = ({ groupBy, onRemove, config }) => {
+const GroupingZone = ({ groupBy, onRemove, config, compact = false }) => {
     const { setNodeRef, isOver } = useDroppable({
         id: 'grouping-zone',
     });
+
+    if (compact) {
+        return (
+            <div 
+                ref={setNodeRef}
+                className={`flex items-center gap-3 px-6 py-2.5 rounded-2xl transition-all duration-200 border-2 border-dashed w-full min-h-[52px] ${isOver ? 'bg-indigo-50 border-indigo-400 ring-4 ring-indigo-50' : 'bg-gray-50/50 border-gray-200 hover:border-indigo-200 hover:bg-white'}`}
+            >
+                <div className="flex items-center gap-1.5 shrink-0">
+                    <Layers className={`w-3.5 h-3.5 ${isOver ? 'text-indigo-500' : 'text-gray-400'}`} />
+                </div>
+                
+                <div className="flex flex-wrap gap-1.5 items-center">
+                    {groupBy.length > 0 ? groupBy.map(f => {
+                        const colDef = (config.columns || config.settings?.columns || []).find(c => (c.key === f || c.field === f));
+                        return (
+                            <span key={f} className="inline-flex items-center px-2 py-0.5 rounded-lg text-[9px] font-black bg-white text-indigo-700 border border-indigo-100 shadow-sm">
+                                {colDef?.label || f}
+                                <X className="w-2.5 h-2.5 ml-1.5 cursor-pointer hover:text-red-500 transition-colors" onClick={() => onRemove(f)} />
+                            </span>
+                        );
+                    }) : (
+                        <span className={`text-[10px] uppercase tracking-widest font-bold transition-colors ${isOver ? 'text-indigo-400' : 'text-gray-300'}`}>
+                            {isOver ? 'Drop!' : 'Grouping'}
+                        </span>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div 
@@ -136,10 +197,19 @@ const GroupingZone = ({ groupBy, onRemove, config }) => {
 // --- Advanced DataGrid Component ---
 export default function AdvancedDataGrid({ 
     slug, 
-    config, 
+    config: initialConfig = {}, 
     initialData = [],
     onAction = null 
 }) {
+    const { auth } = usePage().props;
+    const userRoles = auth?.user?.roles?.map(r => r.name) || [];
+    const config = initialConfig;
+
+    const checkPermission = (btn) => {
+        if (!btn.allowed_roles || btn.allowed_roles.length === 0) return true;
+        return btn.allowed_roles.some(role => userRoles.includes(role));
+    };
+
     const [data, setData] = useState(initialData);
     const [loading, setLoading] = useState(!initialData.length);
     const [columns, setColumns] = useState([]);
@@ -152,6 +222,8 @@ export default function AdvancedDataGrid({
     const [page, setPage] = useState(1);
     const [perPage, setPerPage] = useState(15);
     const [total, setTotal] = useState(0);
+    const [selectedIds, setSelectedIds] = useState([]);
+    const [activeId, setActiveId] = useState(null);
 
     const [showVisibilityMenu, setShowVisibilityMenu] = useState(false);
     const [showSettingsMenu, setShowSettingsMenu] = useState(false);
@@ -249,8 +321,13 @@ export default function AdvancedDataGrid({
         useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
     );
 
+    const handleDragStart = (event) => {
+        setActiveId(event.active.id);
+    };
+
     const handleDragEnd = (event) => {
         const { active, over } = event;
+        setActiveId(null);
         if (!over) return;
 
         if (over.id === 'grouping-zone') {
@@ -297,6 +374,104 @@ export default function AdvancedDataGrid({
         document.addEventListener('mouseup', onMouseUp);
     };
 
+    const handleRowClick = (item, actionId = null, btn = null) => {
+        if (!config.broadcastClicks && !actionId) return;
+        
+        const event = new CustomEvent('kreatifcms:row-selected', { 
+            detail: { 
+                ...item, 
+                action_id: actionId,
+                action_label: btn?.label || null,
+                target_display_mode: btn?.target_display_mode || null,
+                content_type: config.content_type 
+            } 
+        });
+        window.dispatchEvent(event);
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedIds.length === data.length) {
+            setSelectedIds([]);
+        } else {
+            setSelectedIds(data.map(item => item.id));
+        }
+    };
+
+    const toggleSelectRow = (id) => {
+        setSelectedIds(prev => 
+            prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
+        );
+    };
+
+    const handleDeleteSelected = () => {
+        if (!window.confirm(`Are you sure you want to delete ${selectedIds.length} items?`)) return;
+        
+        // Placeholder for bulk delete - can be extended later with a specific endpoint
+        axios.post(route('datagrids.action.bulk', slug), { 
+            action: 'delete',
+            ids: selectedIds 
+        })
+        .then(res => {
+            if (res.data.success) {
+                setSelectedIds([]);
+                fetchData();
+            }
+        })
+        .catch(err => alert(err.response?.data?.error || "Bulk action failed"));
+    };
+
+
+
+    // --- Aggregation Logic ---
+    const calculateSummaries = (items) => {
+        const results = {};
+        const cols = config.columns || config.settings?.columns || [];
+        
+        cols.forEach(col => {
+            const type = col.summary_type;
+            if (!type || type === 'none') return;
+            
+            const key = col.key || col.field;
+            const values = items.map(item => {
+                const val = item[key];
+                return typeof val === 'number' ? val : parseFloat(val);
+            }).filter(v => !isNaN(v));
+            
+            if (values.length === 0 && type !== 'count') return;
+            
+            let result = 0;
+            switch (type) {
+                case 'sum':
+                    result = values.reduce((a, b) => a + b, 0);
+                    break;
+                case 'avg':
+                    result = values.reduce((a, b) => a + b, 0) / values.length;
+                    break;
+                case 'min':
+                    result = Math.min(...values);
+                    break;
+                case 'max':
+                    result = Math.max(...values);
+                    break;
+                case 'count':
+                    result = items.length;
+                    break;
+            }
+            
+            // Format result with thousand separators and precision
+            const colDef = cols.find(c => c.key === key || c.field === key);
+            const decimals = parseInt(colDef?.decimals || 0);
+            
+            results[key] = {
+                type,
+                value: typeof result === 'number' ? result.toLocaleString(undefined, {
+                    minimumFractionDigits: decimals,
+                    maximumFractionDigits: decimals
+                }) : result
+            };
+        });
+        return results;
+    };
 
     // --- Grouping Logic (Recursive) ---
     const groupItems = (items, groups) => {
@@ -340,20 +515,36 @@ export default function AdvancedDataGrid({
             
             const colDef = (config.columns || config.settings?.columns || []).find(c => (c.key === groupField || c.field === groupField));
             const label = colDef?.label || groupField;
+            const groupSummaries = calculateSummaries(group.items);
 
             return (
                 <React.Fragment key={groupId}>
                     <tr className="bg-gray-50/50 hover:bg-gray-100 transition-colors cursor-pointer group" onClick={() => toggleGroup(groupId)}>
-                        <td colSpan={visibleColumns.length + 1} className="px-6 py-2">
-                            <div className="flex items-center text-sm font-semibold text-gray-700" style={{ paddingLeft: `${depth * 20}px` }}>
-                                {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-indigo-500" /> : <ChevronRight className="w-4 h-4 mr-2 text-gray-400 group-hover:text-indigo-500" />}
-                                <span className="text-gray-400 font-normal mr-2">{label}:</span>
-                                {group.key}
-                                <span className="ml-2 text-xs text-gray-400 bg-white px-2 py-0.5 rounded-full border border-gray-100 group-hover:border-indigo-100 group-hover:text-indigo-500">
-                                    {group.items.length} items
-                                </span>
-                            </div>
-                        </td>
+                        <td className="w-0 p-0"></td>
+                        {config.showSelection && <td className="px-6 py-2 border-b border-gray-100"></td>}
+                        
+                        {visibleColumns.map((col, idx) => (
+                            <td key={col} className="px-6 py-2 border-b border-gray-100">
+                                {idx === 0 ? (
+                                    <div className="flex items-center text-sm font-semibold text-gray-700" style={{ paddingLeft: `${depth * 20}px` }}>
+                                        {isExpanded ? <ChevronDown className="w-4 h-4 mr-2 text-indigo-500" /> : <ChevronRight className="w-4 h-4 mr-2 text-gray-400 group-hover:text-indigo-500" />}
+                                        <span className="text-gray-400 font-normal mr-2">{label}:</span>
+                                        {group.key}
+                                        <span className="ml-2 text-[10px] text-gray-400 font-normal bg-white px-2 py-0.5 rounded-full border border-gray-100 group-hover:border-indigo-100 group-hover:text-indigo-500">
+                                            {group.items.length} items
+                                        </span>
+                                    </div>
+                                ) : (
+                                    groupSummaries[col] && (
+                                        <div className="text-right">
+                                            <span className="text-[9px] text-gray-400 uppercase font-black mr-1.5">{groupSummaries[col].type}:</span>
+                                            <span className="text-xs font-bold text-indigo-600">{groupSummaries[col].value}</span>
+                                        </div>
+                                    )
+                                )}
+                            </td>
+                        ))}
+                        <td className="px-6 py-2 border-b border-gray-100"></td>
                     </tr>
                     {isExpanded && (
                         remaining.length > 0 
@@ -365,56 +556,129 @@ export default function AdvancedDataGrid({
         });
     };
 
-    const renderRow = (item, depth = 0) => (
-        <tr key={item.id} className="hover:bg-indigo-50/30 transition-colors group">
-            <td className="w-0 p-0"></td> 
-            {visibleColumns.map((col, idx) => (
-                <td 
-                    key={col} 
-                    className={`${density === 'compact' ? 'px-4 py-2' : 'px-6 py-4'} whitespace-nowrap text-sm text-gray-900`} 
-                    style={{ 
-                        ...(idx === 0 ? { paddingLeft: `${depth * 24 + 24}px` } : {}),
-                        width: columnWidths[col] || 'auto'
-                    }}
-                >
-                    {renderCell(item, col)}
+    const renderRow = (item, depth = 0) => {
+        const isSelected = selectedIds.includes(item.id);
+        
+        return (
+            <tr 
+                key={item.id} 
+                className={`hover:bg-indigo-50/40 transition-colors group cursor-default ${config.broadcastClicks ? 'cursor-pointer' : ''} ${isSelected ? 'bg-indigo-50/20' : ''}`}
+                onClick={() => handleRowClick(item)}
+            >
+                <td className="w-0 p-0"></td> 
+                {config.showSelection && (
+                    <td className="px-6 py-4 whitespace-nowrap w-10">
+                        <label className="flex items-center justify-center cursor-pointer">
+                            <input 
+                                type="checkbox" 
+                                checked={isSelected}
+                                onChange={(e) => { e.stopPropagation(); toggleSelectRow(item.id); }}
+                                className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 transition-all cursor-pointer"
+                            />
+                        </label>
+                    </td>
+                )}
+                {visibleColumns.map((col, idx) => {
+                    const colDef = (config.columns || config.settings?.columns || []).find(c => (c.key === col || c.field === col));
+                    const isNumber = colDef?.type === 'integer' || colDef?.type === 'number' || colDef?.type === 'decimal';
+                    const align = colDef?.align || (isNumber ? 'right' : 'left');
+                    
+                    const alignClass = align === 'right' ? 'text-right' : align === 'center' ? 'text-center' : 'text-left';
+
+                    return (
+                        <td 
+                            key={col} 
+                            className={`${density === 'compact' ? 'px-4 py-2' : 'px-6 py-4'} whitespace-nowrap text-sm text-gray-900 ${alignClass}`} 
+                            style={{ 
+                                ...(idx === 0 ? { paddingLeft: `${depth * 20 + 24}px` } : {}),
+                                width: columnWidths[col] || 'auto'
+                            }}
+                        >
+                            {renderCell(item, col)}
+                        </td>
+                    );
+                })}
+                <td className={`${density === 'compact' ? 'px-4 py-2' : 'px-6 py-4'} whitespace-nowrap text-right text-sm font-medium`}>
+                    <div className="flex justify-end gap-2">
+                        {renderButtons(item)}
+                    </div>
                 </td>
-            ))}
-            <td className={`${density === 'compact' ? 'px-4 py-2' : 'px-6 py-4'} whitespace-nowrap text-right text-sm font-medium`}>
-                {renderButtons(item)}
-            </td>
-        </tr>
-    );
+            </tr>
+        );
+    };
 
     const renderCell = (item, col) => {
         const val = item[col];
         if (val === null || val === undefined) return <span className="text-gray-300">-</span>;
         
         const colDef = (config.columns || config.settings?.columns || []).find(c => (c.key === col || c.field === col));
+        
+        // Handle Images
         if (colDef?.type === 'image' && val) {
             return <img src={val} className="w-8 h-8 rounded shadow-sm object-cover" />;
+        }
+
+        // Handle Numbers with precision
+        const num = parseFloat(val);
+        const isNumericValue = !isNaN(num) && (typeof val === 'number' || (typeof val === 'string' && val.trim() !== '' && !isNaN(num)));
+        const isNumeric = (colDef?.type === 'integer' || colDef?.type === 'number' || colDef?.type === 'decimal' || isNumericValue);
+        
+        if (isNumeric && typeof val !== 'boolean') {
+            const decimals = parseInt(colDef?.decimals || 0);
+            return num.toLocaleString(undefined, {
+                minimumFractionDigits: decimals,
+                maximumFractionDigits: decimals
+            });
         }
         
         return val.toString();
     };
 
 
+    const renderIcon = (btn) => {
+        if (btn.icon_image) {
+            return <img src={btn.icon_image} className="w-3.5 h-3.5 object-contain mr-1.5 inline-block" alt="" />;
+        }
+        if (btn.icon_class) {
+            return <i className={`${btn.icon_class} text-[11px] mr-1.5`}></i>;
+        }
+        return null;
+    };
+
     const renderButtons = (item) => {
         if (!config.buttons) return null;
+        
+        const rowButtons = config.buttons.filter(btn => 
+            (btn.placement === 'row' || !btn.placement) && checkPermission(btn)
+        );
+
+        if (rowButtons.length === 0) return null;
+
         return (
             <div className="flex justify-end space-x-2">
-                {config.buttons.map((btn, idx) => {
+                {rowButtons.map((btn, idx) => {
+                    const variantClasses = {
+                        indigo: 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100',
+                        red: 'bg-red-50 text-red-700 hover:bg-red-100',
+                        emerald: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100',
+                        amber: 'bg-amber-50 text-amber-700 hover:bg-amber-100',
+                        gray: 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    };
+
+                    const buttonClass = variantClasses[btn.variant] || 'text-gray-400 hover:text-indigo-600';
+
                     return (
                         <button
                             key={idx}
-                            className={`p-1.5 rounded transition-all hover:scale-110 active:scale-95 ${btn.css || 'text-gray-400 hover:text-indigo-600'}`}
+                            className={`px-3 py-1.5 rounded-lg text-[11px] font-bold transition-all hover:scale-105 active:scale-95 flex items-center ${buttonClass}`}
                             onClick={(e) => {
                                 e.stopPropagation();
                                 handleButtonAction(btn, item, idx);
                             }}
                             title={btn.label}
                         >
-                            <span className="text-xs">{btn.label}</span>
+                            {renderIcon(btn)}
+                            {btn.label && <span>{btn.label}</span>}
                         </button>
                     )
                 })}
@@ -422,7 +686,60 @@ export default function AdvancedDataGrid({
         );
     };
 
+    const renderHeaderButtons = () => {
+        if (!config.buttons) return null;
+
+        const headerButtons = config.buttons.filter(btn => 
+            btn.placement === 'header' && checkPermission(btn)
+        );
+
+        return headerButtons.map((btn, idx) => {
+             const variantClasses = {
+                indigo: 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-sm',
+                red: 'bg-red-600 text-white hover:bg-red-700 shadow-sm',
+                emerald: 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-sm',
+                amber: 'bg-amber-600 text-white hover:bg-amber-700 shadow-sm',
+                gray: 'bg-gray-600 text-white hover:bg-gray-700 shadow-sm'
+            };
+
+            const buttonClass = variantClasses[btn.variant] || 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50 shadow-sm';
+
+            return (
+                <button
+                    key={`hbtn-${idx}`}
+                    onClick={() => handleButtonAction(btn, null, idx)}
+                    className={`px-4 py-2 rounded-xl text-xs font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2 ${buttonClass}`}
+                >
+                    {renderIcon(btn)}
+                    {btn.label && <span>{btn.label}</span>}
+                </button>
+            );
+        });
+    };
+
     const handleButtonAction = (btn, item, index) => {
+        // Broadcast always if it's a row action (excluding simple redirects if they are intended to only move page, BUT usually even then broadcast is helpful)
+        if (item) {
+            handleRowClick(item, btn.action_id, btn);
+        }
+
+        if (btn.action_type === 'fill_and_redirect') {
+            try {
+                const transfer = {
+                    content_type: config.content_type,
+                    data: item,
+                    timestamp: Date.now()
+                };
+                sessionStorage.setItem('kreatifcms_grid_transfer', JSON.stringify(transfer));
+                if (btn.redirect_url) {
+                    window.location.href = btn.redirect_url;
+                }
+            } catch (e) {
+                console.error('[AdvancedDataGrid] Redirect failed:', e);
+            }
+            return;
+        }
+
         if (btn.js) {
             try {
                 const runner = new Function('item', 'grid', btn.js);
@@ -455,23 +772,25 @@ export default function AdvancedDataGrid({
     return (
         <DndContext 
             sensors={sensors}
-            collisionDetection={closestCenter}
+            collisionDetection={rectIntersection}
+            onDragStart={handleDragStart}
             onDragEnd={handleDragEnd}
         >
-            <div className="bg-white rounded-3xl shadow-2xl shadow-gray-200/50 overflow-hidden border border-gray-100 flex flex-col h-full">
+            <div className="bg-white flex flex-col h-full relative">
                 {/* --- Toolbar --- */}
-                <div className="px-8 py-5 bg-white border-b border-gray-100 flex items-center justify-between gap-4">
-                    <div className="flex items-center space-x-4 min-w-0">
-                        <div className="bg-indigo-50 p-2.5 rounded-2xl">
-                            <LayoutGrid className="w-6 h-6 text-indigo-600" />
-                        </div>
-                        <div className="min-w-0">
-                            <h3 className="text-lg font-black text-gray-900 truncate">{config.title || config.name || 'Data Grid'}</h3>
-                            <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">{total} Records Found</p>
-                        </div>
+                <div className="px-8 py-5 bg-white border-b border-gray-100 flex items-center gap-8">
+
+                    <div className="flex-1 min-w-0">
+                         <GroupingZone 
+                            compact={true}
+                            groupBy={groupBy} 
+                            onRemove={(f) => setGroupBy(prev => prev.filter(x => x !== f))}
+                            config={config}
+                        />
                     </div>
 
-                    <div className="flex items-center space-x-2">
+                    <div className="flex-none flex items-center space-x-2">
+                        {renderHeaderButtons()}
                         {/* Column Toggle dropdown */}
                         <div className="relative">
                             <button 
@@ -566,15 +885,10 @@ export default function AdvancedDataGrid({
                     </div>
                 </div>
 
-                {/* --- Grouping Zone (Drop Zone) --- */}
-                <GroupingZone 
-                    groupBy={groupBy} 
-                    onRemove={(f) => setGroupBy(prev => prev.filter(x => x !== f))}
-                    config={config}
-                />
+                {/* --- Grouping Zone removed from here --- */}
 
                 {/* --- Grid Table --- */}
-                <div className="flex-1 overflow-auto relative min-h-[400px]">
+                <div className="flex-1 overflow-auto relative min-h-[100px]">
                     {loading && (
                         <div className="absolute inset-0 bg-white/50 backdrop-blur-[1px] flex items-center justify-center z-50">
                             <div className="bg-white p-4 rounded-xl shadow-2xl flex items-center space-x-3 border border-gray-100">
@@ -592,9 +906,24 @@ export default function AdvancedDataGrid({
                             >
                                 <tr>
                                     <th className="w-0 p-0"></th>
+                                    {config.showSelection && (
+                                        <th className="px-6 py-4 text-left w-10 bg-gray-50 border-b border-gray-200">
+                                            <label className="flex items-center justify-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={data.length > 0 && selectedIds.length === data.length}
+                                                    onChange={toggleSelectAll}
+                                                    className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 transition-all cursor-pointer"
+                                                />
+                                            </label>
+                                        </th>
+                                    )}
                                     {visibleColumns.map((col) => {
                                         const colDef = (config.columns || config.settings?.columns || []).find(c => (c.key === col || c.field === col));
                                         const s = sort.find(x => x.selector === col);
+                                        const isNumber = colDef?.type === 'integer' || colDef?.type === 'number' || colDef?.type === 'decimal';
+                                        const align = colDef?.align || (isNumber ? 'right' : 'left');
+
                                         return (
                                             <SortableHeader 
                                                 key={col} 
@@ -606,6 +935,7 @@ export default function AdvancedDataGrid({
                                                 isGrouped={groupBy.includes(col)}
                                                 width={columnWidths[col]}
                                                 onResize={handleResize}
+                                                align={align}
                                             />
                                         );
                                     })}
@@ -619,6 +949,36 @@ export default function AdvancedDataGrid({
                         <tbody className="bg-white divide-y divide-gray-100">
                             {renderGroupedRows(data, groupBy)}
                         </tbody>
+
+                        {/* Global Summary Footer */}
+                        {data.length > 0 && Object.keys(calculateSummaries(data)).length > 0 && (
+                            <tfoot className="bg-gray-50/50 border-t border-gray-200">
+                                <tr>
+                                    <td className="w-0 p-0"></td>
+                                    {config.showSelection && <td className="px-6 py-4"></td>}
+                                    {visibleColumns.map((col, idx) => {
+                                        const summaries = calculateSummaries(data);
+                                        const colDef = (config.columns || config.settings?.columns || []).find(c => (c.key === col || c.field === col));
+                                        const isNumber = colDef?.type === 'integer' || colDef?.type === 'number' || colDef?.type === 'decimal';
+                                        const align = colDef?.align || (isNumber ? 'right' : 'left');
+                                        const alignClass = align === 'right' ? 'items-end' : align === 'center' ? 'items-center' : 'items-start';
+
+                                        return (
+                                            <td key={col} className="px-6 py-4">
+                                                {idx === 0 && <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest mr-4">Total Page Summary</span>}
+                                                {summaries[col] && (
+                                                    <div className={`flex flex-col ${alignClass}`}>
+                                                        <span className="text-[9px] font-black text-indigo-400 uppercase tracking-tighter">{summaries[col].type}</span>
+                                                        <span className="text-sm font-black text-indigo-700">{summaries[col].value}</span>
+                                                    </div>
+                                                )}
+                                            </td>
+                                        );
+                                    })}
+                                    <td></td>
+                                </tr>
+                            </tfoot>
+                        )}
                     </table>
 
                     {!loading && data.length === 0 && (
@@ -630,19 +990,39 @@ export default function AdvancedDataGrid({
                             <p className="text-sm">Try adjusting your filters or search terms</p>
                         </div>
                     )}
+
+                    {/* --- Bulk Action Bar --- */}
+                    {selectedIds.length > 0 && (
+                        <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-50 animate-in fade-in slide-in-from-bottom-4 duration-300">
+                            <div className="bg-gray-900 text-white px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-6 border border-gray-700 backdrop-blur-md bg-opacity-95">
+                                <div className="flex items-center gap-2">
+                                    <div className="bg-indigo-500 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-black">
+                                        {selectedIds.length}
+                                    </div>
+                                    <span className="text-xs font-bold uppercase tracking-widest text-gray-400">Selected</span>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
 
                 {/* --- Pagination --- */}
                 <div className="px-8 py-5 bg-white border-t border-gray-100 flex items-center justify-between">
-                    <div className="flex items-center space-x-3 text-sm text-gray-500">
-                        <span className="text-xs font-medium text-gray-400">Rows:</span>
-                        <select 
-                            value={perPage} 
-                            onChange={e => setPerPage(Number(e.target.value))}
-                            className="bg-gray-50 border-gray-100 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-100"
-                        >
-                            {[10, 15, 30, 50, 100].map(v => <option key={v} value={v}>{v}</option>)}
-                        </select>
+                    <div className="flex items-center space-x-6">
+                        <div className="flex items-center space-x-3 text-sm text-gray-500">
+                            <span className="text-xs font-medium text-gray-400">Rows:</span>
+                            <select 
+                                value={perPage} 
+                                onChange={e => setPerPage(Number(e.target.value))}
+                                className="bg-gray-50 border-gray-100 rounded-lg px-3 py-1.5 text-xs font-bold focus:ring-indigo-500 focus:border-indigo-100"
+                            >
+                                {[10, 15, 30, 50, 100].map(v => <option key={v} value={v}>{v}</option>)}
+                            </select>
+                        </div>
+                        <div className="h-4 w-px bg-gray-100"></div>
+                        <p className="text-[10px] text-gray-400 uppercase tracking-widest font-bold">
+                            {total} {config.settings?.footer_text || 'Records Found'}
+                        </p>
                     </div>
 
                     <div className="flex items-center space-x-4">
@@ -666,9 +1046,23 @@ export default function AdvancedDataGrid({
                     </div>
                 </div>
             </div>
+
+            <DragOverlay dropAnimation={{
+                sideEffects: defaultDropAnimationSideEffects({
+                    styles: {
+                        active: {
+                            opacity: '0.4',
+                        },
+                    },
+                }),
+            }}>
+                {activeId ? (
+                    <div className="px-6 py-3 bg-white border border-indigo-200 rounded-xl shadow-2xl text-xs font-bold text-indigo-700 flex items-center gap-3 backdrop-blur-sm ring-4 ring-indigo-50/50">
+                        <GripVertical className="w-4 h-4 text-indigo-400" />
+                        {(config.columns || config.settings?.columns || []).find(c => (c.key === activeId || c.field === activeId))?.label || activeId}
+                    </div>
+                ) : null}
+            </DragOverlay>
         </DndContext>
     );
 }
-
-
-

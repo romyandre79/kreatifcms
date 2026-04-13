@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useForm } from '@inertiajs/react';
 import axios from 'axios';
 import CaptchaWidget from '@/Components/CaptchaWidget';
+import Modal from '@/Components/Modal';
+
 
 export default function FormBlock({ data, contentTypes = [] }) {
     const { 
@@ -13,25 +15,98 @@ export default function FormBlock({ data, contentTypes = [] }) {
         success_message = 'Thank you for your submission!',
         submit_button_text = 'Submit',
         align = 'left',
-        onSuccessJs = ''
+        onSuccessJs = '',
+        field_config = {},
+        syncWithGrid = false,
+        display_mode = 'standard', // 'standard' or 'modal'
+        trigger_action_id = '' 
     } = data;
 
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [formData, setFormData] = useState({});
+    const [isOpen, setIsOpen] = useState(false);
+
+    // Cross-page data pre-filling (e.g. from sessionStorage after redirect)
+    React.useEffect(() => {
+        if (!syncWithGrid) return;
+        
+        try {
+            const storedData = sessionStorage.getItem('kreatifcms_grid_transfer');
+            if (storedData) {
+                const parsed = JSON.parse(storedData);
+                // Check if this data is for this content type
+                if (parsed.content_type === contentTypeSlug || !contentTypeSlug) {
+                    setFormData(prev => ({ ...prev, ...parsed.data }));
+                    sessionStorage.removeItem('kreatifcms_grid_transfer');
+                }
+            }
+        } catch (e) {
+            console.error('[FormBlock] Failed to parse stored data:', e);
+        }
+    }, [syncWithGrid, contentTypeSlug]);
+
+    // Listen for cross-block events (e.g. from AdvancedDataGrid on same page)
+    React.useEffect(() => {
+        if (!syncWithGrid) return;
+
+        const handleRowSelected = (event) => {
+            const { action_id, action_label, content_type, ...rowData } = event.detail;
+            
+            // If a specific trigger ID is set, check if it matches
+            if (trigger_action_id && action_id !== trigger_action_id) {
+                return;
+            }
+
+            // If no trigger ID is set, we fallback to our content type check
+            if (!trigger_action_id && contentTypeSlug && content_type !== contentTypeSlug) {
+                return;
+            }
+
+            if (rowData) {
+                // Pre-fill form data with row values and action metadata
+                setFormData(prev => ({ 
+                    ...prev, 
+                    ...rowData, 
+                    _action_id: action_id,
+                    _action_label: action_label
+                }));
+                
+                // If in modal mode, or forced modal from button, open it
+                if (display_mode === 'modal' || event.detail.target_display_mode === 'modal') {
+                    setIsOpen(true);
+                } else {
+                    // Scroll to form for better UX in standard mode
+                    const element = document.getElementById(`block-${data.id || 'form'}`);
+                    if (element) {
+                        element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                }
+            }
+        };
+
+        window.addEventListener('kreatifcms:row-selected', handleRowSelected);
+        return () => window.removeEventListener('kreatifcms:row-selected', handleRowSelected);
+    }, [syncWithGrid, display_mode, data.id, contentTypeSlug, trigger_action_id]);
+
 
     // Determine fields to render
     let fieldsToRender = [];
     const contentType = (contentTypes || []).find(ct => ct.slug === contentTypeSlug);
     if (mode === 'dynamic' && contentTypeSlug && contentType && contentType.fields) {
-        fieldsToRender = contentType.fields.map(f => ({
-            name: f.name.toLowerCase().replace(/ /g, '_'),
-            label: f.name,
-            type: f.type === 'longtext' ? 'textarea' : (f.type === 'number' ? 'number' : 'text'),
-            placeholder: f.options?.placeholder || '',
-            required: f.required
-        }));
+        fieldsToRender = contentType.fields.map(f => {
+            const slugName = f.name.toLowerCase().replace(/ /g, '_');
+            const config = field_config[f.name] || {};
+            
+            return {
+                name: slugName,
+                label: config.label || f.label || f.name,
+                type: f.type === 'longtext' ? 'textarea' : (f.type === 'number' ? 'number' : 'text'),
+                placeholder: config.placeholder || f.options?.placeholder || '',
+                required: f.required
+            };
+        });
     } else {
         fieldsToRender = fields;
     }
@@ -77,29 +152,10 @@ export default function FormBlock({ data, contentTypes = [] }) {
         }
     };
 
-    if (submitted) {
-        return (
-            <div className="py-12 px-6 max-w-xl mx-auto text-center animate-fade-in">
-                <div className="mb-4 inline-flex items-center justify-center w-16 h-16 bg-green-100 text-green-600 rounded-full">
-                    <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-                    </svg>
-                </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">{success_message}</h3>
-                <button 
-                    onClick={() => { setSubmitted(false); setFormData({}); }}
-                    className="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors"
-                >
-                    Back to form
-                </button>
-            </div>
-        );
-    }
-
     const alignmentClass = align === 'center' ? 'text-center mx-auto' : (align === 'right' ? 'text-right ml-auto' : 'text-left');
 
-    return (
-        <div className={`py-12 px-6 max-w-2xl ${alignmentClass}`}>
+    const formContent = (
+        <div className={`py-12 px-6 ${display_mode === 'modal' ? '' : 'max-w-2xl'} ${alignmentClass}`}>
             {(title || description) && (
                 <div className="mb-8">
                     {title && <h2 className="text-3xl font-extrabold text-gray-900 mb-2">{title}</h2>}
@@ -125,7 +181,6 @@ export default function FormBlock({ data, contentTypes = [] }) {
                         ) : field.type === 'captcha' ? (
                             <CaptchaWidget 
                                 onToken={(token) => handleChange('captcha_token', token)} 
-                                // error={errors?.captcha_token} // axios doesn't use inertia errors directly here, but we can pass it if we have it
                             />
                         ) : (
                             <input
@@ -162,8 +217,66 @@ export default function FormBlock({ data, contentTypes = [] }) {
                             </span>
                         ) : submit_button_text}
                     </button>
+                    {display_mode === 'modal' && (
+                        <button 
+                            type="button" 
+                            onClick={() => setIsOpen(false)}
+                            className="w-full sm:ml-3 sm:w-auto px-8 py-4 bg-white hover:bg-gray-50 text-gray-700 border border-gray-200 rounded-xl font-bold transition-all"
+                        >
+                            Cancel
+                        </button>
+                    )}
                 </div>
             </form>
         </div>
+    );
+
+    if (display_mode === 'modal') {
+        return (
+            <Modal show={isOpen} onClose={() => setIsOpen(false)} maxWidth="2xl">
+                <div className="relative">
+                    <button 
+                        onClick={() => setIsOpen(false)}
+                        className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                    {formContent}
+                </div>
+            </Modal>
+        );
+    }
+
+    return (
+        <>
+            {formContent}
+
+            {/* Premium Success Modal */}
+            {submitted && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-gray-900/40 backdrop-blur-sm animate-in fade-in duration-300">
+                    <div className="bg-white rounded-3xl p-10 max-w-sm w-full text-center shadow-2xl animate-in zoom-in-95 duration-300 border border-gray-100">
+                        <div className="mb-6 inline-flex items-center justify-center w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full animate-bounce shadow-inner">
+                            <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" />
+                            </svg>
+                        </div>
+                        <h3 className="text-2xl font-black text-gray-900 mb-2">Success!</h3>
+                        <p className="text-gray-600 mb-8 font-medium leading-relaxed">{success_message}</p>
+                        <button 
+                            onClick={() => { 
+                                setSubmitted(false); 
+                                setFormData({}); 
+                                if (display_mode === 'modal') setIsOpen(false);
+                            }}
+                            className="w-full py-4 bg-gray-900 hover:bg-black text-white rounded-2xl font-bold transition-all shadow-lg hover:shadow-xl active:scale-95 transform hover:-translate-y-0.5"
+                        >
+                            Continue
+                        </button>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }

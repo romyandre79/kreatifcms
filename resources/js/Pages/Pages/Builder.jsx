@@ -32,7 +32,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [], dataGrids = [] }) {
+export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [], dataGrids = [], availableRoles = [] }) {
 
     const { plugins = [] } = usePage().props;
     const isContentTypeEnabled = plugins.some(p => p.alias === 'contenttype' && p.enabled !== false);
@@ -590,7 +590,24 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
     };
 
     const handleMediaSelect = (url) => {
-        if (mediaPickerTarget) {
+        if (!url) return;
+
+        if (window._selectingButtonIdx !== undefined && window._selectingButtonIdx !== null) {
+            const idx = window._selectingButtonIdx;
+            setBlocks(prev => prev.map(block => {
+                if (block.id === activeBlockId) {
+                    const newData = { ...(block.data || {}) };
+                    const newBtns = [...(newData.buttons || [])];
+                    if (newBtns[idx]) {
+                        newBtns[idx].icon_image = url;
+                        newData.buttons = newBtns;
+                    }
+                    return { ...block, data: newData };
+                }
+                return block;
+            }));
+            window._selectingButtonIdx = null;
+        } else if (mediaPickerTarget) {
             const { blockId, fieldName, index } = mediaPickerTarget;
             
             if (blockId === 'seo') {
@@ -599,14 +616,13 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 setBlocks(prevBlocks => prevBlocks.map(block => {
                     if (block.id !== blockId) return block;
 
-                    const newData = { ...block.data };
+                    const newData = { ...(block.data || {}) };
 
                     if (index !== null && index !== undefined) {
                         if (Array.isArray(newData[fieldName])) {
                             const newItems = [...newData[fieldName]];
                             if (newItems[index]) {
                                 const item = { ...newItems[index] };
-                                // Dynamically detect which field to update based on block type and item structure
                                 if (block.type === 'slideshow' || block.type === 'photogrid' || block.type === 'timeline' || block.type === 'feature_grid' || 'image' in item) {
                                     item.image = url;
                                 } else if (block.type === 'video' || block.type === 'video_grid' || 'poster' in item) {
@@ -619,7 +635,6 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             }
                         }
                     } else {
-                        // Handle megamenu column images
                         const colImgMatch = fieldName.match(/^col_img_(\d+)_(\d+)$/);
                         if (colImgMatch && block.type === 'megamenu') {
                             const mIdx = parseInt(colImgMatch[1]);
@@ -637,16 +652,16 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             newData[fieldName] = url;
                         }
                     }
-
                     return { ...block, data: newData };
                 }));
             }
         }
         setMediaPickerTarget(null);
+        window._selectingButtonIdx = null;
         setMediaPickerOpen(false);
     };
 
-    const renderHeaderConfig = (block) => {
+    const renderHeaderConfig = (block, options = { showCTA: true }) => {
         const data = block.data || {};
         return (
             <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-4 mb-6">
@@ -700,25 +715,27 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     </div>
                 </div>
 
-                <div className="pt-2 border-t border-gray-100/50">
-                    <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Call to Action (CTA)</label>
-                    <div className="space-y-2">
-                        <input 
-                            type="text" 
-                            value={data.cta_text || ''} 
-                            onChange={e => updateBlockData(block.id, 'cta_text', e.target.value)} 
-                            placeholder="Button / Link Text (e.g., View All)"
-                            className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
-                        />
-                        <input 
-                            type="text" 
-                            value={data.cta_url || ''} 
-                            onChange={e => updateBlockData(block.id, 'cta_url', e.target.value)} 
-                            placeholder="Destination URL (e.g., /gallery)"
-                            className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
-                        />
+                {options.showCTA && (
+                    <div className="pt-2 border-t border-gray-100/50">
+                        <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Call to Action (CTA)</label>
+                        <div className="space-y-2">
+                            <input 
+                                type="text" 
+                                value={data.cta_text || ''} 
+                                onChange={e => updateBlockData(block.id, 'cta_text', e.target.value)} 
+                                placeholder="Button / Link Text (e.g., View All)"
+                                className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
+                            />
+                            <input 
+                                type="text" 
+                                value={data.cta_url || ''} 
+                                onChange={e => updateBlockData(block.id, 'cta_url', e.target.value)} 
+                                placeholder="Destination URL (e.g., /gallery)"
+                                className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
+                            />
+                        </div>
                     </div>
-                </div>
+                )}
             </div>
         );
     };
@@ -1388,7 +1405,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     if (isVisible) {
                         newColumns = existing.filter(c => c.key !== field.name);
                     } else {
-                        newColumns = [...existing, { key: field.name, label: field.name, visible: true }];
+                        // Include type and decimals from the field metadata
+                        newColumns = [...existing, { 
+                            key: field.name, 
+                            label: field.name, 
+                            visible: true, 
+                            type: field.type,
+                            decimals: field.options?.decimals || 0
+                        }];
                     }
                     updateBlockData(block.id, 'columns', newColumns);
                 };
@@ -1398,12 +1422,66 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     updateBlockData(block.id, 'columns', newColumns);
                 };
 
+                const handleUpdateColumnSummaryType = (key, summary_type) => {
+                    const newColumns = (data.columns || []).map(c => c.key === key ? { ...c, summary_type } : c);
+                    updateBlockData(block.id, 'columns', newColumns);
+                };
+
+                const handleUpdateColumnAlignment = (key, align) => {
+                    const newColumns = (data.columns || []).map(c => c.key === key ? { ...c, align } : c);
+                    updateBlockData(block.id, 'columns', newColumns);
+                };
+
+                const handleSyncMetadata = () => {
+                    if (!currentContentType) return;
+                    const newColumns = (data.columns || []).map(col => {
+                        const field = currentContentType.fields?.find(f => f.name === col.key);
+                        if (field) {
+                            return { 
+                                ...col, 
+                                type: field.type, 
+                                decimals: field.options?.decimals || 0 
+                            };
+                        }
+                        return col;
+                    });
+                    updateBlockData(block.id, 'columns', newColumns);
+                };
+
                 return (
                     <div className="space-y-6">
-                        {renderHeaderConfig(block)}
+                        {renderHeaderConfig(block, { showCTA: false })}
                         
                         <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-4">
-                            <div>
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Grid Height</label>
+                                    <div className="flex bg-white p-1 rounded-lg border border-gray-100 mb-2">
+                                        {['auto', 'manual'].map(m => (
+                                            <button
+                                                key={m}
+                                                onClick={() => updateBlockData(block.id, 'height_mode', m)}
+                                                className={`flex-1 py-1 rounded-md text-[9px] font-bold uppercase transition-all ${data.height_mode === m || (!data.height_mode && m === 'manual') ? 'bg-indigo-600 text-white shadow-md' : 'text-gray-400 hover:text-gray-600'}`}
+                                            >
+                                                {m}
+                                            </button>
+                                        ))}
+                                    </div>
+                                    {(data.height_mode === 'manual' || !data.height_mode) && (
+                                        <div className="flex items-center gap-2">
+                                            <input 
+                                                type="number" 
+                                                value={data.height_value || 650} 
+                                                onChange={e => updateBlockData(block.id, 'height_value', e.target.value)}
+                                                className="w-full text-xs border-gray-200 rounded-lg bg-white h-7 px-2 focus:ring-indigo-500"
+                                            />
+                                            <span className="text-[10px] font-bold text-gray-400 uppercase">px</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                            
+                            <div className="pt-4 border-t border-gray-100">
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Data Source</label>
                                 <select 
                                     value={data.content_type || ''} 
@@ -1412,7 +1490,13 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                         const ct = contentTypes.find(c => c.slug === value);
                                         const newData = { ...data, content_type: value };
                                         if (ct && (!data.columns || data.columns.length === 0)) {
-                                            newData.columns = (ct.fields || []).slice(0, 5).map(f => ({ key: f.name, label: f.name, visible: true }));
+                                            newData.columns = (ct.fields || []).slice(0, 5).map(f => ({ 
+                                                key: f.name, 
+                                                label: f.name, 
+                                                visible: true,
+                                                type: f.type,
+                                                decimals: f.options?.decimals || 0
+                                            }));
                                         }
                                         setBlocks(prevBlocks => prevBlocks.map(b => {
                                             if (b.id === block.id) return { ...b, data: newData };
@@ -1430,7 +1514,17 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                             {data.content_type && (
                                 <div className="space-y-4 pt-4 border-t border-gray-100">
-                                    <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Columns Management</label>
+                                    <div className="flex items-center justify-between">
+                                        <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Columns Management</label>
+                                        <button 
+                                            onClick={handleSyncMetadata}
+                                            className="text-[9px] font-bold text-indigo-600 uppercase hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
+                                            title="Sync column types and decimals from Content Type schema"
+                                        >
+                                            <LucideIcons.RefreshCw size={10} className="mr-1" />
+                                            Sync Schema
+                                        </button>
+                                    </div>
                                     <div className="space-y-2 max-h-60 overflow-y-auto pr-2 custom-scrollbar">
                                         {(currentContentType?.fields || []).map(field => {
                                             const col = (data.columns || []).find(c => c.key === field.name);
@@ -1447,18 +1541,52 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                     </button>
                                                     <div className="flex-1">
                                                         {col ? (
-                                                            <input 
-                                                                type="text" 
-                                                                value={col.label} 
-                                                                onChange={e => handleUpdateColumnLabel(field.name, e.target.value)}
-                                                                className="w-full text-[11px] border-none p-0 focus:ring-0 font-medium"
-                                                                placeholder={field.name}
-                                                            />
+                                                            <div className="space-y-1">
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={col.label} 
+                                                                    onChange={e => handleUpdateColumnLabel(field.name, e.target.value)}
+                                                                    className="w-full text-[11px] border-none p-0 focus:ring-0 font-bold text-indigo-900"
+                                                                    placeholder={field.name}
+                                                                />
+                                                                <div className="flex items-center justify-between gap-2">
+                                                                    <select 
+                                                                        value={col.summary_type || 'none'}
+                                                                        onChange={e => handleUpdateColumnSummaryType(field.name, e.target.value)}
+                                                                        className="flex-1 text-[8px] border-none bg-indigo-50/50 rounded px-1 h-5 text-indigo-600 font-bold uppercase tracking-tighter cursor-pointer hover:bg-indigo-100"
+                                                                    >
+                                                                        <option value="none">Σ None</option>
+                                                                        <option value="sum">Σ Sum</option>
+                                                                        <option value="avg">Σ Average</option>
+                                                                        <option value="count">Σ Count</option>
+                                                                        <option value="min">Σ Min</option>
+                                                                        <option value="max">Σ Max</option>
+                                                                    </select>
+                                                                    <div className="flex items-center gap-0.5 bg-gray-50 p-0.5 rounded">
+                                                                        {[
+                                                                            { val: 'left', icon: AlignLeft },
+                                                                            { val: 'center', icon: AlignCenter },
+                                                                            { val: 'right', icon: AlignRight },
+                                                                        ].map(opt => (
+                                                                            <button
+                                                                                key={opt.val}
+                                                                                type="button"
+                                                                                onClick={() => handleUpdateColumnAlignment(field.name, opt.val)}
+                                                                                className={`p-1 rounded-md transition-all ${(!col.align && opt.val === 'left') || col.align === opt.val ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-300 hover:text-gray-500'}`}
+                                                                            >
+                                                                                <opt.icon size={8} />
+                                                                            </button>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
                                                         ) : (
                                                             <span className="text-[11px] text-gray-400 italic">{field.name}</span>
                                                         )}
                                                     </div>
-                                                    <span className="text-[9px] text-gray-300 font-mono uppercase">{field.type}</span>
+                                                    <div className="flex flex-col items-end gap-1">
+                                                        <span className="text-[9px] text-gray-300 font-mono uppercase">{field.type}</span>
+                                                    </div>
                                                 </div>
                                             );
                                         })}
@@ -1466,10 +1594,10 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                     <div className="pt-4 border-t border-gray-100">
                                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Actions / Buttons</label>
-                                        <div className="space-y-2">
+                                        <div className="space-y-3">
                                             {(data.buttons || []).map((btn, idx) => (
-                                                <div key={idx} className="p-3 bg-white rounded-xl border border-gray-100 shadow-sm space-y-2">
-                                                    <div className="flex items-center justify-between">
+                                                <div key={idx} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm space-y-4 relative overflow-visible">
+                                                    <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-50">
                                                         <input 
                                                             type="text" 
                                                             value={btn.label} 
@@ -1478,61 +1606,249 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                 newBtns[idx].label = e.target.value;
                                                                 updateBlockData(block.id, 'buttons', newBtns);
                                                             }}
-                                                            className="text-xs font-bold border-none p-0 focus:ring-0 w-2/3"
-                                                            placeholder="Button Label"
+                                                            className="text-sm font-bold border-none p-0 focus:ring-0 w-2/3"
+                                                            placeholder="Button Label (e.g. Add New)"
                                                         />
                                                         <button 
                                                             onClick={() => {
                                                                 const newBtns = (data.buttons || []).filter((_, i) => i !== idx);
                                                                 updateBlockData(block.id, 'buttons', newBtns);
                                                             }}
-                                                            className="text-red-400 hover:text-red-600"
+                                                            className="text-red-400 hover:text-red-600 transition-colors"
                                                         >
-                                                            <LucideIcons.Trash2 size={14} />
+                                                            <LucideIcons.Trash2 size={16} />
                                                         </button>
                                                     </div>
-                                                    <div className="grid grid-cols-2 gap-2">
-                                                        <input 
-                                                            type="text" 
-                                                            value={btn.action_id || ''} 
-                                                            onChange={e => {
-                                                                const newBtns = [...data.buttons];
-                                                                newBtns[idx].action_id = e.target.value;
-                                                                updateBlockData(block.id, 'buttons', newBtns);
-                                                            }}
-                                                            className="text-[10px] border-gray-100 rounded bg-gray-50 h-7"
-                                                            placeholder="Action ID (e.g. edit)"
-                                                        />
-                                                        <select
-                                                            value={btn.variant || 'indigo'}
-                                                            onChange={e => {
-                                                                const newBtns = [...data.buttons];
-                                                                newBtns[idx].variant = e.target.value;
-                                                                updateBlockData(block.id, 'buttons', newBtns);
-                                                            }}
-                                                            className="text-[10px] border-gray-100 rounded bg-gray-50 h-7"
-                                                        >
-                                                            <option value="indigo">Indigo</option>
-                                                            <option value="red">Red</option>
-                                                            <option value="emerald">Emerald</option>
-                                                            <option value="amber">Amber</option>
-                                                        </select>
+
+                                                    <div className="grid grid-cols-1 gap-4">
+                                                        {/* Action Mapping */}
+                                                        <div>
+                                                            <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">ID Aksi / Field Name</label>
+                                                            <input 
+                                                                type="text" 
+                                                                value={btn.action_id || ''} 
+                                                                onChange={e => {
+                                                                    const newBtns = [...data.buttons];
+                                                                    newBtns[idx].action_id = e.target.value;
+                                                                    updateBlockData(block.id, 'buttons', newBtns);
+                                                                }}
+                                                                className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 h-9 px-3 focus:ring-indigo-500"
+                                                                placeholder="e.g. create, edit, or field_name"
+                                                            />
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">Tipe Aksi</label>
+                                                                <select
+                                                                    value={btn.action_type || 'default'}
+                                                                    onChange={e => {
+                                                                        const newBtns = [...data.buttons];
+                                                                        newBtns[idx].action_type = e.target.value;
+                                                                        updateBlockData(block.id, 'buttons', newBtns);
+                                                                    }}
+                                                                    className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 h-9 px-2 focus:ring-indigo-500"
+                                                                >
+                                                                    <option value="default">Default (JS/PHP)</option>
+                                                                    <option value="fill_and_redirect">Fill & Redirect</option>
+                                                                </select>
+                                                            </div>
+                                                            {btn.action_type === 'default' && (
+                                                                <div>
+                                                                    <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">Target Display</label>
+                                                                    <select
+                                                                        value={btn.target_display_mode || 'standard'}
+                                                                        onChange={e => {
+                                                                            const newBtns = [...data.buttons];
+                                                                            newBtns[idx].target_display_mode = e.target.value;
+                                                                            updateBlockData(block.id, 'buttons', newBtns);
+                                                                        }}
+                                                                        className="w-full text-xs border-indigo-200 rounded-lg bg-indigo-50/30 h-9 px-2 focus:ring-indigo-500 font-medium"
+                                                                    >
+                                                                        <option value="standard">Standard (Sync & Scroll)</option>
+                                                                        <option value="modal">Modal (Force Open)</option>
+                                                                    </select>
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">Warna Tombol</label>
+                                                                <select
+                                                                    value={btn.variant || 'indigo'}
+                                                                    onChange={e => {
+                                                                        const newBtns = [...data.buttons];
+                                                                        newBtns[idx].variant = e.target.value;
+                                                                        updateBlockData(block.id, 'buttons', newBtns);
+                                                                    }}
+                                                                    className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 h-9 px-2 focus:ring-indigo-500"
+                                                                >
+                                                                    <option value="indigo">Warna: Indigo</option>
+                                                                    <option value="red">Warna: Red</option>
+                                                                    <option value="emerald">Warna: Emerald</option>
+                                                                    <option value="amber">Warna: Amber</option>
+                                                                    <option value="gray">Warna: Gray</option>
+                                                                </select>
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="grid grid-cols-2 gap-3">
+                                                            <div>
+                                                                <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">Penempatan</label>
+                                                                <select
+                                                                    value={btn.placement || 'row'}
+                                                                    onChange={e => {
+                                                                        const newBtns = [...data.buttons];
+                                                                        newBtns[idx].placement = e.target.value;
+                                                                        updateBlockData(block.id, 'buttons', newBtns);
+                                                                    }}
+                                                                    className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 h-9 px-2 focus:ring-indigo-500"
+                                                                >
+                                                                    <option value="row">🏠 Di Setiap Baris</option>
+                                                                    <option value="header">🔝 Di Header / Toolbar</option>
+                                                                </select>
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">Role Permission</label>
+                                                                <div className="relative group/role">
+                                                                    <div className="w-full text-[9px] border-gray-200 rounded-lg bg-gray-50 h-9 px-2 flex items-center justify-between cursor-pointer overflow-hidden truncate whitespace-nowrap">
+                                                                        {(btn.allowed_roles || []).length > 0 ? (
+                                                                            <span className="text-indigo-600 font-bold">{(btn.allowed_roles || []).length} Roles Selected</span>
+                                                                        ) : <span className="text-gray-400">Semua Public</span>}
+                                                                        <LucideIcons.ChevronDown size={10} />
+                                                                    </div>
+                                                                    <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-100 shadow-xl rounded-xl p-2 mt-1 opacity-0 pointer-events-none group-hover/role:opacity-100 group-hover/role:pointer-events-auto transition-all max-h-40 overflow-y-auto">
+                                                                        {availableRoles.map(role => (
+                                                                            <label key={role.id} className="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer">
+                                                                                <input 
+                                                                                    type="checkbox"
+                                                                                    checked={(btn.allowed_roles || []).includes(role.name)}
+                                                                                    onChange={e => {
+                                                                                        const newBtns = [...data.buttons];
+                                                                                        const roles = btn.allowed_roles || [];
+                                                                                        newBtns[idx].allowed_roles = e.target.checked 
+                                                                                            ? [...roles, role.name]
+                                                                                            : roles.filter(r => r !== role.name);
+                                                                                        updateBlockData(block.id, 'buttons', newBtns);
+                                                                                    }}
+                                                                                    className="rounded text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5"
+                                                                                />
+                                                                                <span className="text-[10px] font-medium text-gray-700">{role.name}</span>
+                                                                            </label>
+                                                                        ))}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        {/* Icon System */}
+                                                        <div>
+                                                            <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">Icon Tombol (Optional)</label>
+                                                            <div className="flex gap-2">
+                                                                <div className="relative flex-1">
+                                                                    <i className={`absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 ${btn.icon_class || 'fas fa-icons'}`}></i>
+                                                                    <input 
+                                                                        type="text" 
+                                                                        value={btn.icon_class || ''} 
+                                                                        onChange={e => {
+                                                                            const newBtns = [...data.buttons];
+                                                                            newBtns[idx].icon_class = e.target.value;
+                                                                            updateBlockData(block.id, 'buttons', newBtns);
+                                                                        }}
+                                                                        className="w-full pl-9 text-xs border-gray-200 rounded-lg bg-gray-50 h-10 px-3 focus:ring-indigo-500"
+                                                                        placeholder="fa fa-pencil, bi bi-edit..."
+                                                                    />
+                                                                </div>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        window._selectingButtonIdx = idx;
+                                                                        setMediaPickerOpen(true);
+                                                                    }}
+                                                                    className="px-3 bg-white border-2 border-indigo-100 rounded-lg flex items-center justify-center text-indigo-600 hover:bg-indigo-50 transition-all shadow-sm"
+                                                                    title="Gunakan Gambar dari Media Library"
+                                                                >
+                                                                    {btn.icon_image ? (
+                                                                        <img src={btn.icon_image} className="w-6 h-6 object-contain" />
+                                                                    ) : <LucideIcons.Image size={18} />}
+                                                                </button>
+                                                                {btn.icon_image && (
+                                                                    <button 
+                                                                        onClick={() => {
+                                                                            const newBtns = [...data.buttons];
+                                                                            newBtns[idx].icon_image = null;
+                                                                            updateBlockData(block.id, 'buttons', newBtns);
+                                                                        }}
+                                                                        className="text-gray-300 hover:text-red-500"
+                                                                    >
+                                                                        <LucideIcons.XCircle size={14} />
+                                                                    </button>
+                                                                )}
+                                                            </div>
+                                                            <p className="text-[9px] text-gray-400 mt-1 italic">Ketik class FontAwesome atau pilih gambar.</p>
+                                                        </div>
+
+                                                        {btn.action_type === 'fill_and_redirect' && (
+                                                            <div className="pt-2 border-t border-indigo-50 animate-in fade-in slide-in-from-top-1">
+                                                                <label className="block text-[9px] font-bold text-emerald-600 uppercase mb-1">Redirect Target URL</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={btn.redirect_url || ''} 
+                                                                    onChange={e => {
+                                                                        const newBtns = [...data.buttons];
+                                                                        newBtns[idx].redirect_url = e.target.value;
+                                                                        updateBlockData(block.id, 'buttons', newBtns);
+                                                                    }}
+                                                                    className="w-full text-xs border-emerald-100 rounded-lg bg-emerald-50 h-9 px-3 focus:ring-emerald-500"
+                                                                    placeholder="e.g. /contact-us or /edit-page"
+                                                                />
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 </div>
                                             ))}
                                             <button 
                                                 onClick={() => {
-                                                    const newBtns = [...(data.buttons || []), { label: 'New Action', action_id: 'view', variant: 'indigo' }];
+                                                    const newBtns = [...(data.buttons || []), { label: 'Aksi Baru', action_id: 'view', variant: 'indigo', placement: 'row', allowed_roles: [] }];
                                                     updateBlockData(block.id, 'buttons', newBtns);
                                                 }}
-                                                className="w-full py-2 border-2 border-dashed border-gray-200 rounded-xl text-[10px] font-bold text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-all flex items-center justify-center gap-2"
+                                                className="w-full py-3 border-2 border-dashed border-gray-200 rounded-xl text-xs font-bold text-gray-400 hover:border-indigo-300 hover:text-indigo-500 transition-all flex items-center justify-center gap-2 group"
                                             >
-                                                <LucideIcons.Plus size={12} /> Add Custom Button
+                                                <LucideIcons.Plus size={16} className="group-hover:scale-125 transition-transform" /> Tambah Tombol Aksi
                                             </button>
+                                        </div>
+                                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between bg-indigo-50/50 p-2 rounded-lg mt-4">
+                                            <div className="flex items-center gap-2">
+                                                <LucideIcons.Radio size={14} className="text-indigo-500" />
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Broadcast Selection</span>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={data.broadcastClicks || false} 
+                                                    onChange={e => updateBlockData(block.id, 'broadcastClicks', e.target.checked)}
+                                                    className="sr-only peer" 
+                                                />
+                                                <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
+                                            </label>
+                                        </div>
+
+                                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between bg-emerald-50/50 p-2 rounded-lg mt-2">
+                                            <div className="flex items-center gap-2">
+                                                <LucideIcons.CheckSquare size={14} className="text-emerald-500" />
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Enable Row Selection</span>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={data.showSelection || false} 
+                                                    onChange={e => updateBlockData(block.id, 'showSelection', e.target.checked)}
+                                                    className="sr-only peer" 
+                                                />
+                                                <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
+                                            </label>
                                         </div>
                                     </div>
                                 </div>
                             )}
+
                         </div>
                     </div>
                 );
@@ -2500,8 +2816,18 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         </div>
 
                         <div>
-                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Title</label>
-                            <input type="text" value={data.title || ''} onChange={e => updateBlockData(block.id, 'title', e.target.value)} className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" />
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Display Mode</label>
+                            <div className="flex bg-gray-100 p-1 rounded-lg">
+                                {['standard', 'modal'].map(dm => (
+                                    <button
+                                        key={dm}
+                                        onClick={() => updateBlockData(block.id, 'display_mode', dm)}
+                                        className={`flex-1 py-1.5 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${data.display_mode === dm || (!data.display_mode && dm === 'standard') ? 'bg-white shadow-sm text-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+                                    >
+                                        {dm}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
 
                         <div>
@@ -2510,18 +2836,98 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         </div>
 
                         {data.mode === 'dynamic' ? (
-                            <div>
-                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
-                                <select 
-                                    value={data.content_type || ''} 
-                                    onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
-                                    className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
-                                >
-                                    <option value="">Select Content Type...</option>
-                                    {contentTypes.map(ct => (
-                                        <option key={ct.id} value={ct.slug}>{ct.name}</option>
-                                    ))}
-                                </select>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
+                                    <select 
+                                        value={data.content_type || ''} 
+                                        onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
+                                        className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
+                                    >
+                                        <option value="">Select Content Type...</option>
+                                        {contentTypes.map(ct => (
+                                            <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {data.content_type && (
+                                    <div className="space-y-3">
+                                        <div className="flex items-center justify-between">
+                                            <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Customization</label>
+                                            <LucideIcons.Settings2 size={12} className="text-gray-400" />
+                                        </div>
+                                        <div className="space-y-2 max-h-80 overflow-y-auto pr-1 custom-scrollbar">
+                                            {(contentTypes.find(ct => ct.slug === data.content_type)?.fields || []).map(field => {
+                                                const fieldConfig = (data.field_config || {})[field.name] || {};
+                                                return (
+                                                    <div key={field.id} className="p-3 bg-white rounded-xl border border-gray-100 shadow-sm space-y-2">
+                                                        <div className="flex items-center justify-between border-b border-gray-50 pb-1 mb-1">
+                                                            <span className="text-[10px] font-mono font-bold text-indigo-400 uppercase">{field.name}</span>
+                                                            <span className="text-[8px] px-1.5 py-0.5 bg-gray-50 text-gray-400 rounded uppercase font-bold">{field.type}</span>
+                                                        </div>
+                                                        <div className="space-y-2">
+                                                            <div>
+                                                                <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Caption (Label)</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={fieldConfig.label || ''} 
+                                                                    onChange={e => {
+                                                                        const newConfig = { ...(data.field_config || {}), [field.name]: { ...fieldConfig, label: e.target.value } };
+                                                                        updateBlockData(block.id, 'field_config', newConfig);
+                                                                    }}
+                                                                    placeholder={field.name}
+                                                                    className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-7"
+                                                                />
+                                                            </div>
+                                                            <div>
+                                                                <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Placeholder</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    value={fieldConfig.placeholder || ''} 
+                                                                    onChange={e => {
+                                                                        const newConfig = { ...(data.field_config || {}), [field.name]: { ...fieldConfig, placeholder: e.target.value } };
+                                                                        updateBlockData(block.id, 'field_config', newConfig);
+                                                                    }}
+                                                                    className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-7"
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
+
+                                        <div className="pt-4 border-t border-gray-100 flex items-center justify-between bg-emerald-50/50 p-2 rounded-lg mt-2">
+                                            <div className="flex items-center gap-2">
+                                                <LucideIcons.Zap size={14} className="text-emerald-500" />
+                                                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sync with DataGrid</span>
+                                            </div>
+                                            <label className="relative inline-flex items-center cursor-pointer">
+                                                <input 
+                                                    type="checkbox" 
+                                                    checked={data.syncWithGrid || false} 
+                                                    onChange={e => updateBlockData(block.id, 'syncWithGrid', e.target.checked)}
+                                                    className="sr-only peer" 
+                                                />
+                                                <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
+                                            </label>
+                                        </div>
+
+                                        {data.syncWithGrid && (
+                                            <div className="pt-2 animate-in fade-in slide-in-from-top-1">
+                                                <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Target Action ID (Optional)</label>
+                                                <input 
+                                                    type="text" 
+                                                    value={data.trigger_action_id || ''} 
+                                                    onChange={e => updateBlockData(block.id, 'trigger_action_id', e.target.value)}
+                                                    placeholder="e.g. view, edit, or fullname"
+                                                    className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-8"
+                                                />
+                                                <p className="text-[8px] text-gray-400 mt-1 italic">Hanya merespon jika "ID Aksi" pada DataGrid sesuai.</p>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
                             </div>
                         ) : (
                             <div>

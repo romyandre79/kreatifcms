@@ -41,14 +41,28 @@ const DataGridBlock = ({ data = {} }) => {
                     </div>
                 )}
 
-                <div className="h-[650px] bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
+                <div 
+                    className="bg-white rounded-[32px] shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden"
+                    style={{ 
+                        height: (data.height_mode === 'auto') ? 'auto' : `${data.height_value || 650}px`,
+                        minHeight: (data.height_mode === 'auto') ? '100px' : 'none'
+                    }}
+                >
                     <AdvancedDataGrid 
                         slug={data.content_type}
                         config={{
                             columns: data.columns || [],
                             buttons: data.buttons || [],
                             perPage: data.per_page || 15,
-                            serverSide: data.server_side ?? true
+                            serverSide: data.server_side ?? true,
+                            showSelection: data.showSelection,
+                            broadcastClicks: data.broadcastClicks,
+                            content_type: data.content_type,
+                            settings: {
+                                icon: data.icon,
+                                footer_text: data.footer_text,
+                                title: data.title
+                            }
                         }}
                     />
                 </div>
