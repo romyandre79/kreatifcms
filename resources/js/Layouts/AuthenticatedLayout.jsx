@@ -131,6 +131,10 @@ export default function AuthenticatedLayout({ header, children }) {
         filteredNavItems.push({ name: 'Marketing', href: safeRoute('brevo.index'), icon: Send, active: isRouteActive('brevo.*') });
     }
 
+    if (plugins.some(p => p.alias === 'aiassistant' && p.enabled) && route().has('ai.settings')) {
+        filteredNavItems.push({ name: 'AI Assistant', href: safeRoute('ai.settings'), icon: Grid, active: isRouteActive('ai.settings') });
+    }
+
     if (hasPermission('jobs', 'read') && plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {
         filteredNavItems.push({ name: 'Jobs', href: safeRoute('jobmanager.index'), icon: Activity, active: isRouteActive('jobmanager.*') });
     }
@@ -288,7 +292,7 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
                 </main>
             </div>
-            {hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'aiassistant' && p.enabled !== false) && <AiAssistantSidebar />}
+            {hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'aiassistant' && p.enabled) && <AiAssistantSidebar />}
         </div>
     );
 }

@@ -171,13 +171,15 @@ export default function Index({ plugins }) {
                                             <a href={route('plugins.export', plugin.name)} className="text-gray-400 hover:text-indigo-600 transition-colors" title="Export Plugin to ZIP">
                                                 <Download className="w-5 h-5" />
                                             </a>
-                                            <button 
-                                                onClick={() => handleOpenSettings(plugin)}
-                                                className="text-gray-400 hover:text-gray-600 transition-colors"
-                                                title="Plugin Settings"
-                                            >
-                                                <Settings className="w-5 h-5" />
-                                            </button>
+                                            {plugin.settings && plugin.settings.length > 0 && (
+                                                <button 
+                                                    onClick={() => handleOpenSettings(plugin)}
+                                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                                    title="Plugin Settings"
+                                                >
+                                                    <Settings className="w-5 h-5" />
+                                                </button>
+                                            )}
                                             <button 
                                                 onClick={() => confirmDelete(plugin)}
                                                 className="text-gray-400 hover:text-red-600 transition-colors"
