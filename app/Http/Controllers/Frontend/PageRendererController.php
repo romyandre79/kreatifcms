@@ -11,7 +11,14 @@ class PageRendererController extends Controller
 {
     public function show($slug)
     {
-        $page = Page::where('slug', $slug)->where('is_published', true)->firstOrFail();
+        $query = Page::where('slug', $slug);
+        
+        // If not logged in, only show published pages
+        if (!auth()->check()) {
+            $query->where('is_published', true);
+        }
+        
+        $page = $query->firstOrFail();
         $pageData = $page->toArray();
         $schemaService = app(\App\Services\SchemaService::class);
         $pageData['blocks'] = $schemaService->hydrateDynamicBlocks($pageData['blocks']);
@@ -36,7 +43,14 @@ class PageRendererController extends Controller
     public function home()
     {
         $homeSlug = \App\Models\Setting::get('general', 'home_page_slug', 'welcome');
-        $page = Page::where('slug', $homeSlug)->where('is_published', true)->first();
+        $query = Page::where('slug', $homeSlug);
+
+        // If not logged in, only show published home page
+        if (!auth()->check()) {
+            $query->where('is_published', true);
+        }
+
+        $page = $query->first();
 
         if ($page) {
             $pageData = $page->toArray();

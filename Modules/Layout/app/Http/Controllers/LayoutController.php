@@ -185,11 +185,16 @@ class LayoutController extends Controller
         if (file_exists($customFontsPath)) {
             $files = scandir($customFontsPath);
             foreach ($files as $file) {
+                if ($file === '.' || $file === '..') continue;
                 $ext = pathinfo($file, PATHINFO_EXTENSION);
-                if (in_array($ext, ['ttf', 'woff', 'woff2'])) {
-                    $fontName = pathinfo($file, PATHINFO_FILENAME);
+                if (in_array($ext, ['ttf', 'woff', 'woff2', 'otf'])) {
+                    $fontSlug = pathinfo($file, PATHINFO_FILENAME);
+                    // Prettify name: plus-jakarta-sans -> Plus Jakarta Sans
+                    $fontName = Str::title(str_replace(['-', '_'], ' ', $fontSlug));
+                    
                     $customFonts[] = [
                         'name' => $fontName,
+                        'slug' => $fontSlug,
                         'file' => $file,
                         'url' => asset("fonts/custom/{$file}")
                     ];
@@ -205,13 +210,14 @@ class LayoutController extends Controller
         $theme = $layout->theme_data ?? [];
         $css = "/* Layout CSS: {$layout->name} */\n\n";
 
-        // Inject font-faces
+        // Inject font-faces for ALL custom fonts
         $fonts = $this->getAvailableFonts();
         foreach ($fonts as $font) {
-            if ($font['file']) {
+            if (isset($font['file']) && $font['file']) {
                 $ext = pathinfo($font['file'], PATHINFO_EXTENSION);
                 $format = $ext === 'woff2' ? 'woff2' : ($ext === 'woff' ? 'woff' : 'truetype');
-                $url = asset("fonts/custom/{$font['file']}");
+                // Use relative path for CSS compatibility
+                $url = "/fonts/custom/{$font['file']}";
                 $css .= "@font-face {\n";
                 $css .= "    font-family: '{$font['name']}';\n";
                 $css .= "    src: url('{$url}') format('{$format}');\n";

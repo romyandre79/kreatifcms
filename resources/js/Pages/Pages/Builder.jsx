@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
     Layout, Type, Image as ImageIcon, Grid, Layers,
@@ -200,6 +200,24 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
+    // AI Integration - Listen for applied layouts
+    useEffect(() => {
+        const handleAiLayout = (e) => {
+            const data = e.detail;
+            if (data.blocks) {
+                setBlocks(ensureIds(data.blocks));
+                setSidebarTab('structure');
+            }
+            if (data.meta_title) setMetaTitle(data.meta_title);
+            if (data.meta_description) setMetaDescription(data.meta_description);
+            // Optionally set title if provided
+            if (data.title) setTitle(data.title);
+        };
+
+        window.addEventListener('apply-ai-layout', handleAiLayout);
+        return () => window.removeEventListener('apply-ai-layout', handleAiLayout);
+    }, []);
 
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     // Which field of which block requested the media picker?

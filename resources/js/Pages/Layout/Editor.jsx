@@ -1,6 +1,6 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, router, usePage } from '@inertiajs/react';
-import { useState, useMemo, useRef } from 'react';
+import { useState, useMemo, useRef, useEffect } from 'react';
 import * as LucideIcons from 'lucide-react';
 import {
     Layout as LayoutIcon, Type, Image as ImageIcon, Grid, Layers,
@@ -152,6 +152,36 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
+    // AI Integration - Listen for applied layouts
+    useEffect(() => {
+        const handleAiLayout = (e) => {
+            const data = e.detail;
+            
+            // For layout editor, we expect a slightly different schema
+            if (data.header_blocks) {
+                const blocks = ensureIds(data.header_blocks);
+                setHeaderData(blocks);
+                if (activeTab === 'header') setBlocks(blocks);
+            }
+            if (data.footer_blocks) {
+                const blocks = ensureIds(data.footer_blocks);
+                setFooterData(blocks);
+                if (activeTab === 'footer') setBlocks(blocks);
+            }
+            if (data.theme_data) setTheme(data.theme_data);
+            if (data.name) setLayoutName(data.name);
+            if (data.access_type) setAccessType(data.access_type);
+            if (data.roles) setSelectedRoles(data.roles);
+            if (data.is_default !== undefined) setIsDefault(data.is_default);
+
+            // Auto switch to header tab if data was applied
+            setActiveTab('header');
+        };
+
+        window.addEventListener('apply-ai-layout', handleAiLayout);
+        return () => window.removeEventListener('apply-ai-layout', handleAiLayout);
+    }, [activeTab]);
 
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [mediaPickerTarget, setMediaPickerTarget] = useState(null);
