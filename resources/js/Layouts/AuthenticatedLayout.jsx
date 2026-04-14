@@ -24,13 +24,17 @@ import {
     Image as ImageIcon,
     Activity,
     Globe,
-    Send
+    Send,
+    HelpCircle,
 } from 'lucide-react';
 
 import AiAssistantSidebar from '@/Components/AiAssistantSidebar';
+import LanguageSwitcher from '@/Components/LanguageSwitcher';
+import DocumentationModal from '@/Components/DocumentationModal';
+import { BookOpen } from 'lucide-react';
 
 export default function AuthenticatedLayout({ header, children }) {
-    const { auth, flash, plugins = [] } = usePage().props;
+    const { auth, flash, plugins = [], localization, active_documentation } = usePage().props;
     const user = auth.user;
     const permissions = auth.permissions || [];
 
@@ -44,6 +48,14 @@ export default function AuthenticatedLayout({ header, children }) {
 
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [docModalOpen, setDocModalOpen] = useState(false);
+
+    /**
+     * Translate helper
+     */
+    const t = (key, group = 'ui') => {
+        return localization?.translations?.[group]?.[key] || key;
+    };
 
     /**
      * Safe route helper to prevent Ziggy crashes when routes are missing 
@@ -72,11 +84,11 @@ export default function AuthenticatedLayout({ header, children }) {
     };
 
     const navItems = [
-        { name: 'Dashboard', href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
-        { name: 'Pages', href: route('pages.index'), icon: FileText, active: route().current('pages.*'), contentType: 'pages' },
-        { name: 'Blocks', href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'reusableblock' },
-        { name: 'Plugins', href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
-        { name: 'Users', href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
+        { name: t('dashboard', 'menu'), href: route('dashboard'), icon: LayoutDashboard, active: route().current('dashboard') },
+        { name: t('pages', 'menu'), href: route('pages.index'), icon: FileText, active: route().current('pages.*'), contentType: 'pages' },
+        { name: t('blocks', 'menu'), href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'reusableblock' },
+        { name: t('plugins', 'menu'), href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
+        { name: t('users', 'menu'), href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
         { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
         { name: 'System Update', href: route('system.update.index'), icon: Settings, active: route().current('system.update.*'), contentType: 'system' },
     ];
@@ -137,6 +149,10 @@ export default function AuthenticatedLayout({ header, children }) {
 
     if (hasPermission('jobs', 'read') && plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {
         filteredNavItems.push({ name: 'Jobs', href: safeRoute('jobmanager.index'), icon: Activity, active: isRouteActive('jobmanager.*') });
+    }
+
+    if (hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'languageswitcher' && p.enabled !== false) && route().has('languages.index')) {
+        filteredNavItems.push({ name: 'Language', href: safeRoute('languages.index'), icon: Globe, active: isRouteActive('languages.*') });
     }
 
     return (
@@ -207,7 +223,7 @@ export default function AuthenticatedLayout({ header, children }) {
                             <Dropdown.Link href={route('logout')} method="post" as="button">
                                 <div className="flex items-center gap-2 text-red-600">
                                     <LogOut className="w-4 h-4" />
-                                    Log Out
+                                    {t('logout')}
                                 </div>
                             </Dropdown.Link>
                         </Dropdown.Content>
@@ -265,6 +281,19 @@ export default function AuthenticatedLayout({ header, children }) {
                     </div>
 
                     <div className="flex items-center gap-4">
+                        {plugins.some(p => p.alias === 'languageswitcher' && p.enabled !== false) && <LanguageSwitcher />}
+
+                        {active_documentation && plugins.some(p => p.alias === 'languageswitcher' && p.enabled !== false) && (
+                            <button
+                                onClick={() => setDocModalOpen(true)}
+                                className="flex items-center gap-2 px-3 py-2 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all font-semibold text-sm shadow-sm"
+                                title={t('read_documentation')}
+                            >
+                                <BookOpen className="w-4 h-4" />
+                                <span className="hidden sm:inline">{t('read_documentation')}</span>
+                            </button>
+                        )}
+
                         {/* Right side Profile dropdown for mobile when sidebar is small or closed */}
                         <div className="md:hidden">
                             <Link href={route('profile.edit')} className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600">
@@ -293,6 +322,11 @@ export default function AuthenticatedLayout({ header, children }) {
                 </main>
             </div>
             {hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'aiassistant' && p.enabled) && <AiAssistantSidebar />}
+            
+            <DocumentationModal 
+                isOpen={docModalOpen} 
+                onClose={() => setDocModalOpen(false)} 
+            />
         </div>
     );
 }

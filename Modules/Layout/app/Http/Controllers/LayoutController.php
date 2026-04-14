@@ -8,6 +8,7 @@ use App\Services\SchemaService;
 use Modules\ReusableBlock\Models\Block;
 use Modules\Layout\Models\Layout;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 
 class LayoutController extends Controller

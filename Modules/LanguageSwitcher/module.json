@@ -1,0 +1,11 @@
+{
+    "name": "LanguageSwitcher",
+    "alias": "languageswitcher",
+    "description": "",
+    "keywords": [],
+    "priority": 0,
+    "providers": [
+        "Modules\\LanguageSwitcher\\Providers\\LanguageSwitcherServiceProvider"
+    ],
+    "files": []
+}

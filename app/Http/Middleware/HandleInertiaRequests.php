@@ -4,6 +4,10 @@ namespace App\Http\Middleware;
 
 use Illuminate\Http\Request;
 use Inertia\Middleware;
+use Illuminate\Support\Facades\App;
+use Modules\LanguageSwitcher\Models\Language;
+use Modules\LanguageSwitcher\Models\Translation;
+use Modules\LanguageSwitcher\Models\Documentation;
 
 class HandleInertiaRequests extends Middleware
 {
@@ -148,6 +152,26 @@ class HandleInertiaRequests extends Middleware
                         return array_merge($defaults, $settings);
                     })(),
                 ];
+            },
+            'localization' => function () {
+                $isLangEnabled = class_exists('\Modules\LanguageSwitcher\Models\Language');
+                if (!$isLangEnabled) return null;
+
+                $locale = App::getLocale();
+                return [
+                    'active_locale' => $locale,
+                    'languages' => Language::where('is_active', true)->get(['id', 'code', 'name', 'flag']),
+                    'translations' => Translation::getForLanguage($locale),
+                ];
+            },
+            'active_documentation' => function () use ($request) {
+                $isDocEnabled = class_exists('\Modules\LanguageSwitcher\Models\Documentation');
+                if (!$isDocEnabled) return null;
+
+                $routeName = $request->route() ? $request->route()->getName() : null;
+                if (!$routeName) return null;
+
+                return Documentation::getByKey($routeName);
             },
         ];
     }
