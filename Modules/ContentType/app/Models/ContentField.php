@@ -7,12 +7,13 @@ use Illuminate\Support\Str;
 
 class ContentField extends Model
 {
-    protected $fillable = ['content_type_id', 'name', 'type', 'required', 'is_unique', 'options', 'description', 'sort_order'];
+    protected $fillable = ['content_type_id', 'name', 'type', 'required', 'is_unique', 'is_translatable', 'options', 'description', 'sort_order'];
 
     protected $casts = [
         'options' => 'array',
         'required' => 'boolean',
         'is_unique' => 'boolean',
+        'is_translatable' => 'boolean',
     ];
 
     protected $appends = ['attribute_name'];

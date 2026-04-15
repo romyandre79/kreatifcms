@@ -1,19 +1,29 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm } from '@inertiajs/react';
 import { Save, ArrowLeft, Image as ImageIcon, Paperclip, X } from 'lucide-react';
-import { Link } from '@inertiajs/react';
 import { useState } from 'react';
 import MediaPickerModal from '@/Components/MediaPickerModal';
 import Summernote from '@/Components/Summernote';
-import { usePage } from '@inertiajs/react';
+import { usePage, Link } from '@inertiajs/react';
+import { Globe } from 'lucide-react';
 
 export default function Create({ contentType, slug, availableRelationships }) {
     const [mediaPickerOpen, setMediaPickerOpen] = useState(false);
     const [activePickerField, setActivePickerField] = useState(null);
 
+    const { plugins = [], localization } = usePage().props;
+    const languages = localization?.languages || [];
+    const isLangActive = plugins.some(p => p.alias === 'languageswitcher' && p.enabled);
+
     const initialState = {};
     contentType.fields.forEach(field => {
-        initialState[field.attribute_name] = field.type === 'boolean' ? false : '';
+        if (field.is_translatable && isLangActive && languages.length > 1) {
+            const localizedVal = {};
+            languages.forEach(l => localizedVal[l.code] = '');
+            initialState[field.attribute_name] = localizedVal;
+        } else {
+            initialState[field.attribute_name] = field.type === 'boolean' ? false : '';
+        }
     });
 
     const { data, setData, post, processing, errors } = useForm(initialState);
@@ -33,8 +43,59 @@ export default function Create({ contentType, slug, availableRelationships }) {
 
     const renderField = (field) => {
         const name = field.attribute_name;
-        const { plugins } = usePage().props;
         const isSummernoteEnabled = plugins?.some(p => p.alias === 'editorsummernote');
+        const isTranslatable = field.is_translatable && isLangActive && languages.length > 1;
+
+        if (isTranslatable) {
+            return (
+                <div className="space-y-3 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                    <div className="flex items-center justify-between">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-widest flex items-center gap-2">
+                            <Globe className="w-3 h-3 text-indigo-500" />
+                            {field.name} (Multilingual)
+                            {field.required && <span className="text-red-500">*</span>}
+                        </label>
+                    </div>
+                    <div className="space-y-4">
+                        {languages.map(lang => (
+                            <div key={lang.code} className="relative group">
+                                <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-40 group-focus-within:opacity-100 transition-opacity z-10">
+                                    <span className="text-xs">{lang.flag}</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">{lang.code}</span>
+                                </div>
+                                {field.type === 'longtext' ? (
+                                    isSummernoteEnabled ? (
+                                        <div className="pl-14">
+                                            <Summernote
+                                                value={data[name]?.[lang.code] || ''}
+                                                onChange={value => setData(name, { ...data[name], [lang.code]: value })}
+                                                placeholder={`${field.name} (${lang.name})...`}
+                                            />
+                                        </div>
+                                    ) : (
+                                        <textarea 
+                                            value={data[name]?.[lang.code] || ''}
+                                            onChange={e => setData(name, { ...data[name], [lang.code]: e.target.value })}
+                                            className="w-full pl-16 pr-4 py-3 bg-white border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all min-h-[100px] resize-none"
+                                            placeholder={`${field.name} (${lang.name})...`}
+                                        />
+                                    )
+                                ) : (
+                                    <input 
+                                        type="text"
+                                        value={data[name]?.[lang.code] || ''}
+                                        onChange={e => setData(name, { ...data[name], [lang.code]: e.target.value })}
+                                        className="w-full pl-16 pr-4 py-3 bg-white border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                        placeholder={`${field.name} (${lang.name})...`}
+                                    />
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                    {errors[name] && <p className="mt-1 text-sm text-red-600">{errors[name]}</p>}
+                </div>
+            );
+        }
 
         switch (field.type) {
             case 'boolean':

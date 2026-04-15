@@ -207,9 +207,28 @@ class SchemaService
                                     }
 
                                     // Process onSelect hook if available
-                                    $contentTypeDoc = ContentType::where('slug', $ctSlug)->first();
-                                    if ($contentTypeDoc && !empty($contentTypeDoc->events['onSelect'])) {
-                                        foreach ($items as $item) {
+                                    $contentTypeDoc = ContentType::with('fields')->where('slug', $ctSlug)->first();
+                                    $isLangActive = class_exists('\Modules\LanguageSwitcher\Models\Language') && \Nwidart\Modules\Facades\Module::isEnabled('LanguageSwitcher');
+                                    $currentLocale = \Illuminate\Support\Facades\App::getLocale();
+
+                                    foreach ($items as $item) {
+                                        // Handle localizations
+                                        if ($contentTypeDoc) {
+                                            foreach ($contentTypeDoc->fields as $f) {
+                                                $fName = \Illuminate\Support\Str::snake($f->name);
+                                                if ($f->is_translatable && isset($item->{$fName})) {
+                                                    $val = $item->{$fName};
+                                                    if ($val && (strpos($val, '{') === 0 || is_array($val))) {
+                                                        $translations = is_array($val) ? $val : json_decode($val, true);
+                                                        if (is_array($translations)) {
+                                                            $item->{$fName} = $translations[$currentLocale] ?? $translations['en'] ?? array_shift($translations);
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+
+                                        if ($contentTypeDoc && !empty($contentTypeDoc->events['onSelect'])) {
                                             $context = ['entry' => $item];
                                             $this->executePhpHook($contentTypeDoc->events['onSelect'], $context);
                                         }

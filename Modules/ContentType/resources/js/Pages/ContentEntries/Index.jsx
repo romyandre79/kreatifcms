@@ -84,8 +84,21 @@ export default function Index({ contentType, entries, slug }) {
                                                 const fieldName = field.attribute_name;
                                                 const value = entry[fieldName];
 
-                                                const formatValue = (val, type) => {
+                                                const formatValue = (val, field) => {
                                                     if (val === null || val === undefined) return '-';
+
+                                                    // Handle Translatable Fields
+                                                    if (field.is_translatable) {
+                                                        let parsed = val;
+                                                        if (typeof val === 'string') {
+                                                            try { parsed = JSON.parse(val); } catch (e) { parsed = val; }
+                                                        }
+                                                        
+                                                        if (parsed && typeof parsed === 'object') {
+                                                            const { active_locale } = usePage().props.localization || { active_locale: 'en' };
+                                                            return parsed[active_locale] || parsed['en'] || Object.values(parsed)[0] || '-';
+                                                        }
+                                                    }
 
                                                     // Format Date
                                                     if (typeof val === 'string') {
@@ -103,7 +116,7 @@ export default function Index({ contentType, entries, slug }) {
                                                     }
 
                                                     // Format Number
-                                                    if (type === 'integer' || typeof val === 'number') {
+                                                    if (field.type === 'integer' || typeof val === 'number') {
                                                         return new Intl.NumberFormat('id-ID').format(val);
                                                     }
 
@@ -117,7 +130,7 @@ export default function Index({ contentType, entries, slug }) {
                                                                 <img src={value} alt="Preview" className="w-full h-full object-cover" />
                                                             </div>
                                                         ) : (
-                                                            formatValue(value, field.type)
+                                                            formatValue(value, field)
                                                         )}
                                                     </td>
                                                 );
