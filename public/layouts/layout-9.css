@@ -1,0 +1,77 @@
+/* Layout CSS: Layout for Dorang Gadget - Hyper Clone (AI Generated) */
+
+@font-face {
+    font-family: 'Stencilptxsprayeddemo J9Mam';
+    src: url('/fonts/custom/StencilPtxSprayedDemo-j9MAM.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Dinnextltpro Reguler';
+    src: url('/fonts/custom/dinnextltpro-reguler.woff2') format('woff2');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Dm Sans';
+    src: url('/fonts/custom/dm-sans.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Nunito Sans';
+    src: url('/fonts/custom/nunito-sans.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Questrial';
+    src: url('/fonts/custom/questrial.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Roboto';
+    src: url('/fonts/custom/roboto.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+:root {
+    --primary-color: #d61f31;
+    --secondary-color: #6c757d;
+    --base-font-size: 16px;
+    --font-family: 'Inter|Plus Jakarta Sans|Roboto', sans-serif;
+}
+
+body { font-family: var(--font-family) !important; font-size: var(--base-font-size); }
+
+/* Custom CSS */
+/* Button Style */
+.btn-primary, .btn-cart { 
+  font-family: Arial, Helvetica, sans-serif;
+  font-size:16px;
+  font-weight:bold;
+  background-color: #d61f31;
+  border-radius:5px;
+  padding: 12px 20px;
+  color:white;
+ }
+/* Card Style */
+.product-card, .product { 
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    /* atau ubah sesuai lebar item */
+    gap: 20px;
+ }

@@ -33,5 +33,6 @@
     "VideoGrid": true,
     "Brevo": true,
     "PhotoGrid": true,
-    "DataGrid": true
+    "DataGrid": true,
+    "LanguageSwitcher": true
 }

@@ -71,7 +71,8 @@
             "Modules\\VideoGrid\\": "Modules/VideoGrid/app/",
             "Modules\\Brevo\\": "Modules/Brevo/app/",
             "Modules\\PhotoGrid\\": "Modules/PhotoGrid/app/",
-            "Modules\\DataGrid\\": "Modules/DataGrid/app/"
+            "Modules\\DataGrid\\": "Modules/DataGrid/app/",
+            "Modules\\LanguageSwitcher\\": "Modules/LanguageSwitcher/app/"
         }
 
     },

@@ -4,6 +4,7 @@ import { Link, usePage, router } from '@inertiajs/react';
 import { Globe, ChevronDown, Menu, X, Search, ShoppingCart, Grid, ChevronRight } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import SocialIcon from '@/Components/SocialIcon';
+import LanguageSwitcher from '@/Components/LanguageSwitcher';
 
 const NavBarBlock = ({ data = {} }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -14,7 +15,8 @@ const NavBarBlock = ({ data = {} }) => {
     const megaTimeoutRef = useRef(null);
     const navbarRef = useRef(null);
     const [navbarBottom, setNavbarBottom] = useState(0);
-    const { auth } = usePage().props;
+    const { auth, plugins = [] } = usePage().props;
+    const isLanguagePluginEnabled = plugins.some(p => p.alias === 'languageswitcher' && p.enabled !== false);
     const isLoggedIn = !!auth?.user;
     const links = Array.isArray(data.links) ? data.links : [];
     const allButtons = data.buttons !== undefined
@@ -68,7 +70,7 @@ const NavBarBlock = ({ data = {} }) => {
         };
     }, [activeMega]);
 
-    const baseComposition = Array.isArray(data.composition) ? data.composition : ['logo', 'links', 'buttons', 'social_links'];
+    const baseComposition = Array.isArray(data.composition) ? data.composition : ['logo', 'links', 'buttons', 'social_links', 'language_switcher'];
     const composition = baseComposition;
 
     const renderLogo = (isMobile = false) => {
@@ -341,6 +343,12 @@ const NavBarBlock = ({ data = {} }) => {
                         );
                     }
                 }
+                case 'language_switcher':
+                    return isLanguagePluginEnabled && (
+                        <div key="language_switcher" className="ml-4 pl-4 border-l border-gray-200 flex items-center h-10">
+                            <LanguageSwitcher />
+                        </div>
+                    );
                 default:
                     return null;
             }
@@ -466,6 +474,12 @@ const NavBarBlock = ({ data = {} }) => {
                     );
                 }
             }
+            case 'language_switcher':
+                return isLanguagePluginEnabled && (
+                    <div className="pt-4 border-t border-gray-100 mt-2 flex justify-center pb-4">
+                        <LanguageSwitcher />
+                    </div>
+                );
             default:
                 return null;
         }
