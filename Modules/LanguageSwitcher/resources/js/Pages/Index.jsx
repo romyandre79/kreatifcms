@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 import { Head, useForm, router } from '@inertiajs/react';
-import { 
-    Globe, Languages, FileText, Plus, Trash2, Edit2, 
-    Save, CheckCircle2, AlertCircle, Search, Filter 
+import {
+    Globe, Languages, FileText, Plus, Trash2, Edit2,
+    Save, CheckCircle2, AlertCircle, Search, Filter
 } from 'lucide-react';
 import { Tab } from '@headlessui/react';
 
@@ -15,8 +15,8 @@ export default function Index({ languages, translations, documentations }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState(0);
 
-    const filteredTranslations = translations.filter(t => 
-        t.key.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    const filteredTranslations = translations.filter(t =>
+        t.key.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.group.toLowerCase().includes(searchTerm.toLowerCase()) ||
         t.value.toLowerCase().includes(searchTerm.toLowerCase())
     );
@@ -29,7 +29,7 @@ export default function Index({ languages, translations, documentations }) {
 
             <div className="py-8 bg-gray-50 min-h-screen">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-                    
+
                     {/* Header Section */}
                     <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
                         <div>
@@ -85,8 +85,8 @@ export default function Index({ languages, translations, documentations }) {
 
                                 {/* Translations Tab */}
                                 <Tab.Panel className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <TranslationsSection 
-                                        translations={filteredTranslations} 
+                                    <TranslationsSection
+                                        translations={filteredTranslations}
                                         languages={languages}
                                         searchTerm={searchTerm}
                                         setSearchTerm={setSearchTerm}
@@ -147,7 +147,7 @@ function LanguagesSection({ languages }) {
     };
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white rounded-[2rem] shadow-sm border border-gray-100 overflow-hidden">
                     <table className="w-full text-left">
@@ -308,7 +308,7 @@ function TranslationsSection({ translations, languages, searchTerm, setSearchTer
 
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8 items-start">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
                 <div className="lg:col-span-1 bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 sticky top-8">
                     <h3 className="text-xl font-black text-gray-900 tracking-tight mb-8">
                         {editingId ? 'Edit Translation' : 'New Translation'}
@@ -467,7 +467,7 @@ function DocumentationSection({ documentations, languages }) {
             emptyTitle[l.code] = '';
             emptyContent[l.code] = '';
         });
-        
+
         setData('sections', [
             ...data.sections,
             { title: emptyTitle, content: emptyContent }
@@ -511,7 +511,7 @@ function DocumentationSection({ documentations, languages }) {
         return (
             <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-300">
                 <div className="flex items-center justify-between">
-                    <button 
+                    <button
                         onClick={() => setView('list')}
                         className="flex items-center gap-2 text-sm font-black text-gray-500 hover:text-indigo-600 transition-colors uppercase tracking-widest"
                     >
@@ -519,7 +519,7 @@ function DocumentationSection({ documentations, languages }) {
                         Back to list
                     </button>
                     <div className="flex items-center gap-4">
-                        <button 
+                        <button
                             onClick={handleSubmit}
                             disabled={processing}
                             className="px-8 py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center gap-2 hover:bg-indigo-700 transition-all active:scale-95"
@@ -530,7 +530,7 @@ function DocumentationSection({ documentations, languages }) {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <div className="lg:col-span-1 space-y-6">
                         <div className="bg-white p-8 rounded-[2.5rem] shadow-sm border border-gray-100 space-y-6">
                             <h3 className="text-xl font-black text-gray-900 tracking-tight flex items-center gap-2">
@@ -540,8 +540,8 @@ function DocumentationSection({ documentations, languages }) {
                             <div className="space-y-4">
                                 <div className="space-y-2">
                                     <label className="text-xs font-black text-gray-400 uppercase tracking-widest">Unique Route Key</label>
-                                    <input 
-                                        type="text" 
+                                    <input
+                                        type="text"
                                         value={data.key}
                                         onChange={e => setData('key', e.target.value)}
                                         placeholder="e.g. pages.index"
@@ -557,7 +557,7 @@ function DocumentationSection({ documentations, languages }) {
                                                 <span className="text-sm">{lang.flag}</span>
                                                 <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">{lang.name} Title</label>
                                             </div>
-                                            <input 
+                                            <input
                                                 type="text"
                                                 value={data.title?.[lang.code] || ''}
                                                 onChange={e => updateTitle(lang.code, e.target.value)}
@@ -583,7 +583,7 @@ function DocumentationSection({ documentations, languages }) {
                     <div className="lg:col-span-2 space-y-6">
                         <div className="flex items-center justify-between px-4">
                             <h3 className="text-xl font-black text-gray-900 tracking-tight">Content Sections</h3>
-                            <button 
+                            <button
                                 onClick={addSection}
                                 className="flex items-center gap-2 px-4 py-2 bg-white text-indigo-600 rounded-xl text-[10px] font-black uppercase tracking-widest shadow-sm border border-gray-100 hover:bg-indigo-50 transition-all"
                             >
@@ -602,14 +602,14 @@ function DocumentationSection({ documentations, languages }) {
                                             </div>
                                             <span className="font-black text-xs text-gray-500 uppercase tracking-widest">Documentation Block</span>
                                         </div>
-                                        <button 
+                                        <button
                                             onClick={() => removeSection(idx)}
                                             className="p-2 text-gray-400 hover:text-red-600 hover:bg-white rounded-lg transition-all"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
                                     </div>
-                                    
+
                                     <div className="p-8 grid grid-cols-1 md:grid-cols-2 gap-8">
                                         {languages.map(lang => (
                                             <div key={lang.code} className="space-y-4">
@@ -620,7 +620,7 @@ function DocumentationSection({ documentations, languages }) {
                                                 <div className="space-y-4">
                                                     <div className="space-y-1">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Subtitle</label>
-                                                        <input 
+                                                        <input
                                                             type="text"
                                                             value={section.title?.[lang.code] || ''}
                                                             onChange={e => updateSection(idx, 'title', lang.code, e.target.value)}
@@ -629,7 +629,7 @@ function DocumentationSection({ documentations, languages }) {
                                                     </div>
                                                     <div className="space-y-1">
                                                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Main Content</label>
-                                                        <textarea 
+                                                        <textarea
                                                             rows={6}
                                                             value={section.content?.[lang.code] || ''}
                                                             onChange={e => updateSection(idx, 'content', lang.code, e.target.value)}
@@ -649,7 +649,7 @@ function DocumentationSection({ documentations, languages }) {
                                         <Plus className="w-8 h-8" />
                                     </div>
                                     <p className="text-gray-400 font-bold">No sections added yet.</p>
-                                    <button 
+                                    <button
                                         onClick={addSection}
                                         className="mt-4 text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:underline"
                                     >
@@ -671,7 +671,7 @@ function DocumentationSection({ documentations, languages }) {
                     <h3 className="text-2xl font-black text-gray-900 tracking-tight">Registered Documentation</h3>
                     <p className="text-gray-500 text-sm font-medium">Contextual help linked to system routes.</p>
                 </div>
-                <button 
+                <button
                     onClick={handleCreate}
                     className="px-6 py-4 bg-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest shadow-xl shadow-indigo-100 flex items-center gap-2 hover:bg-indigo-700 transition-all active:scale-95"
                 >
@@ -689,13 +689,13 @@ function DocumentationSection({ documentations, languages }) {
                                     <FileText className="w-6 h-6" />
                                 </div>
                                 <div className="flex items-center gap-1">
-                                    <button 
+                                    <button
                                         onClick={() => handleEdit(doc)}
                                         className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-all"
                                     >
                                         <Edit2 className="w-4 h-4" />
                                     </button>
-                                    <button 
+                                    <button
                                         onClick={() => handleDelete(doc.id)}
                                         className="p-2 text-gray-400 hover:text-red-600 hover:bg-gray-50 rounded-lg transition-all"
                                     >
@@ -723,7 +723,7 @@ function DocumentationSection({ documentations, languages }) {
                         </div>
                         <h4 className="text-xl font-black text-gray-900 mb-2">No Documentation Found</h4>
                         <p className="text-gray-500 mb-8 max-w-sm mx-auto">Start creating contextual help documentation for your pages to improve user experience.</p>
-                        <button 
+                        <button
                             onClick={handleCreate}
                             className="text-indigo-600 font-black text-[10px] uppercase tracking-widest hover:underline"
                         >
