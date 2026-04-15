@@ -73,6 +73,7 @@ class ContentTypeController extends Controller
                 'type' => $field['type'],
                 'required' => $field['required'] ?? false,
                 'is_unique' => $field['is_unique'] ?? false,
+                'is_translatable' => $field['is_translatable'] ?? false,
                 'description' => $field['description'] ?? null,
                 'options' => $field['options'] ?? null,
                 'sort_order' => $index,
@@ -136,6 +137,7 @@ class ContentTypeController extends Controller
                     'type' => $fieldData['type'],
                     'required' => $fieldData['required'] ?? false,
                     'is_unique' => $fieldData['is_unique'] ?? false,
+                    'is_translatable' => $fieldData['is_translatable'] ?? false,
                     'options' => $fieldData['options'] ?? null,
                     'sort_order' => $index,
                 ]);
@@ -153,6 +155,7 @@ class ContentTypeController extends Controller
                         'type' => $canUpdateType ? $newType : $field->type,
                         'required' => $fieldData['required'] ?? false,
                         'is_unique' => $fieldData['is_unique'] ?? false,
+                        'is_translatable' => $fieldData['is_translatable'] ?? false,
                         'description' => $fieldData['description'] ?? null,
                         'options' => $fieldData['options'] ?? null,
                         'sort_order' => $index,

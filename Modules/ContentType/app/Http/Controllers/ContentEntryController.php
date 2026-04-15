@@ -42,8 +42,26 @@ class ContentEntryController extends Controller
 
         $entries = DB::connection($this->connection)->table($tableName)->get();
 
-        if (!empty($contentType->events['onSelect'])) {
-            foreach ($entries as $entry) {
+        $isLangActive = class_exists('\Modules\LanguageSwitcher\Models\Language') && \Nwidart\Modules\Facades\Module::isEnabled('LanguageSwitcher');
+
+        foreach ($entries as $entry) {
+            if (!$isLangActive) {
+                foreach ($contentType->fields as $field) {
+                    if ($field->is_translatable) {
+                        $fieldName = Str::snake($field->name);
+                        $val = $entry->{$fieldName};
+                        
+                        if ($val && (strpos($val, '{') === 0 || is_array($val))) {
+                            $translations = is_array($val) ? $val : json_decode($val, true);
+                            if (is_array($translations)) {
+                                $entry->{$fieldName} = $translations[config('app.locale')] ?? $translations['en'] ?? array_shift($translations);
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!empty($contentType->events['onSelect'])) {
                 $context = ['entry' => $entry];
                 $this->executePhpHook($contentType->events['onSelect'], $context);
             }
@@ -83,21 +101,35 @@ class ContentEntryController extends Controller
         $rules = [];
         foreach ($contentType->fields as $field) {
             $fieldName = Str::snake($field->name);
-            $fieldRule = ($field->required ? 'required' : 'nullable');
-            if ($field->type === 'text') {
-                $length = $field->options['length'] ?? 255;
-                $fieldRule .= "|max:{$length}";
-            }
-            if ($field->is_unique) {
-                $fieldRule .= "|unique:secondary.{$tableName},{$fieldName}";
-            }
-            if ($field->type === 'relation') {
-                $fieldRule .= '|integer';
+            
+            if ($field->is_translatable && class_exists('\Modules\LanguageSwitcher\Models\Language') && \Nwidart\Modules\Facades\Module::isEnabled('LanguageSwitcher')) {
+                $fieldRule = ($field->required ? 'required' : 'nullable') . '|array';
+            } else {
+                $fieldRule = ($field->required ? 'required' : 'nullable');
+                if ($field->type === 'text') {
+                    $length = $field->options['length'] ?? 255;
+                    $fieldRule .= "|max:{$length}";
+                }
+                if ($field->is_unique) {
+                    $fieldRule .= "|unique:secondary.{$tableName},{$fieldName}";
+                }
+                if ($field->type === 'relation') {
+                    $fieldRule .= '|integer';
+                }
             }
             $rules[$fieldName] = $fieldRule;
         }
 
         $validated = $request->validate($rules);
+
+        // Prepare data for DB (encode translatable fields)
+        foreach ($contentType->fields as $field) {
+            $fieldName = Str::snake($field->name);
+            if ($field->is_translatable && isset($validated[$fieldName]) && is_array($validated[$fieldName])) {
+                $validated[$fieldName] = json_encode($validated[$fieldName]);
+            }
+        }
+
         $validated['user_id'] = Auth::id();
         $validated['created_at'] = now();
         $validated['updated_at'] = now();
@@ -171,6 +203,23 @@ class ContentEntryController extends Controller
             $this->executePhpHook($contentType->events['onSelect'], $context);
         }
 
+        // Flatten translatable fields if plugin is disabled
+        $isLangActive = class_exists('\Modules\LanguageSwitcher\Models\Language') && \Nwidart\Modules\Facades\Module::isEnabled('LanguageSwitcher');
+        if (!$isLangActive) {
+            foreach ($contentType->fields as $field) {
+                if ($field->is_translatable) {
+                    $fieldName = Str::snake($field->name);
+                    $val = $entry->{$fieldName};
+                    if ($val && (strpos($val, '{') === 0 || is_array($val))) {
+                        $translations = is_array($val) ? $val : json_decode($val, true);
+                        if (is_array($translations)) {
+                            $entry->{$fieldName} = $translations[config('app.locale')] ?? $translations['en'] ?? array_shift($translations);
+                        }
+                    }
+                }
+            }
+        }
+
         return response()->json($entry);
     }
 
@@ -185,21 +234,35 @@ class ContentEntryController extends Controller
         $rules = [];
         foreach ($contentType->fields as $field) {
             $fieldName = Str::snake($field->name);
-            $fieldRule = ($field->required ? 'required' : 'nullable');
-            if ($field->type === 'text') {
-                $length = $field->options['length'] ?? 255;
-                $fieldRule .= "|max:{$length}";
-            }
-            if ($field->is_unique) {
-                $fieldRule .= "|unique:secondary.{$tableName},{$fieldName},{$id}";
-            }
-            if ($field->type === 'relation') {
-                $fieldRule .= '|integer';
+
+            if ($field->is_translatable && class_exists('\Modules\LanguageSwitcher\Models\Language') && \Nwidart\Modules\Facades\Module::isEnabled('LanguageSwitcher')) {
+                $fieldRule = ($field->required ? 'required' : 'nullable') . '|array';
+            } else {
+                $fieldRule = ($field->required ? 'required' : 'nullable');
+                if ($field->type === 'text') {
+                    $length = $field->options['length'] ?? 255;
+                    $fieldRule .= "|max:{$length}";
+                }
+                if ($field->is_unique) {
+                    $fieldRule .= "|unique:secondary.{$tableName},{$fieldName},{$id}";
+                }
+                if ($field->type === 'relation') {
+                    $fieldRule .= '|integer';
+                }
             }
             $rules[$fieldName] = $fieldRule;
         }
 
         $validated = $request->validate($rules);
+
+        // Prepare data for DB (encode translatable fields)
+        foreach ($contentType->fields as $field) {
+            $fieldName = Str::snake($field->name);
+            if ($field->is_translatable && isset($validated[$fieldName]) && is_array($validated[$fieldName])) {
+                $validated[$fieldName] = json_encode($validated[$fieldName]);
+            }
+        }
+
         $oldEntry = DB::connection($this->connection)->table($tableName)->where('id', $id)->first();
         
         $validated['user_id'] = Auth::id();

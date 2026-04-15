@@ -155,6 +155,17 @@ function SortableField({ field, onRemove, onUpdate, isNew, allContentTypes }) {
                             className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                         />
                     </div>
+                    {usePage().props.plugins?.some(p => p.alias === 'languageswitcher' && p.enabled) && (['text', 'longtext', 'json'].includes(field.type)) && (
+                        <div className="flex flex-col items-center gap-1">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Transl</span>
+                            <input
+                                type="checkbox"
+                                checked={field.is_translatable || false}
+                                onChange={(e) => onUpdate(field.id, { is_translatable: e.target.checked })}
+                                className="w-5 h-5 rounded border-gray-300 text-pink-600 focus:ring-pink-500 cursor-pointer"
+                            />
+                        </div>
+                    )}
 
                     {isNew && (
                         <button

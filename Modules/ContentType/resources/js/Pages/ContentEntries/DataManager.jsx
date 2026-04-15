@@ -10,7 +10,8 @@ import {
     ChevronRight,
     Settings,
     MoreVertical,
-    Filter
+    Filter,
+    Globe
 } from 'lucide-react';
 
 export default function DataManager({ contentTypes }) {
@@ -174,26 +175,67 @@ export default function DataManager({ contentTypes }) {
                                         <div className="bg-white p-6 rounded-xl border border-gray-100 shadow-sm">
                                             <h2 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-6">General</h2>
                                             <div className="space-y-6">
-                                                {selectedType.fields.map((field) => (
-                                                    <div key={field.id} className="space-y-1.5 focus-within:text-indigo-600 transition-colors">
-                                                        <label className="text-sm font-semibold text-gray-700 block">
-                                                            {field.name}
-                                                            {field.required && <span className="text-red-500 ml-1">*</span>}
-                                                        </label>
-                                                        {field.type === 'longtext' ? (
-                                                            <textarea 
-                                                                className="w-full px-4 py-2.5 bg-gray-50/50 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all min-h-[120px]"
-                                                                placeholder={`Enter ${field.name.toLowerCase()}...`}
-                                                            />
-                                                        ) : (
-                                                            <input 
-                                                                type={field.type === 'integer' ? 'number' : 'text'}
-                                                                className="w-full px-4 py-2.5 bg-gray-50/50 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
-                                                                placeholder={`Enter ${field.name.toLowerCase()}...`}
-                                                            />
-                                                        )}
-                                                    </div>
-                                                ))}
+                                                {selectedType.fields.map((field) => {
+                                                    const isTranslatable = field.is_translatable && usePage().props.plugins?.some(p => p.alias === 'languageswitcher' && p.enabled);
+                                                    const languages = usePage().props.localization?.languages || [];
+
+                                                    if (isTranslatable && languages.length > 1) {
+                                                        return (
+                                                            <div key={field.id} className="space-y-3 p-4 bg-gray-50/50 rounded-2xl border border-gray-100">
+                                                                <div className="flex items-center justify-between">
+                                                                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest flex items-center gap-2">
+                                                                        <Globe className="w-3 h-3 text-indigo-500" />
+                                                                        {field.name} (Multilingual)
+                                                                        {field.required && <span className="text-red-500">*</span>}
+                                                                    </label>
+                                                                </div>
+                                                                <div className="space-y-4">
+                                                                    {languages.map(lang => (
+                                                                        <div key={lang.code} className="relative group">
+                                                                            <div className="absolute left-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 opacity-40 group-focus-within:opacity-100 transition-opacity">
+                                                                                <span className="text-xs">{lang.flag}</span>
+                                                                                <span className="text-[10px] font-black uppercase tracking-widest">{lang.code}</span>
+                                                                            </div>
+                                                                            {field.type === 'longtext' ? (
+                                                                                <textarea 
+                                                                                    className="w-full pl-16 pr-4 py-3 bg-white border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all min-h-[100px] resize-none"
+                                                                                    placeholder={`Enter ${field.name.toLowerCase()} in ${lang.name}...`}
+                                                                                />
+                                                                            ) : (
+                                                                                <input 
+                                                                                    type="text"
+                                                                                    className="w-full pl-16 pr-4 py-3 bg-white border-gray-200 rounded-xl text-sm focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all"
+                                                                                    placeholder={`Enter ${field.name.toLowerCase()} in ${lang.name}...`}
+                                                                                />
+                                                                            )}
+                                                                        </div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+
+                                                    return (
+                                                        <div key={field.id} className="space-y-1.5 focus-within:text-indigo-600 transition-colors">
+                                                            <label className="text-sm font-semibold text-gray-700 block">
+                                                                {field.name}
+                                                                {field.required && <span className="text-red-500 ml-1">*</span>}
+                                                            </label>
+                                                            {field.type === 'longtext' ? (
+                                                                <textarea 
+                                                                    className="w-full px-4 py-2.5 bg-gray-50/50 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all min-h-[120px]"
+                                                                    placeholder={`Enter ${field.name.toLowerCase()}...`}
+                                                                />
+                                                            ) : (
+                                                                <input 
+                                                                    type={field.type === 'integer' ? 'number' : 'text'}
+                                                                    className="w-full px-4 py-2.5 bg-gray-50/50 border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 transition-all"
+                                                                    placeholder={`Enter ${field.name.toLowerCase()}...`}
+                                                                />
+                                                            )}
+                                                        </div>
+                                                    );
+                                                })}
                                                 
                                                 {selectedType.fields.length === 0 && (
                                                     <div className="bg-indigo-50 p-4 rounded-lg flex gap-3 text-indigo-700">

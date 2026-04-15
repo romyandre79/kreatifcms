@@ -364,18 +364,6 @@ export default function Settings({ models, stats, config }) {
                                 </div>
                             )}
 
-                            {/* Info Card */}
-                            <div className="bg-indigo-600 p-8 rounded-[2rem] text-white shadow-2xl shadow-indigo-200 overflow-hidden relative group">
-                                <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:scale-150 transition-transform duration-700">
-                                    <Key className="w-32 h-32" />
-                                </div>
-                                <h4 className="text-xl font-black mb-4 relative z-10">How Models Work</h4>
-                                <p className="text-indigo-100 text-sm font-medium leading-relaxed relative z-10">
-                                    Active models power everything from dynamic content generation to chat assistants.
-                                    The <span className="text-white font-black underline decoration-2 underline-offset-4 decoration-yellow-400">System Default</span> is automatically used when no specific ID is provided.
-                                </p>
-                                <p className="mt-8 text-white/50 text-[10px] font-black uppercase tracking-widest relative z-10">Use the help menu for documentation</p>
-                            </div>
                         </div>
 
                     </div>
