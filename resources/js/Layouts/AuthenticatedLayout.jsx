@@ -33,8 +33,11 @@ import LanguageSwitcher from '@/Components/LanguageSwitcher';
 import DocumentationModal from '@/Components/DocumentationModal';
 import { BookOpen } from 'lucide-react';
 
+import { useTrans } from '@/Utils/trans';
+
 export default function AuthenticatedLayout({ header, children }) {
     const { auth, flash, plugins = [], localization, active_documentation } = usePage().props;
+    const { t } = useTrans();
     const user = auth.user;
     const permissions = auth.permissions || [];
 
@@ -49,13 +52,6 @@ export default function AuthenticatedLayout({ header, children }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [docModalOpen, setDocModalOpen] = useState(false);
-
-    /**
-     * Translate helper
-     */
-    const t = (key, group = 'ui') => {
-        return localization?.translations?.[group]?.[key] || key;
-    };
 
     /**
      * Safe route helper to prevent Ziggy crashes when routes are missing 
@@ -89,25 +85,25 @@ export default function AuthenticatedLayout({ header, children }) {
         { name: t('blocks', 'menu'), href: route('blocks.index'), icon: FileText, active: route().current('blocks.*'), contentType: 'reusableblock' },
         { name: t('plugins', 'menu'), href: route('plugins.index'), icon: Puzzle, active: route().current('plugins.*'), contentType: 'plugins' },
         { name: t('users', 'menu'), href: route('users.index'), icon: Users, active: route().current('users.*'), contentType: 'users' },
-        { name: 'Roles', href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
-        { name: 'System Update', href: route('system.update.index'), icon: Settings, active: route().current('system.update.*'), contentType: 'system' },
+        { name: t('roles', 'menu'), href: route('roles.index'), icon: Shield, active: route().current('roles.*'), contentType: 'roles' },
+        { name: t('system', 'menu'), href: route('system.update.index'), icon: Settings, active: route().current('system.update.*'), contentType: 'system' },
     ];
 
     // Filter items based on permissions
     const filteredNavItems = navItems.filter(item => {
-        if (item.name === 'Dashboard') return true;
+        if (item.name === t('dashboard', 'menu')) return true;
         return hasPermission(item.contentType, 'read');
     });
 
     if (hasPermission('media', 'read') && plugins.some(p => p.alias === 'medialibrary' && p.enabled !== false) && route().has('media.index')) {
-        filteredNavItems.splice(3, 0, { name: 'Media Library', href: safeRoute('media.index'), icon: ImageIcon, active: isRouteActive('media.*') });
+        filteredNavItems.splice(3, 0, { name: t('media', 'menu'), href: safeRoute('media.index'), icon: ImageIcon, active: isRouteActive('media.*') });
     }
 
     if (hasPermission('content-types', 'read') && plugins.some(p => (p.alias === 'contenttype' || p.alias === 'contenttypes') && p.enabled !== false)) {
         const routeName = 'content-types.index';
         if (route().has(routeName)) {
             filteredNavItems.splice(3, 0, { 
-                name: 'Content Type', 
+                name: t('content_types', 'menu'), 
                 href: safeRoute(routeName), 
                 icon: Database, 
                 active: isRouteActive('content-types.*') && !isRouteActive('content-types.data.*') 
@@ -116,11 +112,11 @@ export default function AuthenticatedLayout({ header, children }) {
     }
 
     if (hasPermission('layouts', 'read') && plugins.some(p => p.alias === 'layout' && p.enabled !== false) && route().has('layouts.index')) {
-        filteredNavItems.splice(4, 0, { name: 'Layout Editor', href: safeRoute('layouts.index'), icon: Layout, active: isRouteActive('layouts.index') });
+        filteredNavItems.splice(4, 0, { name: t('layouts', 'menu'), href: safeRoute('layouts.index'), icon: Layout, active: isRouteActive('layouts.index') });
     }
 
     if (hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'generalapi' && p.enabled !== false) && route().has('admin.general-api.index')) {
-        const pluginsIndex = filteredNavItems.findIndex(item => item.name === 'Plugins');
+        const pluginsIndex = filteredNavItems.findIndex(item => item.name === t('plugins', 'menu'));
         if (pluginsIndex !== -1) {
             filteredNavItems.splice(pluginsIndex + 1, 0, { 
                 name: 'General API', 
@@ -132,7 +128,7 @@ export default function AuthenticatedLayout({ header, children }) {
     }
 
     if (hasPermission('databasemanager', 'read') && plugins.some(p => p.alias === 'databasemanager') && route().has('settings.database.index')) {
-        filteredNavItems.push({ name: 'Database', href: safeRoute('settings.database.index'), icon: HardDrive, active: isRouteActive('settings.database.*') });
+        filteredNavItems.push({ name: t('database', 'general'), href: safeRoute('settings.database.index'), icon: HardDrive, active: isRouteActive('settings.database.*') });
     }
 
     if (hasPermission('email-templates', 'read') && plugins.some(p => p.alias === 'emailtemplates') && route().has('email-templates.index')) {
@@ -144,7 +140,7 @@ export default function AuthenticatedLayout({ header, children }) {
     }
 
     if (plugins.some(p => p.alias === 'aiassistant' && p.enabled) && route().has('ai.settings')) {
-        filteredNavItems.push({ name: 'AI Assistant', href: safeRoute('ai.settings'), icon: Grid, active: isRouteActive('ai.settings') });
+        filteredNavItems.push({ name: t('ai_assistant', 'menu'), href: safeRoute('ai.settings'), icon: Grid, active: isRouteActive('ai.settings') });
     }
 
     if (hasPermission('jobs', 'read') && plugins.some(p => p.alias?.toLowerCase() === 'jobmanager' && p.enabled) && route().has('jobmanager.index')) {
@@ -152,7 +148,7 @@ export default function AuthenticatedLayout({ header, children }) {
     }
 
     if (hasPermission('plugins', 'read') && plugins.some(p => p.alias === 'languageswitcher' && p.enabled !== false) && route().has('languages.index')) {
-        filteredNavItems.push({ name: 'Language', href: safeRoute('languages.index'), icon: Globe, active: isRouteActive('languages.*') });
+        filteredNavItems.push({ name: t('languages', 'menu'), href: safeRoute('languages.index'), icon: Globe, active: isRouteActive('languages.*') });
     }
 
     return (

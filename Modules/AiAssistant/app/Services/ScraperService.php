@@ -54,16 +54,20 @@ class ScraperService
     public function scrapeDesign(string $url): array
     {
         try {
-            $response = Http::withOptions(['verify' => false])->get($url);
-            if (!$response->successful()) return ['error' => 'Could not reach URL'];
+            $response = Http::withOptions(['verify' => false])->timeout(45)->get($url);
+            if (!$response->successful()) return ['error' => 'Could not reach URL: ' . $response->status()];
             
             $html = $response->body();
             $baseUrl = parse_url($url, PHP_URL_SCHEME) . '://' . parse_url($url, PHP_URL_HOST);
             
             $fonts = [];
+            $allStyles = "";
             
-            // 1. Look for @font-face in inline styles
-            $this->extractFontsFromContent($html, $baseUrl, $fonts);
+            // 1. Extract inline styles
+            preg_match_all('/<style[^>]*>(.*?)<\/style>/is', $html, $inlineStyles);
+            foreach ($inlineStyles[1] as $style) {
+                $allStyles .= $style . "\n";
+            }
 
             // 2. Look for external CSS files
             preg_match_all('/<link[^>]+rel=["\']stylesheet["\'][^>]+href=["\']([^"\']+)["\']/i', $html, $cssMatches);
@@ -74,62 +78,114 @@ class ScraperService
                 }
                 
                 try {
-                    $cssContent = Http::withOptions(['verify' => false])->timeout(5)->get($cssUrl)->body();
-                    $this->extractFontsFromContent($cssContent, $baseUrl, $fonts);
+                    $cssContent = Http::withOptions(['verify' => false])->timeout(10)->get($cssUrl)->body();
+                    $allStyles .= $cssContent . "\n";
                 } catch (\Exception $e) {
                     continue;
                 }
             }
 
-            // 3. Extract CSS Variables and Pattern-based Styles
-            preg_match_all('/--([^:]+):\s*([^;]+);/', $html, $varMatches);
+            // 3. Extract Fonts from collected styles
+            $this->extractFontsFromContent($allStyles, $baseUrl, $fonts);
+
+            // 4. Extract CSS Variables
+            preg_match_all('/--([^:]+):\s*([^;]+);/', $allStyles, $varMatches);
             $vars = [];
             if (!empty($varMatches[1])) {
                 foreach ($varMatches[1] as $idx => $name) {
-                    $vars[$name] = trim($varMatches[2][$idx]);
+                    $val = trim($varMatches[2][$idx]);
+                    if (strlen($val) < 100) { // Avoid huge blob variables
+                        $vars[$name] = $val;
+                    }
                 }
             }
 
-            // Extract specific component styles (buttons, header, product cards, etc)
-            $customStyles = "";
-            // Look for button-like classes
-            if (preg_match('/(\.btn[^{]*|\.button[^{]*|\[class\*="btn-"][^{]*)\s*{([^}]+)}/i', $html, $btnMatch)) 
-                $customStyles .= "/* Button Style */\n.btn-primary, .btn-cart { {$btnMatch[2]} }\n";
-            
-            // Look for product/card-like classes
-            if (preg_match('/(\.product[^{]*|\.card[^{]*|\.item[^{]*)\s*{([^}]+)}/i', $html, $cardMatch)) 
-                $customStyles .= "/* Card Style */\n.product-card, .product { {$cardMatch[2]} }\n";
-            
-            // Look for navbar/header patterns
-            if (preg_match('/(\.navbar[^{]*|\.main-navigation[^{]*|\.header[^{]*)\s*{([^}]+)}/i', $html, $navMatch)) 
-                $customStyles .= "/* Navbar Style */\n.navbar { {$navMatch[2]} }\n";
-            
-            // Look for global border radii and shadows often found in :root or body
-            if (preg_match('/:root\s*{([^}]+)}/i', $html, $rootMatch)) {
-                if (preg_match_all('/--([a-z0-9-]+-radius|--shadow)[^:]*:\s*([^;]+);/i', $rootMatch[1], $designTokens)) {
-                    $customStyles .= "/* Design Tokens */\n:root { " . implode(' ', $designTokens[0]) . " }\n";
-                }
-            }
+            // 5. Extract Advanced Component Styles
+            $customStylesHint = $this->extractAdvancedStyles($allStyles);
 
             return [
                 'url' => $url,
-                'detected_font_family' => $fonts[0]['family'] ?? 'Inter',
+                'detected_font_family' => $fonts[array_key_first($fonts)]['family'] ?? 'Plus Jakarta Sans',
                 'fonts' => array_values($fonts),
                 'css_variables' => $vars,
-                'custom_styles_hint' => $customStyles
+                'custom_styles_hint' => $customStylesHint
             ];
         } catch (\Exception $e) {
+            \Log::error("ScrapeDesign Error: " . $e->getMessage());
             return ['error' => $e->getMessage()];
         }
     }
 
+    /**
+     * Extracts complex design patterns from CSS content.
+     */
+    private function extractAdvancedStyles(string $css): string
+    {
+        $hint = "/* AI Scraper High-Fidelity Hints */\n\n";
+
+        // A. Background Patterns (Gradients & Colors)
+        if (preg_match_all('/(background|background-image|background-color):\s*([^;!]+)/i', $css, $bgMatches)) {
+            $gradients = array_filter($bgMatches[2], fn($m) => str_contains($m, 'gradient'));
+            if (!empty($gradients)) {
+                $hint .= "/* Detected Gradients */\n";
+                foreach (array_unique(array_slice($gradients, 0, 5)) as $g) {
+                    $hint .= "/* Possible Brand Gradient: */ " . trim($g) . ";\n";
+                }
+                $hint .= "\n";
+            }
+        }
+
+        // B. Branding Transforms & Special Effects
+        $patterns = [
+            'Transforms' => '/transform:\s*([^;]+)/i',
+            'Box Shadows' => '/box-shadow:\s*([^;]+)/i',
+            'Transitions' => '/transition:\s*([^;]+)/i',
+        ];
+
+        foreach ($patterns as $label => $regex) {
+            if (preg_match_all($regex, $css, $matches)) {
+                $unique = array_unique($matches[1]);
+                if (!empty($unique)) {
+                    $hint .= "/* Detected {$label} */\n";
+                    foreach (array_slice($unique, 0, 3) as $m) {
+                        $hint .= "/* Example: */ " . trim($m) . ";\n";
+                    }
+                    $hint .= "\n";
+                }
+            }
+        }
+
+        // C. Component Specific Logic (Header/Nav/Buttons)
+        $components = [
+            'Header/Navbar' => '/(\.navbar|\.header|\.main-nav|\.menu)[^{]*{[^}]*(?:background|height|padding)[^}]*}/i',
+            'Buttons' => '/(\.btn|\.button|\[class\*="btn-"])[^{]*{[^}]*(?:background|border-radius|font-weight)[^}]*}/i',
+            'Product Cards' => '/(\.product|\.card|\.item)[^{]*{[^}]*(?:box-shadow|border|margin)[^}]*}/i',
+        ];
+
+        foreach ($components as $label => $regex) {
+            if (preg_match_all($regex, $css, $matches)) {
+                $hint .= "/* Component Style: {$label} */\n";
+                // Get the longest matches as they usually contain more definitions
+                $results = array_unique($matches[0]);
+                usort($results, fn($a, $b) => strlen($b) - strlen($a));
+                foreach (array_slice($results, 0, 3) as $m) {
+                    $hint .= $m . "\n";
+                }
+                $hint .= "\n";
+            }
+        }
+
+        return $hint;
+    }
+
     private function extractFontsFromContent(string $content, string $baseUrl, &$fonts)
     {
-        // Simple regex for @font-face src: url(...)
+        // Improved regex for @font-face src: url(...)
         preg_match_all('/@font-face\s*{([^}]+)}/i', $content, $fontFaceBlocks);
         
         foreach ($fontFaceBlocks[1] as $block) {
             preg_match('/font-family:\s*[\'"]?([^\'";]+)/i', $block, $familyMatch);
+            // Search for all URLs, focusing on woff2/woff
             preg_match_all('/url\(["\']?([^"\')]+)["\']?\)/i', $block, $urlMatches);
             
             if (!empty($familyMatch[1]) && !empty($urlMatches[1])) {
@@ -138,22 +194,21 @@ class ScraperService
                 foreach ($urlMatches[1] as $fontUrl) {
                     $fontUrl = trim($fontUrl);
                     
-                    // FIX: Handle protocol-relative //
                     if (Str::startsWith($fontUrl, '//')) {
                         $fontUrl = 'https:' . $fontUrl;
                     } 
-                    // FIX: Handle fake root-relative for known CDNs (like Doran Gadget issue)
                     else if (Str::startsWith($fontUrl, '/fonts.gstatic.com')) {
                         $fontUrl = 'https:/' . $fontUrl;
                     }
-                    // Handle standard relative/absolute
                     else if (!Str::startsWith($fontUrl, 'http')) {
                         $fontUrl = ltrim($fontUrl, '/');
-                        $fontUrl = $baseUrl . '/' . $fontUrl;
+                        // Resolve relative paths if needed? Simple baseUrl prepending for now
+                        if (!Str::startsWith($fontUrl, ['data:', 'blob:'])) {
+                            $fontUrl = $baseUrl . '/' . $fontUrl;
+                        }
                     }
 
-                    // Only take the first working URL for this family (usually woff2)
-                    if (Str::contains($fontUrl, ['.woff2', '.woff', '.ttf', '.otf'])) {
+                    if (Str::contains($fontUrl, ['.woff2', '.woff', '.ttf', '.otf']) && !Str::contains($fontUrl, 'data:')) {
                         $fonts[$family] = [
                             'family' => $family,
                             'url' => $fontUrl,

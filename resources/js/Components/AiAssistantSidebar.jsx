@@ -115,13 +115,17 @@ export default function AiAssistantSidebar() {
             const missingFonts = res.data.fonts ? res.data.fonts.filter(f => !f.is_installed) : [];
             
             // Format a prompt for the AI to handle the rest
-            let scanSummary = `Scan results for ${url} are in:\n`;
+            let scanSummary = `IMPORTANT: Design Scan results for ${url} are now available below. Use these details to generate a highly accurate "Hyper Clone" JSON payload.\n\n`;
+            scanSummary += `DESIGN DATA:\n`;
             scanSummary += `- Core Font: ${res.data.detected_font_family}\n`;
-            scanSummary += `- Missing Fonts: ${missingFonts.map(f => f.family).join(', ')}\n`;
+            scanSummary += `- Fonts to Install: ${JSON.stringify(missingFonts)}\n`;
             scanSummary += `- CSS Variables: ${JSON.stringify(res.data.css_variables || {})}\n`;
-            scanSummary += `- Custom Styles Hint: ${res.data.custom_styles_hint || ''}\n\n`;
-            scanSummary += `Now, please generate a full Hyper Clone JSON payload for this site. Ensure 'fonts_to_install' includes these fonts: ${JSON.stringify(missingFonts)}. `;
-            scanSummary += `Apply the 'Custom Styles Hint' exactly into the 'customCss' field. Replicate the headers, footers and main blocks of dorangadget.com correctly.`;
+            scanSummary += `- Custom Styles Hint: \n\`\`\`css\n${res.data.custom_styles_hint || ''}\n\`\`\`\n\n`;
+            scanSummary += `INSTRUCTIONS:\n`;
+            scanSummary += `1. Replicate the site's layout structure (header, footer, and main sections) using the available blocks.\n`;
+            scanSummary += `2. Put ALL patterns from 'Custom Styles Hint' into 'theme_data.customCss'.\n`;
+            scanSummary += `3. Ensure branding colors match the 'CSS Variables' provided.\n`;
+            scanSummary += `4. OUTPUT THE FULL UNIFIED JSON IN A MARKDOWN BLOCK.`;
 
             // Add a visual status message
             setMessages(prev => [...prev, { 
