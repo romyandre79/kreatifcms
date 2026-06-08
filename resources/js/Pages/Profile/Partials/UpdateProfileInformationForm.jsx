@@ -5,12 +5,15 @@ import TextInput from '@/Components/TextInput';
 import { Transition } from '@headlessui/react';
 import { Link, useForm, usePage } from '@inertiajs/react';
 
+import { useTrans } from '@/Utils/trans';
+
 export default function UpdateProfileInformation({
     mustVerifyEmail,
     status,
     className = '',
 }) {
     const user = usePage().props.auth.user;
+    const { t } = useTrans();
 
     const { data, setData, patch, errors, processing, recentlySuccessful } =
         useForm({
@@ -27,18 +30,18 @@ export default function UpdateProfileInformation({
     return (
         <section className={className}>
             <header>
-                <h2 className="text-lg font-medium text-gray-900">
-                    Profile Information
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight">
+                    {t('profile_info', 'profile')}
                 </h2>
 
-                <p className="mt-1 text-sm text-gray-600">
-                    Update your account's profile information and email address.
+                <p className="mt-1 text-sm text-gray-500 font-medium font-italic">
+                    {t('profile_info_desc', 'profile')}
                 </p>
             </header>
 
             <form onSubmit={submit} className="mt-6 space-y-6">
                 <div>
-                    <InputLabel htmlFor="name" value="Name" />
+                    <InputLabel htmlFor="name" value="name" />
 
                     <TextInput
                         id="name"
@@ -54,7 +57,7 @@ export default function UpdateProfileInformation({
                 </div>
 
                 <div>
-                    <InputLabel htmlFor="email" value="Email" />
+                    <InputLabel htmlFor="email" value="email" />
 
                     <TextInput
                         id="email"
@@ -72,28 +75,27 @@ export default function UpdateProfileInformation({
                 {mustVerifyEmail && user.email_verified_at === null && (
                     <div>
                         <p className="mt-2 text-sm text-gray-800">
-                            Your email address is unverified.
+                            {t('email_unverified', 'profile')}
                             <Link
                                 href={route('verification.send')}
                                 method="post"
                                 as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+                                className="ml-1 rounded-md text-sm text-indigo-600 font-bold underline hover:text-indigo-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
                             >
-                                Click here to re-send the verification email.
+                                {t('resend_verification', 'profile')}
                             </Link>
                         </p>
 
                         {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600">
-                                A new verification link has been sent to your
-                                email address.
+                            <div className="mt-2 text-sm font-bold text-green-600">
+                                {t('verification_sent', 'profile')}
                             </div>
                         )}
                     </div>
                 )}
 
                 <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+                    <PrimaryButton disabled={processing}>{t('save', 'general')}</PrimaryButton>
 
                     <Transition
                         show={recentlySuccessful}
@@ -102,8 +104,8 @@ export default function UpdateProfileInformation({
                         leave="transition ease-in-out"
                         leaveTo="opacity-0"
                     >
-                        <p className="text-sm text-gray-600">
-                            Saved.
+                        <p className="text-sm font-bold text-gray-400 italic">
+                            {t('saved', 'general')}
                         </p>
                     </Transition>
                 </div>

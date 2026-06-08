@@ -7,8 +7,11 @@ import DashboardGrid from '@/Components/Dashboard/DashboardGrid';
 import WidgetEditor from '@/Components/Dashboard/WidgetEditor';
 import DeleteConfirmationModal from '@/Components/DeleteConfirmationModal';
 
+import { useTrans } from '@/Utils/trans';
+
 export default function Dashboard() {
     const { contentTypes } = usePage().props;
+    const { t } = useTrans();
     const [widgets, setWidgets] = useState([]);
     const [isEditorOpen, setIsEditorOpen] = useState(false);
     const [editingWidget, setEditingWidget] = useState(null);
@@ -102,41 +105,41 @@ export default function Dashboard() {
             header={
                 <div className="flex justify-between items-center">
                     <h2 className="text-xl font-semibold leading-tight text-gray-800">
-                        Dynamic Dashboard
+                        {t('dashboard_title', 'dashboard')}
                     </h2>
                     <button
                         onClick={handleAddWidget}
                         className="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-xl font-semibold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 active:bg-indigo-900 transition-all shadow-sm shadow-indigo-100"
                     >
                         <Plus className="w-4 h-4 mr-2" />
-                        Add Widget
+                        {t('add_widget', 'dashboard')}
                     </button>
                 </div>
             }
         >
-            <Head title="Dashboard" />
+            <Head title={t('dashboard', 'menu')} />
 
             <div className="mx-auto px-4 sm:px-6 lg:px-8">
                 {isLoading ? (
                     <div className="flex flex-col items-center justify-center py-24 space-y-4">
                         <div className="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin" />
-                        <p className="text-sm font-bold text-gray-400 italic">Initializing your premium workspace...</p>
+                        <p className="text-sm font-bold text-gray-400 italic">{t('initializing', 'dashboard')}</p>
                     </div>
                 ) : widgets.length === 0 ? (
                     <div className="bg-white border-2 border-dashed border-gray-200 rounded-3xl p-24 text-center">
                         <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
                             <Layout className="w-10 h-10" />
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">Your dashboard is empty</h3>
+                        <h3 className="text-xl font-bold text-gray-900">{t('empty_dashboard_title', 'dashboard')}</h3>
                         <p className="mt-2 text-gray-500 max-w-sm mx-auto italic font-medium">
-                            Start by adding dynamic widgets to track your content types, aggregate data, and visualize trends!
+                            {t('empty_dashboard_desc', 'dashboard')}
                         </p>
                         <button
                             onClick={handleAddWidget}
                             className="mt-8 inline-flex items-center px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold text-sm hover:bg-indigo-700 transition-all shadow-md shadow-indigo-100"
                         >
                             <Plus className="w-5 h-5 mr-2" />
-                            Add Your First Widget
+                            {t('add_first_widget', 'dashboard')}
                         </button>
                     </div>
                 ) : (
@@ -161,8 +164,8 @@ export default function Dashboard() {
                 show={showDeleteModal}
                 onClose={() => setShowDeleteModal(false)}
                 onConfirm={handleDelete}
-                title="Remove Widget"
-                message="Are you sure you want to remove this widget from your dashboard? This action will only remove the widget, not the underlying data."
+                title={t('remove_widget', 'dashboard')}
+                message={t('remove_widget_confirm', 'dashboard')}
                 processing={isDeleting}
             />
         </AuthenticatedLayout>

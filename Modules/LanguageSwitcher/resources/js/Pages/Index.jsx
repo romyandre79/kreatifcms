@@ -11,7 +11,10 @@ function classNames(...classes) {
     return classes.filter(Boolean).join(' ');
 }
 
+import { useTrans } from '@/Utils/trans';
+
 export default function Index({ languages, translations, documentations }) {
+    const { t } = useTrans();
     const [searchTerm, setSearchTerm] = useState('');
     const [activeTab, setActiveTab] = useState(0);
 
@@ -23,9 +26,9 @@ export default function Index({ languages, translations, documentations }) {
 
     return (
         <AuthenticatedLayout
-            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">Language & Localization Manager</h2>}
+            header={<h2 className="font-semibold text-xl text-gray-800 leading-tight">{t('languages', 'menu')} & {t('info', 'general')}</h2>}
         >
-            <Head title="Language Manager" />
+            <Head title={t('languages', 'menu')} />
 
             <div className="py-8 bg-gray-50 min-h-screen">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
@@ -37,7 +40,7 @@ export default function Index({ languages, translations, documentations }) {
                                 <div className="p-3 bg-indigo-600 rounded-2xl text-white shadow-lg shadow-indigo-200">
                                     <Globe className="w-8 h-8" />
                                 </div>
-                                Localization
+                                {t('languages', 'menu')}
                             </h2>
                             <p className="text-gray-500 mt-2 font-medium max-w-xl">
                                 Manage your global audience by configuring languages, UI translations, and contextual help documentation.
@@ -54,7 +57,7 @@ export default function Index({ languages, translations, documentations }) {
                                 )}>
                                     <div className="flex items-center justify-center gap-2">
                                         <Globe className="w-4 h-4" />
-                                        <span>Languages</span>
+                                        <span>{t('languages', 'menu')}</span>
                                     </div>
                                 </Tab>
                                 <Tab className={({ selected }) => classNames(
@@ -63,7 +66,7 @@ export default function Index({ languages, translations, documentations }) {
                                 )}>
                                     <div className="flex items-center justify-center gap-2">
                                         <Languages className="w-4 h-4" />
-                                        <span>Translations</span>
+                                        <span>{t('entries', 'content')}</span>
                                     </div>
                                 </Tab>
                                 <Tab className={({ selected }) => classNames(
@@ -72,7 +75,7 @@ export default function Index({ languages, translations, documentations }) {
                                 )}>
                                     <div className="flex items-center justify-center gap-2">
                                         <FileText className="w-4 h-4" />
-                                        <span>Documentation</span>
+                                        <span>{t('documentation', 'menu')}</span>
                                     </div>
                                 </Tab>
                             </Tab.List>
@@ -80,7 +83,7 @@ export default function Index({ languages, translations, documentations }) {
                             <Tab.Panels>
                                 {/* Languages Tab */}
                                 <Tab.Panel className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <LanguagesSection languages={languages} />
+                                    <LanguagesSection languages={languages} t={t} />
                                 </Tab.Panel>
 
                                 {/* Translations Tab */}
@@ -90,12 +93,13 @@ export default function Index({ languages, translations, documentations }) {
                                         languages={languages}
                                         searchTerm={searchTerm}
                                         setSearchTerm={setSearchTerm}
+                                        t={t}
                                     />
                                 </Tab.Panel>
 
                                 {/* Documentation Tab */}
                                 <Tab.Panel className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                                    <DocumentationSection documentations={documentations} />
+                                    <DocumentationSection documentations={documentations} t={t} languages={languages} />
                                 </Tab.Panel>
                             </Tab.Panels>
                         </Tab.Group>
@@ -106,7 +110,7 @@ export default function Index({ languages, translations, documentations }) {
     );
 }
 
-function LanguagesSection({ languages }) {
+function LanguagesSection({ languages, t }) {
     const { data, setData, post, processing, reset, errors } = useForm({
         id: null,
         code: '',
@@ -141,7 +145,7 @@ function LanguagesSection({ languages }) {
     };
 
     const confirmDelete = (id) => {
-        if (confirm('Are you sure you want to delete this language and all its translations?')) {
+        if (confirm(t('are_you_sure', 'general'))) {
             router.delete(route('languages.destroy', id));
         }
     };
@@ -153,10 +157,10 @@ function LanguagesSection({ languages }) {
                     <table className="w-full text-left">
                         <thead className="bg-gray-50/50 border-b border-gray-100">
                             <tr>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Language</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">Code</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Status</th>
-                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Actions</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('languages', 'menu')}</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest">{t('key', 'form')}</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">{t('status', 'general')}</th>
+                                <th className="px-8 py-5 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">{t('actions', 'general')}</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
