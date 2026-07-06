@@ -34,7 +34,6 @@
     "autoload": {
         "psr-4": {
             "App\\": "app/",
-            "Modules\\ImageConverter\\": "Modules/ImageConverter/app/",
             "Modules\\Security\\": "Modules/Security/app/",
             "Modules\\ReusableBlock\\": "Modules/ReusableBlock/app/",
             "Modules\\Seo\\": "Modules/Seo/app/",
@@ -50,12 +49,8 @@
             "Modules\\DatabaseManager\\": "Modules/DatabaseManager/app/",
             "Modules\\RedisCache\\": "Modules/RedisCache/app/",
             "Modules\\EmailConfig\\": "Modules/EmailConfig/app/",
-            "Modules\\EmailTemplates\\": "Modules/EmailTemplates/app/",
             "Modules\\EditorSummernote\\": "Modules/EditorSummernote/app/",
-            "Modules\\Captcha\\": "Modules/Captcha/app/",
             "Modules\\AiAssistant\\": "Modules/AiAssistant/app/",
-            "Modules\\OtpService\\": "Modules/OtpService/app/",
-            "Modules\\JobManager\\": "Modules/JobManager/app/",
             "Modules\\MediaLibrary\\": "Modules/MediaLibrary/app/",
             "Modules\\FormBlock\\": "Modules/FormBlock/app/",
             "Database\\Factories\\": "database/factories/",
@@ -65,16 +60,12 @@
             "Modules\\ContentType\\": "Modules/ContentType/app/",
             "Modules\\PhpEventHooks\\": "Modules/PhpEventHooks/app/",
             "Modules\\MegaMenu\\": "Modules/MegaMenu/app/",
-            "Modules\\TwoFactorAuth\\": "Modules/TwoFactorAuth/app/",
-            "Modules\\GeneralApi\\": "Modules/GeneralApi/app/",
             "Modules\\VideoBlock\\": "Modules/VideoBlock/app/",
             "Modules\\VideoGrid\\": "Modules/VideoGrid/app/",
-            "Modules\\Brevo\\": "Modules/Brevo/app/",
             "Modules\\PhotoGrid\\": "Modules/PhotoGrid/app/",
             "Modules\\DataGrid\\": "Modules/DataGrid/app/",
             "Modules\\LanguageSwitcher\\": "Modules/LanguageSwitcher/app/"
         }
-
     },
     "autoload-dev": {
         "psr-4": {
