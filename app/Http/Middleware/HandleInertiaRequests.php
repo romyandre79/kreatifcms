@@ -43,6 +43,66 @@ class HandleInertiaRequests extends Middleware
 
         return [
             ...parent::share($request),
+            'sidebarMenus' => function () use ($request) {
+                if (!$request->user()) {
+                    return [];
+                }
+
+                // 1. Get list of active modules
+                $activePlugins = [];
+                if (class_exists('\Nwidart\Modules\Facades\Module')) {
+                    $modules = \Nwidart\Modules\Facades\Module::all();
+                    foreach ($modules as $module) {
+                        if ($module->isEnabled()) {
+                            $activePlugins[] = $module->getLowerName();
+                        }
+                    }
+                }
+
+                // 2. Fetch all menus structure (with parent-child relation)
+                $user = $request->user();
+                $menus = \App\Models\SidebarMenu::with('children')
+                    ->whereNull('parent_id')
+                    ->where('is_active', true)
+                    ->orderBy('order')
+                    ->get();
+
+                // 3. Filter menus based on permissions and plugin state
+                return $menus->filter(function ($parent) use ($user, $activePlugins) {
+                    // Check if parent depends on an disabled plugin
+                    if ($parent->plugin_alias && !in_array(strtolower($parent->plugin_alias), $activePlugins)) {
+                        return false;
+                    }
+
+                    // Check parent permission if defined
+                    if ($parent->permission_required && !$user->hasPermission($parent->permission_required, 'read')) {
+                        return false;
+                    }
+
+                    // Filter children
+                    if ($parent->children->isNotEmpty()) {
+                        $filteredChildren = $parent->children->filter(function ($child) use ($user, $activePlugins) {
+                            // Check plugin
+                            if ($child->plugin_alias && !in_array(strtolower($child->plugin_alias), $activePlugins)) {
+                                return false;
+                            }
+                            // Check permission
+                            if ($child->permission_required && !$user->hasPermission($child->permission_required, 'read')) {
+                                return false;
+                            }
+                            return true;
+                        })->values();
+
+                        $parent->setRelation('children', $filteredChildren);
+
+                        // Only show parent if it has at least one accessible child
+                        return $filteredChildren->isNotEmpty();
+                    }
+
+                    // If no children, only show if it has a route (like Dashboard)
+                    return $parent->route_name !== null;
+                })->values()->toArray();
+            },
             'auth' => [
                 'user' => $request->user(),
                 'permissions' => $request->user() ? $request->user()->allPermissions() : [],

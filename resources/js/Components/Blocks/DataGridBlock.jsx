@@ -16,39 +16,19 @@ const DataGridBlock = ({ data = {} }) => {
     }
 
     return (
-        <section 
-            className={`py-12 px-6 overflow-hidden ${data.bg_color ? '' : 'bg-white'}`} 
+        <section
+            className={`py-0 overflow-hidden ${data.bg_color}`}
             style={{ backgroundColor: data.bg_color }}
         >
             <div className="max-w-[1600px] mx-auto">
-                {(data.title || data.subtitle) && (
-                    <div className={`mb-10 space-y-2 ${data.align === 'center' ? 'text-center' : data.align === 'right' ? 'text-right' : 'text-left'}`}>
-                        {data.title && (
-                            <h2
-                                className="text-3xl font-black tracking-tight"
-                                style={{ color: data.title_color || '#111827' }}
-                            >
-                                {data.title}
-                            </h2>
-                        )}
-                        {data.subtitle && (
-                            <p
-                                className={`text-base leading-relaxed text-gray-500 ${data.align === 'center' ? 'max-w-2xl mx-auto' : 'max-w-2xl'}`}
-                            >
-                                {data.subtitle}
-                            </p>
-                        )}
-                    </div>
-                )}
-
-                <div 
-                    className="bg-white rounded-[32px] shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden"
-                    style={{ 
+                <div
+                    className="bg-white rounded-md shadow-2xl shadow-gray-200/50 border border-gray-100 overflow-hidden"
+                    style={{
                         height: (data.height_mode === 'auto') ? 'auto' : `${data.height_value || 650}px`,
                         minHeight: (data.height_mode === 'auto') ? '100px' : 'none'
                     }}
                 >
-                    <AdvancedDataGrid 
+                    <AdvancedDataGrid
                         slug={data.content_type}
                         config={{
                             columns: data.columns || [],
@@ -57,6 +37,10 @@ const DataGridBlock = ({ data = {} }) => {
                             serverSide: data.server_side ?? true,
                             showSelection: data.showSelection,
                             broadcastClicks: data.broadcastClicks,
+                            showVisibilityToggle: data.showVisibilityToggle,
+                            showSettingsToggle: data.showSettingsToggle,
+                            enableAddButton: data.enableAddButton,
+                            addButtonIconOnly: data.addButtonIconOnly,
                             content_type: data.content_type,
                             settings: {
                                 icon: data.icon,

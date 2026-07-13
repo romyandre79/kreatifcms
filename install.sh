@@ -52,10 +52,24 @@ echo "[6/8] Running database migrations (php artisan migrate)..."
 php artisan migrate
 
 echo
-echo "[7/8] Building assets (npm run build)..."
+echo "[7/9] Building assets (npm run build)..."
 npm run build
 
 echo
-echo "[8/8] Starting development server (php artisan serve)..."
+echo "[8/9] Fixing permissions..."
+# Auto-fix Laravel writable directories
+chmod -R 775 storage bootstrap/cache 2>/dev/null || true
+# Jika deploy.sh ada dan user adalah root, jalankan full permission fix
+if [ "$EUID" -eq 0 ] && [ -f "./deploy.sh" ]; then
+    echo "Running full server permission fix (deploy.sh)..."
+    bash ./deploy.sh "$(pwd)"
+    echo "Permission fix complete!"
+else
+    echo "Basic permission fix applied (storage & bootstrap/cache)."
+    echo "Untuk fix lengkap di server, jalankan: sudo ./deploy.sh"
+fi
+
+echo
+echo "[9/9] Starting development server (php artisan serve)..."
 echo "Preparation complete! Starting server..."
 php artisan serve

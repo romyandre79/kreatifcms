@@ -50,6 +50,22 @@ class PluginController extends Controller
         $module = Module::find($name);
         if ($module) {
             $module->enable();
+
+            try {
+                // Run migrations for the module
+                \Illuminate\Support\Facades\Artisan::call('module:migrate', [
+                    'module' => $module->getName(),
+                    '--force' => true
+                ]);
+
+                // Run seeders for the module
+                \Illuminate\Support\Facades\Artisan::call('module:seed', [
+                    'module' => $module->getName(),
+                    '--force' => true
+                ]);
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("Failed to migrate/seed module {$name}: " . $e->getMessage());
+            }
         }
 
         return redirect()->back()->with('message', "Plugin {$name} enabled successfully.");

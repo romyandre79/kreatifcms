@@ -87,6 +87,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::middleware(['permission:roles,read'])->group(function () {
         Route::resource('roles', App\Http\Controllers\RoleController::class);
     });
+    Route::middleware(['permission:menus,read'])->group(function () {
+        Route::resource('sidebar-menus', App\Http\Controllers\SidebarMenuController::class)->names('sidebar-menus');
+    });
 
     // System Update Routes
     Route::middleware(['permission:system,update'])->group(function () {
@@ -94,6 +97,27 @@ Route::middleware(['auth', 'verified'])->group(function () {
         Route::post('/system/update/check', [App\Http\Controllers\SystemUpdateController::class, 'check'])->name('system.update.check');
         Route::post('/system/update/run', [App\Http\Controllers\SystemUpdateController::class, 'run'])->name('system.update.run');
         Route::post('/system/update/diagnostics', [App\Http\Controllers\SystemUpdateController::class, 'diagnostics'])->name('system.update.diagnostics');
+    });
+
+    // Workflows Route
+    Route::resource('workflows', Modules\Workflow\Http\Controllers\WorkflowController::class);
+
+    // Project Manager Routes
+    Route::middleware(['permission:plugins,read'])->group(function () {
+        Route::get('/project-manager', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'index'])->name('projectmanager.index');
+        Route::post('/project-manager/duplicate', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'duplicate'])->name('projectmanager.duplicate')->middleware('permission:plugins,create');
+        Route::get('/project-manager/status', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'status'])->name('projectmanager.status');
+        
+        // Deployed websites CRUD
+        Route::post('/project-manager/websites', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'storeWebsite'])->name('projectmanager.websites.store')->middleware('permission:plugins,create');
+        Route::put('/project-manager/websites/{id}', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'updateWebsite'])->name('projectmanager.websites.update')->middleware('permission:plugins,update');
+        Route::delete('/project-manager/websites/{id}', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'deleteWebsite'])->name('projectmanager.websites.delete')->middleware('permission:plugins,delete');
+        
+        // Deployed website operations
+        Route::post('/project-manager/websites/{id}/deploy', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'deployWebsite'])->name('projectmanager.websites.deploy')->middleware('permission:plugins,update');
+        Route::post('/project-manager/websites/{id}/backup', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'backupWebsite'])->name('projectmanager.websites.backup')->middleware('permission:plugins,update');
+        Route::post('/project-manager/websites/{id}/restore', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'restoreWebsite'])->name('projectmanager.websites.restore')->middleware('permission:plugins,update');
+        Route::get('/project-manager/websites/{id}/backups', [\Modules\ProjectManager\Http\Controllers\ProjectManagerController::class, 'getBackups'])->name('projectmanager.websites.backups');
     });
 
     // Dashboard Widget Routes
@@ -106,4 +130,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
 require __DIR__.'/auth.php';
 
 // Dynamic Page Routing - Must be at the very bottom to act as a fallback catch-all
-Route::get('/{slug}', [App\Http\Controllers\Frontend\PageRendererController::class, 'show'])->name('pages.show');
+// Wrapped in booted() to ensure it is registered AFTER all module routes have been loaded.
+app()->booted(function () {
+    Route::get('/{slug}', [App\Http\Controllers\Frontend\PageRendererController::class, 'show'])->middleware('web')->name('frontend.page.show');
+});

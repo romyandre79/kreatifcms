@@ -111,7 +111,7 @@ class DashboardWidgetController extends Controller
                             ->get();
                     } else {
                         // Default to count by created_at if no group by
-                        $data = $query->select(DB::raw('DATE(created_at) as date'), DB::raw('count(*) as total'))
+                        $data = $query->select(DB::raw(\App\Services\DatabaseFactory::dateExpression('created_at') . ' as date'), DB::raw('count(*) as total'))
                             ->groupBy('date')
                             ->orderBy('date')
                             ->get();

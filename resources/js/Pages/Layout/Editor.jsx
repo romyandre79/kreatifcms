@@ -2440,6 +2440,18 @@ export default function LayoutEditor({ layout = {}, headerBlocks = [], footerBlo
                                                 <div className={`w-3 h-3 bg-white rounded-full transition-transform ${isDefault ? 'translate-x-5' : ''}`} />
                                             </button>
                                         </div>
+                                        <div className="flex items-center justify-between pt-2 border-t border-gray-100 mt-2">
+                                            <div className="flex flex-col">
+                                                <label className="text-xs font-bold text-gray-700">Include Admin Sidebar</label>
+                                                <span className="text-[10px] text-gray-400">Wrap this layout inside the Authenticated Admin Shell</span>
+                                            </div>
+                                            <button 
+                                                onClick={() => setTheme({ ...theme, useAdminSidebar: !theme.useAdminSidebar })}
+                                                className={`w-10 h-5 rounded-full p-1 transition-colors ${theme.useAdminSidebar ? 'bg-green-500' : 'bg-gray-300'}`}
+                                            >
+                                                <div className={`w-3 h-3 bg-white rounded-full transition-transform ${theme.useAdminSidebar ? 'translate-x-5' : ''}`} />
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
 

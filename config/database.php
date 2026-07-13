@@ -114,25 +114,27 @@ return [
             // 'trust_server_certificate' => env('DB_TRUST_SERVER_CERTIFICATE', 'false'),
         ],
 
-        'secondary' => [
-            'driver' => 'mysql',
+        'secondary' => array_filter([
+            'driver' => env('DB_SECONDARY_CONNECTION', 'mysql'),
             'url' => env('DB_URL'),
             'host' => env('DB_SECONDARY_HOST', '127.0.0.1'),
-            'port' => env('DB_SECONDARY_PORT', '3306'),
+            'port' => env('DB_SECONDARY_PORT', \App\Services\DatabaseFactory::getDefaultPort(env('DB_SECONDARY_CONNECTION', 'mysql'))),
             'database' => env('DB_SECONDARY_DATABASE', 'kreatif_portal_content'),
             'username' => env('DB_SECONDARY_USERNAME', 'root'),
             'password' => env('DB_SECONDARY_PASSWORD', ''),
-            'unix_socket' => env('DB_SOCKET', ''),
-            'charset' => env('DB_CHARSET', 'utf8mb4'),
-            'collation' => env('DB_COLLATION', 'utf8mb4_unicode_ci'),
+            'unix_socket' => in_array(env('DB_SECONDARY_CONNECTION', 'mysql'), ['mysql', 'mariadb']) ? env('DB_SOCKET', '') : null,
+            'charset' => env('DB_CHARSET', in_array(env('DB_SECONDARY_CONNECTION', 'mysql'), ['mysql', 'mariadb']) ? 'utf8mb4' : 'utf8'),
+            'collation' => in_array(env('DB_SECONDARY_CONNECTION', 'mysql'), ['mysql', 'mariadb']) ? env('DB_COLLATION', 'utf8mb4_unicode_ci') : null,
             'prefix' => '',
             'prefix_indexes' => true,
-            'strict' => true,
-            'engine' => null,
-            'options' => extension_loaded('pdo_mysql') ? array_filter([
-                (defined('PDO::MYSQL_ATTR_SSL_CA') ?PDO::MYSQL_ATTR_SSL_CA : null) => env('MYSQL_ATTR_SSL_CA'),
+            'strict' => in_array(env('DB_SECONDARY_CONNECTION', 'mysql'), ['mysql', 'mariadb']),
+            'engine' => in_array(env('DB_SECONDARY_CONNECTION', 'mysql'), ['mysql', 'mariadb']) ? null : null,
+            'search_path' => env('DB_SECONDARY_CONNECTION', 'mysql') === 'pgsql' ? 'public' : null,
+            'sslmode' => env('DB_SECONDARY_CONNECTION', 'mysql') === 'pgsql' ? env('DB_SSLMODE', 'prefer') : null,
+            'options' => in_array(env('DB_SECONDARY_CONNECTION', 'mysql'), ['mysql', 'mariadb']) && extension_loaded('pdo_mysql') ? array_filter([
+                (PHP_VERSION_ID >= 80500 ?Mysql::ATTR_SSL_CA : PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
-        ],
+        ], fn ($value) => !is_null($value)),
 
     ],
 

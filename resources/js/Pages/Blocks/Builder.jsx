@@ -11,7 +11,7 @@ import SocialIcon from '@/Components/SocialIcon';
 import MarkdownToolbar from '@/Components/MarkdownToolbar';
 import Summernote from '@/Components/Summernote';
 
-export default function Builder({ block }) {
+export default function Builder({ block, contentTypes = [], workflows = [] }) {
     const { plugins = [] } = usePage().props;
     const blockPlugins = plugins.filter(p => p.type === 'block');
 
@@ -488,6 +488,239 @@ export default function Builder({ block }) {
                         </div>
                         <div className="space-y-6">
                             {composition.map((key, idx) => renderSection(key, idx))}
+                        </div>
+                    </div>
+                );
+            }
+            case 'master_data': {
+                return (
+                    <div className="space-y-6">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Block Title</label>
+                            <input 
+                                type="text" 
+                                value={data.title || ''} 
+                                onChange={e => updateData('title', e.target.value)}
+                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Master Entity Source</label>
+                            <select 
+                                value={data.entity || 'currencies'} 
+                                onChange={e => updateData('entity', e.target.value)}
+                                className="w-full text-sm border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500 bg-white shadow-sm"
+                            >
+                                <option value="currencies">Currencies</option>
+                                <option value="companies">Companies</option>
+                                <option value="branches">Branches</option>
+                                <option value="countries">Countries</option>
+                                <option value="provinces">Provinces</option>
+                                <option value="cities">Cities</option>
+                                <option value="doc-numberings">Document Numberings</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Theme Color</label>
+                            <input 
+                                type="color" 
+                                value={data.theme_color || '#4f46e5'} 
+                                onChange={e => updateData('theme_color', e.target.value)}
+                                className="w-full h-10 border border-gray-300 rounded-lg cursor-pointer bg-white"
+                            />
+                        </div>
+                    </div>
+                );
+            }
+            case 'form': {
+                const hasItems = data.has_items || false;
+                const itemsConfig = data.items_config || {};
+
+                const updateItemsConfig = (key, val) => {
+                    const newConfig = { ...itemsConfig, [key]: val };
+                    updateData('items_config', newConfig);
+                };
+
+                const storeWorkflow = workflows.find(w => w.name === `erp-store-${data.content_type}`);
+                const updateWorkflow = workflows.find(w => w.name === `erp-update-${data.content_type}`);
+
+                return (
+                    <div className="space-y-6">
+                        <div className="p-6 bg-white border border-gray-200 rounded-3xl shadow-sm space-y-4">
+                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">Form Basic Settings</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Form Title</label>
+                                    <input type="text" value={data.title || ''} onChange={e => updateData('title', e.target.value)} className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm" />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Submit Button Text</label>
+                                    <input type="text" value={data.submit_button_text || 'Submit'} onChange={e => updateData('submit_button_text', e.target.value)} className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm" />
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Success Message</label>
+                                <textarea value={data.success_message || ''} onChange={e => updateData('success_message', e.target.value)} rows="2" className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm" />
+                            </div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Form Mode</label>
+                                    <select value={data.mode || 'dynamic'} onChange={e => updateData('mode', e.target.value)} className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm font-semibold">
+                                        <option value="dynamic">Dynamic (Content Type Schema)</option>
+                                        <option value="static">Static (Defined fields list)</option>
+                                    </select>
+                                </div>
+                                {data.mode !== 'static' && (
+                                    <div>
+                                        <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Target Content Type</label>
+                                        <select value={data.content_type || ''} onChange={e => updateData('content_type', e.target.value)} className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm font-semibold text-indigo-600">
+                                            <option value="">-- Choose Content Type --</option>
+                                            {contentTypes.map(ct => (
+                                                <option key={ct.id} value={ct.slug}>{ct.name} ({ct.slug})</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-white border border-gray-200 rounded-3xl shadow-sm space-y-4">
+                            <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider border-b border-gray-100 pb-2">Interaction & Modal Settings</h3>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Display Mode</label>
+                                    <select value={data.display_mode || 'standard'} onChange={e => updateData('display_mode', e.target.value)} className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm">
+                                        <option value="standard">Standard (Embedded inline)</option>
+                                        <option value="modal">Modal Window</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Trigger Action ID (Grid connection)</label>
+                                    <input type="text" value={data.trigger_action_id || ''} onChange={e => updateData('trigger_action_id', e.target.value)} placeholder="e.g. edit" className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm text-gray-500" />
+                                </div>
+                            </div>
+                            <div className="pt-2">
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className={`w-10 h-5 rounded-full p-1 transition-colors ${data.syncWithGrid ? 'bg-indigo-600' : 'bg-gray-300'}`}>
+                                        <div className={`w-3 h-3 bg-white rounded-full transition-transform ${data.syncWithGrid ? 'translate-x-5' : ''}`} />
+                                    </div>
+                                    <input type="checkbox" className="hidden" checked={!!data.syncWithGrid} onChange={e => updateData('syncWithGrid', e.target.checked)} />
+                                    <span className="text-xs font-bold text-gray-600 uppercase tracking-widest group-hover:text-indigo-600 transition-colors">Sync with Advanced Data Grid</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Associated Workflows Info */}
+                        <div className="p-6 bg-indigo-50/40 border border-indigo-100 rounded-3xl shadow-sm space-y-4">
+                            <h3 className="text-sm font-black text-indigo-950 uppercase tracking-wider border-b border-indigo-100/50 pb-2 flex items-center gap-1.5">
+                                <LucideIcons.GitBranch className="w-4 h-4 text-indigo-600" />
+                                Connected Workflows
+                            </h3>
+                            <div className="space-y-3">
+                                <div>
+                                    <label className="block text-xs font-bold text-indigo-900 mb-2">Workflow: Store (Create)</label>
+                                    <select 
+                                        value={itemsConfig.store_workflow || ''} 
+                                        onChange={e => updateItemsConfig('store_workflow', e.target.value)}
+                                        className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm font-semibold"
+                                    >
+                                        <option value="">{data.content_type ? `Default (erp-store-${data.content_type})` : '-- Select Workflow --'}</option>
+                                        {workflows.map(w => (
+                                            <option key={'wf_st_b_' + w.id} value={w.name}>{w.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-bold text-indigo-900 mb-2">Workflow: Update (Edit / Post)</label>
+                                    <select 
+                                        value={itemsConfig.update_workflow || ''} 
+                                        onChange={e => updateItemsConfig('update_workflow', e.target.value)}
+                                        className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm font-semibold"
+                                    >
+                                        <option value="">{data.content_type ? `Default (erp-update-${data.content_type})` : '-- Select Workflow --'}</option>
+                                        {workflows.map(w => (
+                                            <option key={'wf_up_b_' + w.id} value={w.name}>{w.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="p-6 bg-white border border-gray-200 rounded-3xl shadow-sm space-y-4">
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-2">
+                                <h3 className="text-sm font-black text-gray-900 uppercase tracking-wider">Sub-items / Lines Allocation Configuration</h3>
+                                <label className="flex items-center gap-3 cursor-pointer group">
+                                    <div className={`w-10 h-5 rounded-full p-1 transition-colors ${data.has_items ? 'bg-indigo-600' : 'bg-gray-300'}`}>
+                                        <div className={`w-3 h-3 bg-white rounded-full transition-transform ${data.has_items ? 'translate-x-5' : ''}`} />
+                                    </div>
+                                    <input type="checkbox" className="hidden" checked={!!data.has_items} onChange={e => updateData('has_items', e.target.checked)} />
+                                    <span className="text-xs font-extrabold text-gray-500 uppercase tracking-wider group-hover:text-indigo-600 transition-colors">Has Sub-Items</span>
+                                </label>
+                            </div>
+
+                            {hasItems && (
+                                <div className="space-y-4 pt-2">
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Section Title</label>
+                                            <input type="text" value={itemsConfig.title || ''} onChange={e => updateItemsConfig('title', e.target.value)} placeholder="e.g. Baris Alokasi Jurnal" className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Lines DB Table</label>
+                                            <select 
+                                                value={itemsConfig.items_table || ''} 
+                                                onChange={e => updateItemsConfig('items_table', e.target.value)}
+                                                className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm font-semibold font-mono"
+                                            >
+                                                <option value="">-- Choose Lines Table --</option>
+                                                {contentTypes.map(ct => {
+                                                    const dbTable = `cms_${ct.slug}`;
+                                                    return (
+                                                        <option key={'lines_ct_b_' + ct.id} value={dbTable}>{ct.name} ({dbTable})</option>
+                                                    );
+                                                })}
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Parent Foreign Key</label>
+                                            <input type="text" value={itemsConfig.parent_foreign_key || ''} onChange={e => updateItemsConfig('parent_foreign_key', e.target.value)} placeholder="e.g. journal_id" className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm font-mono text-xs" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">API Endpoint Fetch</label>
+                                            <input type="text" value={itemsConfig.api_endpoint_fetch || ''} onChange={e => updateItemsConfig('api_endpoint_fetch', e.target.value)} placeholder="e.g. /admin/accounting/api/journal-items/{id}" className="w-full text-sm border-gray-300 rounded-lg bg-white shadow-sm font-mono text-xs" />
+                                        </div>
+                                    </div>
+                                    <div className="p-4 bg-gray-50 border border-gray-200 rounded-2xl space-y-3">
+                                        <h4 className="text-xs font-black text-gray-700 uppercase tracking-wider">Debit/Credit Balance Verification Check</h4>
+                                        <div className="grid grid-cols-3 gap-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Balance Group Field</label>
+                                                <input type="text" value={itemsConfig.balance_check?.balance_by_field || ''} onChange={e => {
+                                                    const check = itemsConfig.balance_check || {};
+                                                    updateItemsConfig('balance_check', { ...check, enabled: true, balance_by_field: e.target.value });
+                                                }} placeholder="e.g. type" className="w-full text-xs border-gray-300 rounded bg-white shadow-sm" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Debit/Credit Match Values</label>
+                                                <input type="text" value={(itemsConfig.balance_check?.balance_values || []).join(', ')} onChange={e => {
+                                                    const check = itemsConfig.balance_check || {};
+                                                    const arr = e.target.value.split(',').map(s => s.trim());
+                                                    updateItemsConfig('balance_check', { ...check, enabled: true, balance_values: arr });
+                                                }} placeholder="e.g. debit, credit" className="w-full text-xs border-gray-300 rounded bg-white shadow-sm" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Amount Value Field</label>
+                                                <input type="text" value={itemsConfig.balance_check?.value_field || ''} onChange={e => {
+                                                    const check = itemsConfig.balance_check || {};
+                                                    updateItemsConfig('balance_check', { ...check, enabled: true, value_field: e.target.value });
+                                                }} placeholder="e.g. amount" className="w-full text-xs border-gray-300 rounded bg-white shadow-sm" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 );

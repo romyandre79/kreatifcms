@@ -58,6 +58,9 @@ class PageController extends Controller
             'contentTypes' => (class_exists('Modules\ContentType\Models\ContentType') && \Nwidart\Modules\Facades\Module::isEnabled('ContentType'))
                 ? \Modules\ContentType\Models\ContentType::with('fields')->get()
                 : [],
+            'workflows' => (class_exists('Modules\Workflow\Models\Workflow') && \Nwidart\Modules\Facades\Module::isEnabled('Workflow'))
+                ? \Modules\Workflow\Models\Workflow::where('is_active', true)->orderBy('name')->get()
+                : [],
             'dataGrids' => (class_exists('Modules\DataGrid\Models\DataGrid') && \Nwidart\Modules\Facades\Module::isEnabled('DataGrid'))
                 ? \Modules\DataGrid\Models\DataGrid::all()
                 : [],

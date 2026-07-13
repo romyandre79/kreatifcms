@@ -1,7 +1,9 @@
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import DynamicPageRenderer from '@/Components/DynamicPageRenderer';
+import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout';
 
 export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
+    const { auth } = usePage().props;
     const title = page?.title || page?.meta_title || 'Page';
     const metaDesc = page?.meta_description || layout?.seo?.default_meta_description || '';
     const siteName = layout?.seo?.site_name || 'Kreatif CMS';
@@ -19,7 +21,7 @@ export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
     (theme.customStyles || []).forEach(s => {
         if (s.fontFamily) fonts.add(s.fontFamily);
     });
-    
+
     const fontQuery = Array.from(fonts)
         .filter(f => f !== 'System' && f !== '')
         .map(f => `family=${f.replace(/ /g, '+')}:wght@400;500;600;700`)
@@ -35,6 +37,31 @@ export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
         }
     `).join('\n');
 
+    const showAdminSidebar = theme.useAdminSidebar && auth?.user;
+
+    const pageContent = (
+        <>
+            {/* Header */}
+            {headerBlocks.length > 0 && (
+                <header>
+                    <DynamicPageRenderer blocks={headerBlocks} reusableBlocks={safeReusableBlocks} />
+                </header>
+            )}
+
+            {/* Main Content */}
+            <main className="min-h-screen">
+                <DynamicPageRenderer blocks={pageBlocks} reusableBlocks={safeReusableBlocks} />
+            </main>
+
+            {/* Footer */}
+            {footerBlocks.length > 0 && (
+                <footer>
+                    <DynamicPageRenderer blocks={footerBlocks} reusableBlocks={safeReusableBlocks} />
+                </footer>
+            )}
+        </>
+    );
+
     return (
         <>
             <Head>
@@ -44,7 +71,7 @@ export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
                 {page?.og_image && <meta property="og:image" content={page.og_image} />}
                 <meta property="og:title" content={`${title}${separator}${siteName}`} />
                 <meta property="og:type" content="website" />
-                
+
                 {layout?.id && (
                     <link rel="stylesheet" href={`/layouts/layout-${layout.id}.css`} />
                 )}
@@ -67,23 +94,12 @@ export default function Page({ page = {}, reusableBlocks = [], layout = {} }) {
                 `}</style>
             </Head>
 
-            {/* Header */}
-            {headerBlocks.length > 0 && (
-                <header>
-                    <DynamicPageRenderer blocks={headerBlocks} reusableBlocks={safeReusableBlocks} />
-                </header>
-            )}
-
-            {/* Main Content */}
-            <main className="min-h-screen">
-                <DynamicPageRenderer blocks={pageBlocks} reusableBlocks={safeReusableBlocks} />
-            </main>
-
-            {/* Footer */}
-            {footerBlocks.length > 0 && (
-                <footer>
-                    <DynamicPageRenderer blocks={footerBlocks} reusableBlocks={safeReusableBlocks} />
-                </footer>
+            {showAdminSidebar ? (
+                <AuthenticatedLayout header={<span>{title}</span>}>
+                    {pageContent}
+                </AuthenticatedLayout>
+            ) : (
+                pageContent
             )}
         </>
     );

@@ -17,6 +17,9 @@ const VideoBlock = lazy(() => import('./Blocks/VideoBlock'));
 const VideoGridBlock = lazy(() => import('./Blocks/VideoGridBlock'));
 const PhotoGridBlock = lazy(() => import('./Blocks/PhotoGridBlock'));
 const DataGridBlock = lazy(() => import('./Blocks/DataGridBlock'));
+const MetricCardBlock = lazy(() => import('./Blocks/MetricCardBlock'));
+const TabsBlock = lazy(() => import('./Blocks/TabsBlock'));
+const DataSummaryListBlock = lazy(() => import('./Blocks/DataSummaryListBlock'));
 
 
 
@@ -36,7 +39,10 @@ const BlockComponents = {
     video: VideoBlock,
     video_grid: VideoGridBlock,
     photogrid: PhotoGridBlock,
-    datagrid: DataGridBlock
+    datagrid: DataGridBlock,
+    metric_card: MetricCardBlock,
+    tabs: TabsBlock,
+    data_summary_list: DataSummaryListBlock
 };
 
 
@@ -99,7 +105,13 @@ const BlockEventHandler = ({ events = {}, customJs, blockId }) => {
 
 export default React.memo(function DynamicPageRenderer({ blocks = [], reusableBlocks = [] }) {
     const { plugins = [] } = usePage().props;
-    const activeBlockTypes = plugins.filter(p => p.type === 'block').map(p => p.meta?.id || p.alias);
+    const activeBlockTypes = [
+        ...plugins.filter(p => p.type === 'block').map(p => p.meta?.id || p.alias),
+        'datagrid',
+        'metric_card',
+        'tabs',
+        'data_summary_list'
+    ];
 
     if (!blocks || (Array.isArray(blocks) && blocks.length === 0)) {
         return (
@@ -110,7 +122,7 @@ export default React.memo(function DynamicPageRenderer({ blocks = [], reusableBl
     }
 
     return (
-        <div className="dynamic-page-content font-sans antialiased text-gray-900 bg-white">
+        <div className="dynamic-page-content font-sans antialiased text-gray-900">
             {(Array.isArray(blocks) ? blocks : []).map((block) => {
                 if (!block) return null;
                 let actualType = block.type;

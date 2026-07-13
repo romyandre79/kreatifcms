@@ -7,6 +7,7 @@ use Modules\ContentType\Models\ContentField;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Str;
+use App\Services\DatabaseFactory;
 
 class SchemaService
 {
@@ -69,7 +70,7 @@ class SchemaService
      */
     public function getTableName(string $slug)
     {
-        return 'cms_' . Str::snake($slug);
+        return 'cms_' . Str::snake(str_replace('-', '_', $slug));
     }
 
     /**
@@ -95,14 +96,51 @@ class SchemaService
             if (!in_array('user_id', $existingColumns)) {
                 $table->unsignedBigInteger('user_id')->nullable()->after('id');
             }
-            
+
+            $conn = \DB::connection($this->connection);
+            $indexes = [];
+            try {
+                // Get list of existing unique indexes for this table
+                $doctrineSchemaManager = $conn->getDoctrineSchemaManager();
+                $tableIndexes = $doctrineSchemaManager->listTableIndexes($tableName);
+                foreach ($tableIndexes as $index) {
+                    if ($index->isUnique()) {
+                        foreach ($index->getColumns() as $col) {
+                            $indexes[$col] = $index->getName();
+                        }
+                    }
+                }
+            } catch (\Exception $e) {
+                // Fallback if Doctrine is not installed or fails
+            }
+
             foreach ($contentType->fields as $field) {
                 $columnName = Str::snake($field->name);
+                
+                // Temporarily disable is_unique indicator when calling addFieldToTable
+                // so we can handle unique index addition manually and avoid Duplicate Key error.
+                $isUniqueRequested = (bool)$field->is_unique;
+                $field->is_unique = false; 
+
                 if (!in_array($columnName, $existingColumns)) {
-                    $this->addFieldToTable($table, $field);
+                    $column = $this->addFieldToTable($table, $field);
+                    if ($isUniqueRequested) {
+                        $column->unique();
+                    }
                 } else {
-                    $this->addFieldToTable($table, $field)->change();
+                    $column = $this->addFieldToTable($table, $field)->change();
+                    
+                    // Handle unique constraint on modification safely
+                    $hasUniqueIndex = isset($indexes[$columnName]);
+                    if ($isUniqueRequested && !$hasUniqueIndex) {
+                        $table->unique($columnName);
+                    } elseif (!$isUniqueRequested && $hasUniqueIndex) {
+                        $table->dropUnique($indexes[$columnName]);
+                    }
                 }
+
+                // Restore original state
+                $field->is_unique = $isUniqueRequested;
             }
         });
     }
@@ -112,21 +150,7 @@ class SchemaService
      */
     protected function ensureDatabaseExists()
     {
-        $database = config('database.connections.secondary.database');
-        $host = config('database.connections.secondary.host');
-        $port = config('database.connections.secondary.port');
-        $username = config('database.connections.secondary.username');
-        $password = config('database.connections.secondary.password');
-
-        if ($database && $host && $username) {
-            try {
-                $pdo = new \PDO("mysql:host={$host};port={$port}", $username, $password);
-                $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
-                $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$database}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
-            } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning("Could not automatically create secondary database: " . $e->getMessage());
-            }
-        }
+        DatabaseFactory::createDatabaseIfNotExists($this->connection);
     }
     /**
      * Hydrate dynamic blocks with data from the secondary database.
@@ -149,13 +173,23 @@ class SchemaService
                             $fields = $contentType->fields ?? collect();
                             $block['data']['fields'] = $fields->map(function($f) {
                                 $options = $f->options ?: [];
+                                $targetSlug = '';
+                                if ($f->type === 'relation' && !empty($options['target_id'])) {
+                                    $targetCt = ContentType::find($options['target_id']);
+                                    if ($targetCt) {
+                                        $targetSlug = $targetCt->slug;
+                                    }
+                                }
+
                                 return [
                                     'id' => $f->id,
                                     'name' => \Illuminate\Support\Str::snake($f->name),
                                     'label' => $f->name,
-                                    'type' => $f->type === 'longtext' ? 'textarea' : ($f->type === 'number' ? 'number' : 'text'),
+                                    'type' => $f->type,
                                     'placeholder' => $options['placeholder'] ?? '',
-                                    'required' => (bool)$f->required
+                                    'required' => (bool)$f->required,
+                                    'options' => $options,
+                                    'target_slug' => $targetSlug
                                 ];
                             })->toArray();
                             \Illuminate\Support\Facades\Log::info("Hydrated form fields from content type: {$ctSlug}");

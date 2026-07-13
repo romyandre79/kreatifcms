@@ -32,15 +32,13 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 
-export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [], dataGrids = [], availableRoles = [] }) {
+export default function Builder({ page, layouts = [], layout = {}, reusableBlocks = [], contentTypes = [], dataGrids = [], availableRoles = [], workflows = [] }) {
 
     const { plugins = [] } = usePage().props;
     const isContentTypeEnabled = plugins.some(p => p.alias === 'contenttype' && p.enabled !== false);
     const blockPlugins = plugins.filter(p => p.type === 'block');
-    
-    // Filter out block options that require ContentType if it's disabled.
-    // E.g., if 'content_list' is an option anywhere, we can hide it.
-    
+    const isMasterDataEnabled = plugins.some(p => p.alias === 'masterdata' && p.enabled !== false);
+
     const BLOCK_TYPES = [
         ...blockPlugins.map(p => {
             const IconComponent = p.meta?.icon ? LucideIcons[p.meta.icon] || LucideIcons.LayoutGrid : LucideIcons.LayoutGrid;
@@ -51,9 +49,26 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 desc: p.meta?.desc || p.description || ''
             };
         }).filter(p => isContentTypeEnabled || (p.id !== 'content_list' && p.id !== 'form' && p.id !== 'slideshow' && p.id !== 'timeline' && p.id !== 'feature_grid')),
-        { id: 'reusable_block', name: 'Saved Block', icon: LucideIcons.Box || LucideIcons.Layers, desc: 'Import a saved block' }
+        {
+            id: 'metric_card',
+            name: 'Metric Card',
+            icon: LucideIcons.Calculator,
+            desc: 'Display dynamic calculated statistics from Content Types (SUM, AVG, COUNT, MIN, MAX)'
+        },
+        {
+            id: 'tabs',
+            name: 'Tabs',
+            icon: LucideIcons.Folder,
+            desc: 'Organize content sections into navigable tabs'
+        },
+        {
+            id: 'data_summary_list',
+            name: 'Data Summary List',
+            icon: LucideIcons.ListChecks,
+            desc: 'Display lists of data with calculations and summaries at the bottom'
+        }
     ];
-    
+
     // But since `content_list`, `form`, `timeline`, `slideshow` are already block plugins, 
     // maybe we just disable their 'dynamic' part instead of hiding the whole block.
     // Let's redefine BLOCK_TYPES without full exclusion, but remove `content_list` block
@@ -69,14 +84,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
     const moveNestedItem = (allLinks, currentLinks, index, direction, parentPath = [], updateFn) => {
         const newAllLinks = [...allLinks];
         let targetArr = newAllLinks;
-        
+
         for (const segment of parentPath) {
             targetArr = targetArr[segment];
         }
 
         const targetIndex = index + direction;
         if (targetIndex < 0 || targetIndex >= targetArr.length) return;
-        
+
         [targetArr[index], targetArr[targetIndex]] = [targetArr[targetIndex], targetArr[index]];
         updateFn(newAllLinks, []);
     };
@@ -88,43 +103,43 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 {(links || []).map((link, lIdx) => (
                     <div key={link.id} className="group/link">
                         <div className="flex items-center gap-1 group/item">
-                        <div className="flex flex-col flex-1 min-w-0 gap-1.5 py-1">
-                            <input
-                                type="text"
-                                value={link.label || ''}
-                                onChange={(e) => {
-                                    const newLinks = [...links];
-                                    newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value };
-                                    updateFn(newLinks, path);
-                                }}
-                                placeholder="Label"
-                                className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 p-0 font-bold text-gray-700"
-                            />
-                            <input
-                                type="text"
-                                value={link.url || ''}
-                                onChange={(e) => {
-                                    const newLinks = [...links];
-                                    newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value };
-                                    updateFn(newLinks, path);
-                                }}
-                                placeholder="URL"
-                                className="w-full text-[8px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400 font-mono"
-                            />
-                        </div>
+                            <div className="flex flex-col flex-1 min-w-0 gap-1.5 py-1">
+                                <input
+                                    type="text"
+                                    value={link.label || ''}
+                                    onChange={(e) => {
+                                        const newLinks = [...links];
+                                        newLinks[lIdx] = { ...newLinks[lIdx], label: e.target.value };
+                                        updateFn(newLinks, path);
+                                    }}
+                                    placeholder="Label"
+                                    className="w-full text-[10px] border-transparent bg-transparent focus:ring-0 p-0 font-bold text-gray-700"
+                                />
+                                <input
+                                    type="text"
+                                    value={link.url || ''}
+                                    onChange={(e) => {
+                                        const newLinks = [...links];
+                                        newLinks[lIdx] = { ...newLinks[lIdx], url: e.target.value };
+                                        updateFn(newLinks, path);
+                                    }}
+                                    placeholder="URL"
+                                    className="w-full text-[8px] border-transparent bg-transparent focus:ring-0 p-0 text-gray-400 font-mono"
+                                />
+                            </div>
                             <div className="flex items-center opacity-0 group-hover/link:opacity-100 transition-opacity">
                                 <div className="flex items-center border-r border-gray-100 pr-1 mr-1">
-                                    <button 
-                                        disabled={lIdx === 0} 
-                                        onClick={() => moveNestedItem(currentAllLinks, links, lIdx, -1, path, updateFn)} 
+                                    <button
+                                        disabled={lIdx === 0}
+                                        onClick={() => moveNestedItem(currentAllLinks, links, lIdx, -1, path, updateFn)}
                                         className="p-0.5 text-gray-400 hover:text-indigo-600 disabled:opacity-20"
                                         title="Move Up"
                                     >
                                         <ChevronUp className="w-2.5 h-2.5" />
                                     </button>
-                                    <button 
-                                        disabled={lIdx === links.length - 1} 
-                                        onClick={() => moveNestedItem(currentAllLinks, links, lIdx, 1, path, updateFn)} 
+                                    <button
+                                        disabled={lIdx === links.length - 1}
+                                        onClick={() => moveNestedItem(currentAllLinks, links, lIdx, 1, path, updateFn)}
                                         className="p-0.5 text-gray-400 hover:text-indigo-600 disabled:opacity-20"
                                         title="Move Down"
                                     >
@@ -163,7 +178,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
             </div>
         );
     };
-    
+
     // Ensure all blocks have an ID (for backward compatibility)
     const ensureIds = (blockArr) => {
         if (!Array.isArray(blockArr)) return [];
@@ -175,7 +190,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
     const [slug, setSlug] = useState(page.slug);
     const [isPublished, setIsPublished] = useState(page.is_published);
     const [layoutId, setLayoutId] = useState(page.layout_id || '');
-    
+
     // SEO State
     const [metaTitle, setMetaTitle] = useState(page.meta_title || '');
     const [metaDescription, setMetaDescription] = useState(page.meta_description || '');
@@ -253,16 +268,16 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 config: { autoPlay: true, interval: 5000, showArrows: true, showDots: true }
             };
         } else if (type === 'navbar') {
-            newBlock.data = { 
-                logo: '', 
-                links: [{ id: generateId(), label: 'Home', url: '/' }], 
+            newBlock.data = {
+                logo: '',
+                links: [{ id: generateId(), label: 'Home', url: '/' }],
                 buttons: [
                     { id: generateId(), label: 'Login', url: '/login', style: 'ghost', visibility: 'guest' },
                     { id: generateId(), label: 'Get Started', url: '#', style: 'primary' }
                 ],
                 social_links: [],
                 composition: ['links', 'buttons', 'social_links'],
-                sticky: true, 
+                sticky: true,
                 glass: true,
                 align: 'center'
             };
@@ -283,9 +298,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
         } else if (type === 'reusable_block') {
             newBlock.data = { block_id: '' };
         } else if (type === 'form') {
-            newBlock.data = { 
-                mode: 'static', 
-                title: 'Contact Us', 
+            newBlock.data = {
+                mode: 'static',
+                title: 'Contact Us',
                 description: 'We would love to hear from you.',
                 success_message: 'Thank you for your submission!',
                 submit_button_text: 'Send Message',
@@ -426,12 +441,12 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 subtitle: 'Watch our latest videos and tutorials.',
                 columns: 3,
                 items: [
-                    { 
-                        id: generateId(), 
-                        title: 'Sample Video', 
-                        description: 'Brief description of the video content.', 
-                        url: '', 
-                        poster: '', 
+                    {
+                        id: generateId(),
+                        title: 'Sample Video',
+                        description: 'Brief description of the video content.',
+                        url: '',
+                        poster: '',
                         is_paid: false,
                         locked_title: 'Premium Video',
                         paid_message: 'Please log in to watch this video.'
@@ -456,11 +471,11 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 columns: 3,
                 lightbox: true,
                 items: [
-                    { 
-                        id: generateId(), 
-                        title: 'Sample Photo', 
-                        description: 'Description of the photo.', 
-                        image: '', 
+                    {
+                        id: generateId(),
+                        title: 'Sample Photo',
+                        description: 'Description of the photo.',
+                        image: '',
                         is_paid: false,
                         locked_title: 'Premium Photo',
                         paid_message: 'Please log in to view this photo.'
@@ -489,6 +504,46 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 align: 'left',
                 per_page: 15,
                 server_side: true
+            };
+        } else if (type === 'metric_card') {
+            newBlock.data = {
+                title: 'Metric Card',
+                content_type: '',
+                aggregate_function: 'count',
+                aggregate_field: '',
+                filter_field: '',
+                filter_value: '',
+                format_type: 'currency',
+                bg_color: '#ffffff',
+                text_color: '#1f2937',
+                icon: 'Calculator',
+                trend: 'none',
+                trend_color: 'emerald'
+            };
+        } else if (type === 'tabs') {
+            newBlock.data = {
+                tabs: [
+                    { id: generateId(), label: 'Tab 1', block_id: '' },
+                    { id: generateId(), label: 'Tab 2', block_id: '' }
+                ],
+                active_color: '#4f46e5',
+                tab_style: 'pills',
+                align: 'left'
+            };
+        } else if (type === 'data_summary_list') {
+            newBlock.data = {
+                title: 'Assets',
+                badge_text: 'Debit Balance',
+                content_type: '',
+                code_field: 'code',
+                label_field: 'name',
+                value_field: 'balance',
+                filter_field: '',
+                filter_value: '',
+                total_label: 'Total Assets',
+                bg_color: '#ffffff',
+                text_color: '#1f2937',
+                accent_color: '#10b981'
             };
         }
 
@@ -534,7 +589,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     };
                     const oldIndex = items.findIndex((item, idx) => getItemId(item, idx) === active.id);
                     const newIndex = items.findIndex((item, idx) => getItemId(item, idx) === over.id);
-                    
+
                     if (oldIndex !== -1 && newIndex !== -1) {
                         return {
                             ...block,
@@ -613,7 +668,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
         reader.onload = (e) => {
             try {
                 const importedData = JSON.parse(e.target.result);
-                
+
                 if (importedData.blocks) setBlocks(ensureIds(importedData.blocks));
                 if (importedData.title) setTitle(importedData.title);
                 if (importedData.slug) setSlug(importedData.slug);
@@ -679,7 +734,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
             window._selectingButtonIdx = null;
         } else if (mediaPickerTarget) {
             const { blockId, fieldName, index } = mediaPickerTarget;
-            
+
             if (blockId === 'seo') {
                 if (fieldName === 'og_image') setOgImage(url);
             } else {
@@ -738,18 +793,18 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 <div>
                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Section Header Settings</label>
                     <div className="space-y-3">
-                        <input 
-                            type="text" 
-                            value={data.title || ''} 
-                            onChange={e => updateBlockData(block.id, 'title', e.target.value)} 
+                        <input
+                            type="text"
+                            value={data.title || ''}
+                            onChange={e => updateBlockData(block.id, 'title', e.target.value)}
                             placeholder="Main Title"
-                            className="w-full text-xs font-bold border-gray-200 rounded-lg bg-white h-9 px-3 focus:ring-indigo-500" 
+                            className="w-full text-xs font-bold border-gray-200 rounded-lg bg-white h-9 px-3 focus:ring-indigo-500"
                         />
-                        <textarea 
-                            value={data.subtitle || ''} 
-                            onChange={e => updateBlockData(block.id, 'subtitle', e.target.value)} 
+                        <textarea
+                            value={data.subtitle || ''}
+                            onChange={e => updateBlockData(block.id, 'subtitle', e.target.value)}
                             placeholder="Subtitle / Description"
-                            className="w-full text-xs border-gray-200 rounded-lg bg-white px-3 py-2 focus:ring-indigo-500 resize-none h-16" 
+                            className="w-full text-xs border-gray-200 rounded-lg bg-white px-3 py-2 focus:ring-indigo-500 resize-none h-16"
                         />
                     </div>
                 </div>
@@ -775,12 +830,12 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     <div>
                         <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1.5">Section Styling</label>
                         <div className="flex gap-2">
-                             <div className="relative group">
+                            <div className="relative group">
                                 <input type="color" title="Title Color" value={data.title_color || '#111827'} onChange={e => updateBlockData(block.id, 'title_color', e.target.value)} className="w-6 h-6 p-0 border-none rounded bg-transparent cursor-pointer overflow-hidden shadow-sm hover:scale-110 transition-transform" />
-                             </div>
-                             <div className="relative group">
+                            </div>
+                            <div className="relative group">
                                 <input type="color" title="Background Color" value={data.bg_color || '#ffffff'} onChange={e => updateBlockData(block.id, 'bg_color', e.target.value)} className="w-6 h-6 p-0 border-none rounded bg-transparent cursor-pointer overflow-hidden shadow-sm hover:scale-110 transition-transform" />
-                             </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -789,19 +844,19 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     <div className="pt-2 border-t border-gray-100/50">
                         <label className="block text-[10px] font-bold text-gray-500 uppercase mb-2">Call to Action (CTA)</label>
                         <div className="space-y-2">
-                            <input 
-                                type="text" 
-                                value={data.cta_text || ''} 
-                                onChange={e => updateBlockData(block.id, 'cta_text', e.target.value)} 
+                            <input
+                                type="text"
+                                value={data.cta_text || ''}
+                                onChange={e => updateBlockData(block.id, 'cta_text', e.target.value)}
                                 placeholder="Button / Link Text (e.g., View All)"
-                                className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
+                                className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500"
                             />
-                            <input 
-                                type="text" 
-                                value={data.cta_url || ''} 
-                                onChange={e => updateBlockData(block.id, 'cta_url', e.target.value)} 
+                            <input
+                                type="text"
+                                value={data.cta_url || ''}
+                                onChange={e => updateBlockData(block.id, 'cta_url', e.target.value)}
                                 placeholder="Destination URL (e.g., /gallery)"
-                                className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500" 
+                                className="w-full text-[10px] border-gray-200 rounded-lg bg-white h-8 px-3 focus:ring-indigo-500"
                             />
                         </div>
                     </div>
@@ -850,9 +905,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     const cssInput = (key) => (
                         <div className="mt-2 pt-2 border-t border-gray-50">
                             <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Section Style CSS</label>
-                            <input 
-                                type="text" 
-                                value={data[`${key}_css`] || ''} 
+                            <input
+                                type="text"
+                                value={data[`${key}_css`] || ''}
                                 onChange={(e) => updateBlockData(block.id, `${key}_css`, e.target.value)}
                                 placeholder="e.g. flex: 1; justify-content: center;"
                                 className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 h-7 px-1"
@@ -942,7 +997,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                     </div>
                                                     <div className="grid grid-cols-2 gap-2 flex-1 pt-1">
                                                         <select
-                                                            value={link.icon || 'Facebook'} 
+                                                            value={link.icon || 'Facebook'}
                                                             onChange={(e) => {
                                                                 const newLinks = [...social_links];
                                                                 newLinks[sIdx] = { ...newLinks[sIdx], icon: e.target.value };
@@ -952,29 +1007,29 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         >
                                                             {iconOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
                                                         </select>
-                                                        <input 
-                                                            type="text" 
-                                                            value={link.label || ''} 
+                                                        <input
+                                                            type="text"
+                                                            value={link.label || ''}
                                                             onChange={(e) => {
                                                                 const newLinks = [...social_links];
                                                                 newLinks[sIdx] = { ...newLinks[sIdx], label: e.target.value };
                                                                 updateBlockData(block.id, 'social_links', newLinks);
-                                                            }} 
-                                                            placeholder="Label (opt)" 
+                                                            }}
+                                                            placeholder="Label (opt)"
                                                             className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white"
                                                         />
                                                     </div>
                                                 </div>
-                                                <input 
-                                                    type="text" 
-                                                    value={link.url || ''} 
+                                                <input
+                                                    type="text"
+                                                    value={link.url || ''}
                                                     onChange={(e) => {
                                                         const newLinks = [...social_links];
                                                         newLinks[sIdx] = { ...newLinks[sIdx], url: e.target.value };
                                                         updateBlockData(block.id, 'social_links', newLinks);
-                                                    }} 
-                                                    placeholder="URL" 
-                                                    className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white" 
+                                                    }}
+                                                    placeholder="URL"
+                                                    className="w-full text-[10px] border-gray-200 rounded focus:ring-indigo-500 p-1 bg-white"
                                                 />
                                             </div>
                                         ))}
@@ -988,9 +1043,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     {sectionHeader('Search Bar', null, '')}
                                     <div>
                                         <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Placeholder Text</label>
-                                        <input 
-                                            type="text" 
-                                            value={data.search_placeholder || ''} 
+                                        <input
+                                            type="text"
+                                            value={data.search_placeholder || ''}
                                             onChange={(e) => updateBlockData(block.id, 'search_placeholder', e.target.value)}
                                             placeholder="e.g. Cari produk..."
                                             className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500 h-8 px-2"
@@ -1005,9 +1060,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     {sectionHeader('Shopping Cart', null, '')}
                                     <div>
                                         <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1">Cart URL</label>
-                                        <input 
-                                            type="text" 
-                                            value={data.cart_url || ''} 
+                                        <input
+                                            type="text"
+                                            value={data.cart_url || ''}
                                             onChange={(e) => updateBlockData(block.id, 'cart_url', e.target.value)}
                                             placeholder="/cart"
                                             className="w-full text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500 h-8 px-2"
@@ -1020,7 +1075,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             const mmSource = data.megamenu_source || 'static';
                             const selectedType = contentTypes.find(ct => ct.slug === data.megamenu_content_type);
                             const fields = selectedType ? selectedType.fields : [];
-                            
+
                             return (
                                 <div key="megamenu" className="space-y-4 pb-4 border-b border-gray-100">
                                     <div className="flex items-center justify-between mb-2">
@@ -1083,7 +1138,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                                 const arr = [...mega_menus]; const cols = (arr[mIdx].columns || []).filter((_, i) => i !== cIdx); arr[mIdx] = { ...arr[mIdx], columns: cols }; updateBlockData(block.id, 'mega_menus', arr);
                                                                             }} className="p-0.5 text-gray-300 hover:text-red-500 opacity-0 group-hover/col:opacity-100"><X className="w-2.5 h-2.5" /></button>
                                                                         </div>
-                                                                        
+
                                                                         {renderLinks(col.links, [], updateLinks)}
 
                                                                         <button onClick={() => {
@@ -1203,9 +1258,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                 {availableSections.map(sec => (
                                     <label key={sec.id} className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative">
-                                            <input 
-                                                type="checkbox" 
-                                                checked={composition.includes(sec.id)} 
+                                            <input
+                                                type="checkbox"
+                                                checked={composition.includes(sec.id)}
                                                 onChange={() => toggleSection(sec.id)}
                                                 className="sr-only"
                                             />
@@ -1260,8 +1315,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             </label>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Navbar Custom CSS</label>
-                                <textarea 
-                                    value={data.customCss || ''} 
+                                <textarea
+                                    value={data.customCss || ''}
                                     onChange={e => updateBlockData(block.id, 'customCss', e.target.value)}
                                     placeholder=".block-id { ... }"
                                     className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
@@ -1270,8 +1325,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Navbar Custom JS (On Load)</label>
-                                <textarea 
-                                    value={data.customJs || ''} 
+                                <textarea
+                                    value={data.customJs || ''}
                                     onChange={e => updateBlockData(block.id, 'customJs', e.target.value)}
                                     placeholder="console.log('navbar loaded');"
                                     className="w-full text-[10px] font-mono border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500"
@@ -1316,15 +1371,15 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
             case 'content_list': {
                 const selectedType = contentTypes.find(ct => ct.slug === data.content_type);
                 const fields = selectedType ? selectedType.fields : [];
-                
+
                 return (
                     <div className="space-y-6">
                         {renderHeaderConfig(block)}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
-                                <select 
-                                    value={data.content_type || ''} 
+                                <select
+                                    value={data.content_type || ''}
                                     onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                 >
@@ -1336,8 +1391,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Layout</label>
-                                <select 
-                                    value={data.layout_style || 'grid'} 
+                                <select
+                                    value={data.layout_style || 'grid'}
                                     onChange={e => updateBlockData(block.id, 'layout_style', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                 >
@@ -1350,18 +1405,18 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         <div className="grid grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Max Items</label>
-                                <input 
-                                    type="number" 
+                                <input
+                                    type="number"
                                     min="1" max="100"
-                                    value={data.limit || 3} 
+                                    value={data.limit || 3}
                                     onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value))}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                 />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Sort By</label>
-                                <select 
-                                    value={data.sort_by || 'created_at'} 
+                                <select
+                                    value={data.sort_by || 'created_at'}
                                     onChange={e => updateBlockData(block.id, 'sort_by', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                 >
@@ -1371,15 +1426,15 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     <optgroup label="Custom Fields">
                                         {fields.map(f => {
                                             const fieldName = f.name.toLowerCase().replace(/ /g, '_');
-                                            return <option key={'sort_'+f.id} value={fieldName}>{f.name}</option>;
+                                            return <option key={'sort_' + f.id} value={fieldName}>{f.name}</option>;
                                         })}
                                     </optgroup>
                                 </select>
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Direction</label>
-                                <select 
-                                    value={data.sort_dir || 'desc'} 
+                                <select
+                                    value={data.sort_dir || 'desc'}
                                     onChange={e => updateBlockData(block.id, 'sort_dir', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                 >
@@ -1393,12 +1448,12 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             <div className="p-4 bg-gray-50 rounded-xl border border-gray-100">
                                 <h4 className="text-sm font-bold text-gray-900 mb-3">Field Mapping</h4>
                                 <p className="text-xs text-gray-500 mb-4">Map your custom fields to the layout elements.</p>
-                                
+
                                 <div className="space-y-4">
                                     <div className="flex items-center gap-4">
                                         <label className="w-1/3 text-xs font-bold text-gray-600">Card Title</label>
-                                        <select 
-                                            value={data.mapping?.title || ''} 
+                                        <select
+                                            value={data.mapping?.title || ''}
                                             onChange={e => {
                                                 const mapping = { ...(data.mapping || {}), title: e.target.value };
                                                 updateBlockData(block.id, 'mapping', mapping);
@@ -1408,14 +1463,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             <option value="">-- No Title --</option>
                                             {fields.filter(f => ['text', 'longtext', 'string'].includes(f.type)).map(f => {
                                                 const fieldName = f.name.toLowerCase().replace(/ /g, '_');
-                                                return <option key={'m_title_'+f.id} value={fieldName}>{f.name}</option>;
+                                                return <option key={'m_title_' + f.id} value={fieldName}>{f.name}</option>;
                                             })}
                                         </select>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <label className="w-1/3 text-xs font-bold text-gray-600">Card Description</label>
-                                        <select 
-                                            value={data.mapping?.description || ''} 
+                                        <select
+                                            value={data.mapping?.description || ''}
                                             onChange={e => {
                                                 const mapping = { ...(data.mapping || {}), description: e.target.value };
                                                 updateBlockData(block.id, 'mapping', mapping);
@@ -1425,14 +1480,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             <option value="">-- No Description --</option>
                                             {fields.filter(f => ['text', 'longtext', 'string'].includes(f.type)).map(f => {
                                                 const fieldName = f.name.toLowerCase().replace(/ /g, '_');
-                                                return <option key={'m_desc_'+f.id} value={fieldName}>{f.name}</option>;
+                                                return <option key={'m_desc_' + f.id} value={fieldName}>{f.name}</option>;
                                             })}
                                         </select>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <label className="w-1/3 text-xs font-bold text-gray-600">Card Image URL</label>
-                                        <select 
-                                            value={data.mapping?.image || ''} 
+                                        <select
+                                            value={data.mapping?.image || ''}
                                             onChange={e => {
                                                 const mapping = { ...(data.mapping || {}), image: e.target.value };
                                                 updateBlockData(block.id, 'mapping', mapping);
@@ -1442,14 +1497,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             <option value="">-- No Image --</option>
                                             {fields.map(f => {
                                                 const fieldName = f.name.toLowerCase().replace(/ /g, '_');
-                                                return <option key={'m_img_'+f.id} value={fieldName}>{f.name}</option>;
+                                                return <option key={'m_img_' + f.id} value={fieldName}>{f.name}</option>;
                                             })}
                                         </select>
                                     </div>
                                     <div className="flex items-center gap-4">
                                         <label className="w-1/3 text-xs font-bold text-gray-600">Read More Links</label>
-                                        <input 
-                                            type="text" 
+                                        <input
+                                            type="text"
                                             value={data.mapping?.link_prefix || `/category/slug/`}
                                             onChange={e => {
                                                 const mapping = { ...(data.mapping || {}), link_prefix: e.target.value };
@@ -1467,7 +1522,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
             }
             case 'datagrid': {
                 const currentContentType = contentTypes.find(ct => ct.slug === data.content_type);
-                
+
                 const handleToggleColumn = (field) => {
                     const existing = data.columns || [];
                     const isVisible = existing.some(c => c.key === field.name);
@@ -1476,10 +1531,10 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         newColumns = existing.filter(c => c.key !== field.name);
                     } else {
                         // Include type and decimals from the field metadata
-                        newColumns = [...existing, { 
-                            key: field.name, 
-                            label: field.name, 
-                            visible: true, 
+                        newColumns = [...existing, {
+                            key: field.name,
+                            label: field.name,
+                            visible: true,
                             type: field.type,
                             decimals: field.options?.decimals || 0
                         }];
@@ -1507,10 +1562,10 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     const newColumns = (data.columns || []).map(col => {
                         const field = currentContentType.fields?.find(f => f.name === col.key);
                         if (field) {
-                            return { 
-                                ...col, 
-                                type: field.type, 
-                                decimals: field.options?.decimals || 0 
+                            return {
+                                ...col,
+                                type: field.type,
+                                decimals: field.options?.decimals || 0
                             };
                         }
                         return col;
@@ -1521,7 +1576,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 return (
                     <div className="space-y-6">
                         {renderHeaderConfig(block, { showCTA: false })}
-                        
+
                         <div className="p-4 bg-gray-50/50 rounded-2xl border border-gray-100 space-y-4">
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex-1">
@@ -1539,9 +1594,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     </div>
                                     {(data.height_mode === 'manual' || !data.height_mode) && (
                                         <div className="flex items-center gap-2">
-                                            <input 
-                                                type="number" 
-                                                value={data.height_value || 650} 
+                                            <input
+                                                type="number"
+                                                value={data.height_value || 650}
                                                 onChange={e => updateBlockData(block.id, 'height_value', e.target.value)}
                                                 className="w-full text-xs border-gray-200 rounded-lg bg-white h-7 px-2 focus:ring-indigo-500"
                                             />
@@ -1550,19 +1605,19 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     )}
                                 </div>
                             </div>
-                            
+
                             <div className="pt-4 border-t border-gray-100">
                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Data Source</label>
-                                <select 
-                                    value={data.content_type || ''} 
+                                <select
+                                    value={data.content_type || ''}
                                     onChange={e => {
                                         const value = e.target.value;
                                         const ct = contentTypes.find(c => c.slug === value);
                                         const newData = { ...data, content_type: value };
                                         if (ct && (!data.columns || data.columns.length === 0)) {
-                                            newData.columns = (ct.fields || []).slice(0, 5).map(f => ({ 
-                                                key: f.name, 
-                                                label: f.name, 
+                                            newData.columns = (ct.fields || []).slice(0, 5).map(f => ({
+                                                key: f.name,
+                                                label: f.name,
                                                 visible: true,
                                                 type: f.type,
                                                 decimals: f.options?.decimals || 0
@@ -1586,7 +1641,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                 <div className="space-y-4 pt-4 border-t border-gray-100">
                                     <div className="flex items-center justify-between">
                                         <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Columns Management</label>
-                                        <button 
+                                        <button
                                             onClick={handleSyncMetadata}
                                             className="text-[9px] font-bold text-indigo-600 uppercase hover:text-indigo-700 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded-md"
                                             title="Sync column types and decimals from Content Type schema"
@@ -1603,7 +1658,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                             return (
                                                 <div key={field.id} className="flex items-center gap-2 p-2 bg-white rounded-lg border border-gray-100 shadow-sm">
-                                                    <button 
+                                                    <button
                                                         onClick={() => handleToggleColumn(field)}
                                                         className={`p-1 rounded ${col ? 'text-indigo-600 bg-indigo-50' : 'text-gray-300 bg-gray-50'}`}
                                                     >
@@ -1612,15 +1667,15 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                     <div className="flex-1">
                                                         {col ? (
                                                             <div className="space-y-1">
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={col.label} 
+                                                                <input
+                                                                    type="text"
+                                                                    value={col.label}
                                                                     onChange={e => handleUpdateColumnLabel(field.name, e.target.value)}
                                                                     className="w-full text-[11px] border-none p-0 focus:ring-0 font-bold text-indigo-900"
                                                                     placeholder={field.name}
                                                                 />
                                                                 <div className="flex items-center justify-between gap-2">
-                                                                    <select 
+                                                                    <select
                                                                         value={col.summary_type || 'none'}
                                                                         onChange={e => handleUpdateColumnSummaryType(field.name, e.target.value)}
                                                                         className="flex-1 text-[8px] border-none bg-indigo-50/50 rounded px-1 h-5 text-indigo-600 font-bold uppercase tracking-tighter cursor-pointer hover:bg-indigo-100"
@@ -1668,9 +1723,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             {(data.buttons || []).map((btn, idx) => (
                                                 <div key={idx} className="p-4 bg-white rounded-xl border border-gray-100 shadow-sm space-y-4 relative overflow-visible">
                                                     <div className="flex items-center justify-between border-b pb-2 mb-2 border-gray-50">
-                                                        <input 
-                                                            type="text" 
-                                                            value={btn.label} 
+                                                        <input
+                                                            type="text"
+                                                            value={btn.label}
                                                             onChange={e => {
                                                                 const newBtns = [...data.buttons];
                                                                 newBtns[idx].label = e.target.value;
@@ -1679,7 +1734,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                             className="text-sm font-bold border-none p-0 focus:ring-0 w-2/3"
                                                             placeholder="Button Label (e.g. Add New)"
                                                         />
-                                                        <button 
+                                                        <button
                                                             onClick={() => {
                                                                 const newBtns = (data.buttons || []).filter((_, i) => i !== idx);
                                                                 updateBlockData(block.id, 'buttons', newBtns);
@@ -1694,9 +1749,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         {/* Action Mapping */}
                                                         <div>
                                                             <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">ID Aksi / Field Name</label>
-                                                            <input 
-                                                                type="text" 
-                                                                value={btn.action_id || ''} 
+                                                            <input
+                                                                type="text"
+                                                                value={btn.action_id || ''}
                                                                 onChange={e => {
                                                                     const newBtns = [...data.buttons];
                                                                     newBtns[idx].action_id = e.target.value;
@@ -1788,13 +1843,13 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                     <div className="absolute top-full left-0 right-0 z-50 bg-white border border-gray-100 shadow-xl rounded-xl p-2 mt-1 opacity-0 pointer-events-none group-hover/role:opacity-100 group-hover/role:pointer-events-auto transition-all max-h-40 overflow-y-auto">
                                                                         {availableRoles.map(role => (
                                                                             <label key={role.id} className="flex items-center gap-2 p-1.5 hover:bg-gray-50 rounded cursor-pointer">
-                                                                                <input 
+                                                                                <input
                                                                                     type="checkbox"
                                                                                     checked={(btn.allowed_roles || []).includes(role.name)}
                                                                                     onChange={e => {
                                                                                         const newBtns = [...data.buttons];
                                                                                         const roles = btn.allowed_roles || [];
-                                                                                        newBtns[idx].allowed_roles = e.target.checked 
+                                                                                        newBtns[idx].allowed_roles = e.target.checked
                                                                                             ? [...roles, role.name]
                                                                                             : roles.filter(r => r !== role.name);
                                                                                         updateBlockData(block.id, 'buttons', newBtns);
@@ -1815,9 +1870,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                             <div className="flex gap-2">
                                                                 <div className="relative flex-1">
                                                                     <i className={`absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 ${btn.icon_class || 'fas fa-icons'}`}></i>
-                                                                    <input 
-                                                                        type="text" 
-                                                                        value={btn.icon_class || ''} 
+                                                                    <input
+                                                                        type="text"
+                                                                        value={btn.icon_class || ''}
                                                                         onChange={e => {
                                                                             const newBtns = [...data.buttons];
                                                                             newBtns[idx].icon_class = e.target.value;
@@ -1827,7 +1882,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                         placeholder="fa fa-pencil, bi bi-edit..."
                                                                     />
                                                                 </div>
-                                                                <button 
+                                                                <button
                                                                     onClick={() => {
                                                                         window._selectingButtonIdx = idx;
                                                                         setMediaPickerOpen(true);
@@ -1840,7 +1895,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                     ) : <LucideIcons.Image size={18} />}
                                                                 </button>
                                                                 {btn.icon_image && (
-                                                                    <button 
+                                                                    <button
                                                                         onClick={() => {
                                                                             const newBtns = [...data.buttons];
                                                                             newBtns[idx].icon_image = null;
@@ -1858,9 +1913,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         {btn.action_type === 'fill_and_redirect' && (
                                                             <div className="pt-2 border-t border-indigo-50 animate-in fade-in slide-in-from-top-1">
                                                                 <label className="block text-[9px] font-bold text-emerald-600 uppercase mb-1">Redirect Target URL</label>
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={btn.redirect_url || ''} 
+                                                                <input
+                                                                    type="text"
+                                                                    value={btn.redirect_url || ''}
                                                                     onChange={e => {
                                                                         const newBtns = [...data.buttons];
                                                                         newBtns[idx].redirect_url = e.target.value;
@@ -1874,7 +1929,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                     </div>
                                                 </div>
                                             ))}
-                                            <button 
+                                            <button
                                                 onClick={() => {
                                                     const newBtns = [...(data.buttons || []), { label: 'Aksi Baru', action_id: 'view', variant: 'indigo', placement: 'row', allowed_roles: [] }];
                                                     updateBlockData(block.id, 'buttons', newBtns);
@@ -1890,11 +1945,11 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Broadcast Selection</span>
                                             </div>
                                             <label className="relative inline-flex items-center cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={data.broadcastClicks || false} 
+                                                <input
+                                                    type="checkbox"
+                                                    checked={data.broadcastClicks || false}
                                                     onChange={e => updateBlockData(block.id, 'broadcastClicks', e.target.checked)}
-                                                    className="sr-only peer" 
+                                                    className="sr-only peer"
                                                 />
                                                 <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-indigo-600"></div>
                                             </label>
@@ -1906,11 +1961,11 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Enable Row Selection</span>
                                             </div>
                                             <label className="relative inline-flex items-center cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={data.showSelection || false} 
+                                                <input
+                                                    type="checkbox"
+                                                    checked={data.showSelection || false}
                                                     onChange={e => updateBlockData(block.id, 'showSelection', e.target.checked)}
-                                                    className="sr-only peer" 
+                                                    className="sr-only peer"
                                                 />
                                                 <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
                                             </label>
@@ -1933,14 +1988,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         <div>
                             <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-3">Content Editor</label>
                             {isSummernoteEnabled ? (
-                                <Summernote 
-                                    value={data.content || ''} 
+                                <Summernote
+                                    value={data.content || ''}
                                     onChange={val => updateBlockData(block.id, 'content', val)}
                                     placeholder="Type your content here..."
                                 />
                             ) : (
                                 <>
-                                    <MarkdownToolbar 
+                                    <MarkdownToolbar
                                         onInsert={(syntax) => {
                                             const textarea = document.getElementById(`text-editor-${block.id}`);
                                             if (!textarea) return;
@@ -1950,7 +2005,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             const before = text.substring(0, start);
                                             const selected = text.substring(start, end);
                                             const after = text.substring(end);
-                                            
+
                                             let replacement = '';
                                             if (syntax === 'bold') replacement = `**${selected || 'bold text'}**`;
                                             else if (syntax === 'italic') replacement = `*${selected || 'italic text'}*`;
@@ -1961,7 +2016,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                             const newValue = before + replacement + after;
                                             updateBlockData(block.id, 'content', newValue);
-                                            
+
                                             // Refocus and set selection (approximate)
                                             setTimeout(() => {
                                                 textarea.focus();
@@ -1969,11 +2024,11 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             }, 10);
                                         }}
                                     />
-                                    <textarea 
+                                    <textarea
                                         id={`text-editor-${block.id}`}
-                                        value={data.content || ''} 
-                                        onChange={e => updateBlockData(block.id, 'content', e.target.value)} 
-                                        rows="10" 
+                                        value={data.content || ''}
+                                        onChange={e => updateBlockData(block.id, 'content', e.target.value)}
+                                        rows="10"
                                         className="w-full text-sm border-gray-200 rounded-b-xl focus:ring-0 focus:border-gray-200 bg-gray-50 font-mono p-4 resize-y border-t-0"
                                         placeholder="Type your content here..."
                                     />
@@ -2002,18 +2057,18 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1.5"><Palette className="w-3 h-3" /> Colors</label>
                                 <div className="flex gap-2">
                                     <div className="flex-1">
-                                        <input 
-                                            type="color" 
-                                            value={data.backgroundColor || '#ffffff'} 
+                                        <input
+                                            type="color"
+                                            value={data.backgroundColor || '#ffffff'}
                                             onChange={e => updateBlockData(block.id, 'backgroundColor', e.target.value)}
                                             className="w-full h-8 p-0.5 rounded-lg border-gray-200 cursor-pointer"
                                             title="Background Color"
                                         />
                                     </div>
                                     <div className="flex-1">
-                                        <input 
-                                            type="color" 
-                                            value={data.textColor || '#111827'} 
+                                        <input
+                                            type="color"
+                                            value={data.textColor || '#111827'}
                                             onChange={e => updateBlockData(block.id, 'textColor', e.target.value)}
                                             className="w-full h-8 p-0.5 rounded-lg border-gray-200 cursor-pointer"
                                             title="Text Color"
@@ -2026,18 +2081,18 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Vertical Spacing (px)</label>
-                                <input 
-                                    type="number" 
-                                    value={data.paddingY || 64} 
+                                <input
+                                    type="number"
+                                    value={data.paddingY || 64}
                                     onChange={e => updateBlockData(block.id, 'paddingY', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
                                 />
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2">Border Radius (px)</label>
-                                <input 
-                                    type="number" 
-                                    value={data.borderRadius || 0} 
+                                <input
+                                    type="number"
+                                    value={data.borderRadius || 0}
                                     onChange={e => updateBlockData(block.id, 'borderRadius', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
                                 />
@@ -2096,18 +2151,18 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                 >
                                                                     {iconOptions.map(icon => <option key={icon} value={icon}>{icon}</option>)}
                                                                 </select>
-                                                            <input
-                                                                type="text"
-                                                                value={link.label || ''}
-                                                                onChange={(e) => {
-                                                                    const newLinks = [...links];
-                                                                    newLinks[idx] = { ...newLinks[idx], label: e.target.value };
-                                                                    updateBlockData(block.id, 'links', newLinks);
-                                                                }}
-                                                                placeholder="Label (optional)"
-                                                                className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
-                                                            />
-                                                        </div>
+                                                                <input
+                                                                    type="text"
+                                                                    value={link.label || ''}
+                                                                    onChange={(e) => {
+                                                                        const newLinks = [...links];
+                                                                        newLinks[idx] = { ...newLinks[idx], label: e.target.value };
+                                                                        updateBlockData(block.id, 'links', newLinks);
+                                                                    }}
+                                                                    placeholder="Label (optional)"
+                                                                    className="w-full text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                                                />
+                                                            </div>
                                                         </div>
                                                         <input
                                                             type="text"
@@ -2132,8 +2187,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Style</label>
-                                <select 
-                                    value={data.iconStyle || 'circular'} 
+                                <select
+                                    value={data.iconStyle || 'circular'}
                                     onChange={e => updateBlockData(block.id, 'iconStyle', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                 >
@@ -2145,8 +2200,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Size</label>
-                                <select 
-                                    value={data.size || 'md'} 
+                                <select
+                                    value={data.size || 'md'}
                                     onChange={e => updateBlockData(block.id, 'size', e.target.value)}
                                     className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                 >
@@ -2178,18 +2233,18 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Background</label>
-                                <input 
-                                    type="color" 
-                                    value={data.backgroundColor || '#ffffff'} 
+                                <input
+                                    type="color"
+                                    value={data.backgroundColor || '#ffffff'}
                                     onChange={e => updateBlockData(block.id, 'backgroundColor', e.target.value)}
                                     className="w-full h-10 p-0 border-0 bg-transparent cursor-pointer"
                                 />
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Icon Color</label>
-                                <input 
-                                    type="color" 
-                                    value={data.textColor || '#111827'} 
+                                <input
+                                    type="color"
+                                    value={data.textColor || '#111827'}
                                     onChange={e => updateBlockData(block.id, 'textColor', e.target.value)}
                                     className="w-full h-10 p-0 border-0 bg-transparent cursor-pointer"
                                 />
@@ -2262,8 +2317,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Content Type</label>
-                                    <select 
-                                        value={data.content_type || ''} 
+                                    <select
+                                        value={data.content_type || ''}
                                         onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                         className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
                                     >
@@ -2293,13 +2348,13 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             </div>
                                             <div className="col-span-2">
                                                 <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Max Items</label>
-                                                <input 
-                                                    type="number" 
-                                                    value={data.limit || 5} 
-                                                    onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value) || 5)} 
-                                                    className="w-full text-[10px] border-gray-200 rounded-lg bg-white" 
-                                                    min="1" 
-                                                    max="50" 
+                                                <input
+                                                    type="number"
+                                                    value={data.limit || 5}
+                                                    onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value) || 5)}
+                                                    className="w-full text-[10px] border-gray-200 rounded-lg bg-white"
+                                                    min="1"
+                                                    max="50"
                                                 />
                                             </div>
                                         </div>
@@ -2367,7 +2422,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         </div>
                                                         <textarea value={item.content} onChange={e => { const newItems = [...items]; newItems[idx].content = e.target.value; updateBlockData(block.id, 'items', newItems); }} placeholder="Content (Markdown)" rows="2" className="w-full text-[10px] border-none bg-white rounded p-1 resize-none" />
                                                         <div className="flex gap-2 items-center">
-                                                            <div 
+                                                            <div
                                                                 className="w-12 h-10 bg-gray-100 rounded border border-gray-200 cursor-pointer overflow-hidden flex items-center justify-center group/img"
                                                                 onClick={() => openMediaPicker(block.id, 'items', idx)}
                                                             >
@@ -2398,7 +2453,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         )}
 
                         <div className="space-y-4 pt-4 border-t border-gray-100">
-                             <div>
+                            <div>
                                 <label className="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Custom CSS</label>
                                 <textarea value={data.customCss || ''} onChange={e => updateBlockData(block.id, 'customCss', e.target.value)} rows="3" className="w-full text-[10px] font-mono border-gray-100 rounded bg-gray-50 p-2" placeholder=".timeline { ... }" />
                             </div>
@@ -2488,10 +2543,10 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             >
                                                 <X className="w-3 h-3" />
                                             </button>
-                                            
+
                                             <div className="flex items-center justify-between mb-3 bg-white/50 p-1 rounded-lg border border-gray-100">
                                                 <div className="flex gap-1">
-                                                    <button 
+                                                    <button
                                                         onClick={() => {
                                                             const newItems = [...items];
                                                             newItems[idx] = { ...newItems[idx], type: 'image' };
@@ -2502,7 +2557,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         Image
                                                     </button>
                                                     {isVideoActive && (
-                                                        <button 
+                                                        <button
                                                             onClick={() => {
                                                                 const newItems = [...items];
                                                                 newItems[idx] = { ...newItems[idx], type: 'video' };
@@ -2526,7 +2581,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                             <ImageIcon className="w-6 h-6" />
                                                         </div>
                                                     )}
-                                                    <button 
+                                                    <button
                                                         onClick={() => openMediaPicker(block.id, 'items', idx)}
                                                         className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-[9px] font-bold"
                                                     >
@@ -2535,9 +2590,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                 </div>
                                                 <div className="flex-1 space-y-2">
                                                     {item.type === 'video' ? (
-                                                        <input 
-                                                            type="text" 
-                                                            value={item.video_url || ''} 
+                                                        <input
+                                                            type="text"
+                                                            value={item.video_url || ''}
                                                             onChange={e => {
                                                                 const newItems = [...items];
                                                                 newItems[idx] = { ...newItems[idx], video_url: e.target.value };
@@ -2547,9 +2602,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                             className="w-full text-[10px] border-gray-200 rounded-lg focus:ring-indigo-500 font-mono"
                                                         />
                                                     ) : (
-                                                        <input 
-                                                            type="text" 
-                                                            value={item.title || ''} 
+                                                        <input
+                                                            type="text"
+                                                            value={item.title || ''}
                                                             onChange={e => {
                                                                 const newItems = [...items];
                                                                 newItems[idx] = { ...newItems[idx], title: e.target.value };
@@ -2559,9 +2614,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                             className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500"
                                                         />
                                                     )}
-                                                    <input 
-                                                        type="text" 
-                                                        value={item.link || ''} 
+                                                    <input
+                                                        type="text"
+                                                        value={item.link || ''}
                                                         onChange={e => {
                                                             const newItems = [...items];
                                                             newItems[idx] = { ...newItems[idx], link: e.target.value };
@@ -2580,8 +2635,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
-                                    <select 
-                                        value={data.content_type || ''} 
+                                    <select
+                                        value={data.content_type || ''}
                                         onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                         className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                     >
@@ -2596,8 +2651,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                         <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Field Mapping</h4>
                                         <div className="flex items-center gap-4">
                                             <label className="w-1/3 text-xs font-bold text-gray-600">Image Field</label>
-                                            <select 
-                                                value={data.mapping?.image || ''} 
+                                            <select
+                                                value={data.mapping?.image || ''}
                                                 onChange={e => {
                                                     const mapping = { ...(data.mapping || {}), image: e.target.value };
                                                     updateBlockData(block.id, 'mapping', mapping);
@@ -2606,14 +2661,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             >
                                                 <option value="">-- Choose Field --</option>
                                                 {fields.map(f => (
-                                                    <option key={'s_img_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                                    <option key={'s_img_' + f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
                                                 ))}
                                             </select>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <label className="w-1/3 text-xs font-bold text-gray-600">Title Field</label>
-                                            <select 
-                                                value={data.mapping?.title || ''} 
+                                            <select
+                                                value={data.mapping?.title || ''}
                                                 onChange={e => {
                                                     const mapping = { ...(data.mapping || {}), title: e.target.value };
                                                     updateBlockData(block.id, 'mapping', mapping);
@@ -2622,14 +2677,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             >
                                                 <option value="">-- No Title --</option>
                                                 {fields.filter(f => ['text', 'string'].includes(f.type)).map(f => (
-                                                    <option key={'s_title_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                                    <option key={'s_title_' + f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
                                                 ))}
                                             </select>
                                         </div>
                                         <div className="flex items-center gap-4">
                                             <label className="w-1/3 text-xs font-bold text-gray-600">Link Field</label>
-                                            <select 
-                                                value={data.mapping?.link || ''} 
+                                            <select
+                                                value={data.mapping?.link || ''}
                                                 onChange={e => {
                                                     const mapping = { ...(data.mapping || {}), link: e.target.value };
                                                     updateBlockData(block.id, 'mapping', mapping);
@@ -2638,7 +2693,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             >
                                                 <option value="">-- No Link --</option>
                                                 {fields.map(f => (
-                                                    <option key={'s_link_'+f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                                    <option key={'s_link_' + f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
                                                 ))}
                                             </select>
                                         </div>
@@ -2651,28 +2706,28 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Settings</h4>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="flex items-center gap-3">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={config.autoPlay} 
+                                    <input
+                                        type="checkbox"
+                                        checked={config.autoPlay}
                                         onChange={e => updateBlockData(block.id, 'config', { ...config, autoPlay: e.target.checked })}
-                                        className="rounded text-indigo-600 focus:ring-indigo-500" 
+                                        className="rounded text-indigo-600 focus:ring-indigo-500"
                                     />
                                     <label className="text-xs text-gray-600 font-medium">Autoplay</label>
                                 </div>
                                 <div className="flex items-center gap-3">
-                                    <input 
-                                        type="checkbox" 
-                                        checked={config.showArrows} 
+                                    <input
+                                        type="checkbox"
+                                        checked={config.showArrows}
                                         onChange={e => updateBlockData(block.id, 'config', { ...config, showArrows: e.target.checked })}
-                                        className="rounded text-indigo-600 focus:ring-indigo-500" 
+                                        className="rounded text-indigo-600 focus:ring-indigo-500"
                                     />
                                     <label className="text-xs text-gray-600 font-medium">Arrows</label>
                                 </div>
                             </div>
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Custom CSS</label>
-                                <textarea 
-                                    value={data.customCss || ''} 
+                                <textarea
+                                    value={data.customCss || ''}
                                     onChange={e => updateBlockData(block.id, 'customCss', e.target.value)}
                                     placeholder=".slideshow-container { ... }"
                                     rows="3"
@@ -2693,7 +2748,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 return (
                     <div className="space-y-6">
                         {renderHeaderConfig(block)}
-                        
+
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -2743,54 +2798,54 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             {items.map((item, idx) => {
                                                 const featureId = item.id || `item-${idx}`;
                                                 return (
-                                                <SortableNestedItem key={featureId} id={featureId}>
-                                                    <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                const newItems = items.filter((_, i) => i !== idx);
-                                                                updateBlockData(block.id, 'items', newItems);
-                                                            }}
-                                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                        <input
-                                                            type="text"
-                                                            value={item.title || ''}
-                                                            onChange={(e) => {
-                                                                const newItems = [...items];
-                                                                newItems[idx] = { ...newItems[idx], title: e.target.value };
-                                                                updateBlockData(block.id, 'items', newItems);
-                                                            }}
-                                                            placeholder="Feature Title"
-                                                            className="w-full text-sm border-0 border-b border-gray-200 focus:ring-0 focus:border-indigo-500 px-0 py-1 mb-2 font-semibold"
-                                                        />
-                                                        <textarea
-                                                            value={item.desc || ''}
-                                                            onChange={(e) => {
-                                                                const newItems = [...items];
-                                                                newItems[idx] = { ...newItems[idx], desc: e.target.value };
-                                                                updateBlockData(block.id, 'items', newItems);
-                                                            }}
-                                                            rows="2"
-                                                            placeholder="Feature description..."
-                                                            className="w-full text-[10px] border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 mb-2"
-                                                        />
-                                                        <div className="flex gap-2 items-center">
-                                                            <div 
-                                                                className="w-8 h-8 bg-gray-100 rounded border border-gray-200 cursor-pointer overflow-hidden flex items-center justify-center group/img"
-                                                                onClick={() => openMediaPicker(block.id, 'items', idx)}
+                                                    <SortableNestedItem key={featureId} id={featureId}>
+                                                        <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newItems = items.filter((_, i) => i !== idx);
+                                                                    updateBlockData(block.id, 'items', newItems);
+                                                                }}
+                                                                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                                             >
-                                                                {item.image ? (
-                                                                    <img src={item.image} className="w-full h-full object-cover" />
-                                                                ) : (
-                                                                    <LucideIcons.Image className="w-3 h-3 text-gray-400 group-hover/img:text-indigo-500" />
-                                                                )}
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                            <input
+                                                                type="text"
+                                                                value={item.title || ''}
+                                                                onChange={(e) => {
+                                                                    const newItems = [...items];
+                                                                    newItems[idx] = { ...newItems[idx], title: e.target.value };
+                                                                    updateBlockData(block.id, 'items', newItems);
+                                                                }}
+                                                                placeholder="Feature Title"
+                                                                className="w-full text-sm border-0 border-b border-gray-200 focus:ring-0 focus:border-indigo-500 px-0 py-1 mb-2 font-semibold"
+                                                            />
+                                                            <textarea
+                                                                value={item.desc || ''}
+                                                                onChange={(e) => {
+                                                                    const newItems = [...items];
+                                                                    newItems[idx] = { ...newItems[idx], desc: e.target.value };
+                                                                    updateBlockData(block.id, 'items', newItems);
+                                                                }}
+                                                                rows="2"
+                                                                placeholder="Feature description..."
+                                                                className="w-full text-[10px] border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 mb-2"
+                                                            />
+                                                            <div className="flex gap-2 items-center">
+                                                                <div
+                                                                    className="w-8 h-8 bg-gray-100 rounded border border-gray-200 cursor-pointer overflow-hidden flex items-center justify-center group/img"
+                                                                    onClick={() => openMediaPicker(block.id, 'items', idx)}
+                                                                >
+                                                                    {item.image ? (
+                                                                        <img src={item.image} className="w-full h-full object-cover" />
+                                                                    ) : (
+                                                                        <LucideIcons.Image className="w-3 h-3 text-gray-400 group-hover/img:text-indigo-500" />
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-[10px] text-gray-400">Feature Image</span>
                                                             </div>
-                                                            <span className="text-[10px] text-gray-400">Feature Image</span>
                                                         </div>
-                                                    </div>
-                                                </SortableNestedItem>
+                                                    </SortableNestedItem>
                                                 );
                                             })}
                                         </SortableContext>
@@ -2801,8 +2856,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Type</label>
-                                    <select 
-                                        value={data.content_type || ''} 
+                                    <select
+                                        value={data.content_type || ''}
                                         onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                         className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                     >
@@ -2819,8 +2874,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             {['title', 'desc', 'image'].map(key => (
                                                 <div key={key}>
                                                     <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">{key === 'desc' ? 'Description' : key}</label>
-                                                    <select 
-                                                        value={data.mapping?.[key] || ''} 
+                                                    <select
+                                                        value={data.mapping?.[key] || ''}
                                                         onChange={e => updateBlockData(block.id, 'mapping', { ...data.mapping, [key]: e.target.value })}
                                                         className="w-full text-[10px] border-gray-200 rounded bg-white h-7 px-1 focus:ring-indigo-500"
                                                     >
@@ -2901,6 +2956,11 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         </div>
 
                         <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Form Title</label>
+                            <input type="text" value={data.title || ''} onChange={e => updateBlockData(block.id, 'title', e.target.value)} className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" placeholder="e.g. Request Demo" />
+                        </div>
+
+                        <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Description</label>
                             <textarea value={data.description || ''} onChange={e => updateBlockData(block.id, 'description', e.target.value)} rows="2" className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" />
                         </div>
@@ -2909,8 +2969,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
-                                    <select 
-                                        value={data.content_type || ''} 
+                                    <select
+                                        value={data.content_type || ''}
                                         onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                         className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                     >
@@ -2938,9 +2998,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         <div className="space-y-2">
                                                             <div>
                                                                 <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Caption (Label)</label>
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={fieldConfig.label || ''} 
+                                                                <input
+                                                                    type="text"
+                                                                    value={fieldConfig.label || ''}
                                                                     onChange={e => {
                                                                         const newConfig = { ...(data.field_config || {}), [field.name]: { ...fieldConfig, label: e.target.value } };
                                                                         updateBlockData(block.id, 'field_config', newConfig);
@@ -2951,9 +3011,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                             </div>
                                                             <div>
                                                                 <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Placeholder</label>
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={fieldConfig.placeholder || ''} 
+                                                                <input
+                                                                    type="text"
+                                                                    value={fieldConfig.placeholder || ''}
                                                                     onChange={e => {
                                                                         const newConfig = { ...(data.field_config || {}), [field.name]: { ...fieldConfig, placeholder: e.target.value } };
                                                                         updateBlockData(block.id, 'field_config', newConfig);
@@ -2961,6 +3021,21 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                     className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-7"
                                                                 />
                                                             </div>
+                                                            {field.type === 'relation' && (
+                                                                <div>
+                                                                    <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Display Field(s) (comma-separated)</label>
+                                                                    <input
+                                                                        type="text"
+                                                                        placeholder="e.g. code,name"
+                                                                        value={fieldConfig.display_fields || ''}
+                                                                        onChange={e => {
+                                                                            const newConfig = { ...(data.field_config || {}), [field.name]: { ...fieldConfig, display_fields: e.target.value } };
+                                                                            updateBlockData(block.id, 'field_config', newConfig);
+                                                                        }}
+                                                                        className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-7 font-mono"
+                                                                    />
+                                                                </div>
+                                                            )}
                                                         </div>
                                                     </div>
                                                 );
@@ -2973,11 +3048,11 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                 <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Sync with DataGrid</span>
                                             </div>
                                             <label className="relative inline-flex items-center cursor-pointer">
-                                                <input 
-                                                    type="checkbox" 
-                                                    checked={data.syncWithGrid || false} 
+                                                <input
+                                                    type="checkbox"
+                                                    checked={data.syncWithGrid || false}
                                                     onChange={e => updateBlockData(block.id, 'syncWithGrid', e.target.checked)}
-                                                    className="sr-only peer" 
+                                                    className="sr-only peer"
                                                 />
                                                 <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
                                             </label>
@@ -2986,9 +3061,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                         {data.syncWithGrid && (
                                             <div className="pt-2 animate-in fade-in slide-in-from-top-1">
                                                 <label className="block text-[9px] font-bold text-gray-400 uppercase mb-1 ml-1">Target Action ID (Optional)</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={data.trigger_action_id || ''} 
+                                                <input
+                                                    type="text"
+                                                    value={data.trigger_action_id || ''}
                                                     onChange={e => updateBlockData(block.id, 'trigger_action_id', e.target.value)}
                                                     placeholder="e.g. view, edit, or fullname"
                                                     className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-8"
@@ -3019,71 +3094,71 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             {fields.map((field, idx) => {
                                                 const fieldId = field.id || `item-${idx}`;
                                                 return (
-                                                <SortableNestedItem key={fieldId} id={fieldId}>
-                                                    <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
-                                                        <button
-                                                            onClick={() => {
-                                                                const newFields = fields.filter((_, i) => i !== idx);
-                                                                updateBlockData(block.id, 'fields', newFields);
-                                                            }}
-                                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                                                        >
-                                                            <X className="w-4 h-4" />
-                                                        </button>
-                                                        <div className="grid grid-cols-2 gap-2 mb-2">
+                                                    <SortableNestedItem key={fieldId} id={fieldId}>
+                                                        <div className="p-3 border border-gray-200 rounded-lg bg-white relative group flex-1">
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newFields = fields.filter((_, i) => i !== idx);
+                                                                    updateBlockData(block.id, 'fields', newFields);
+                                                                }}
+                                                                className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                                                            >
+                                                                <X className="w-4 h-4" />
+                                                            </button>
+                                                            <div className="grid grid-cols-2 gap-2 mb-2">
+                                                                <input
+                                                                    type="text"
+                                                                    value={field.label || ''}
+                                                                    onChange={(e) => {
+                                                                        const newFields = [...fields];
+                                                                        newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                                        updateBlockData(block.id, 'fields', newFields);
+                                                                    }}
+                                                                    placeholder="Label"
+                                                                    className="text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                                                />
+                                                                <select
+                                                                    value={field.type || 'text'}
+                                                                    onChange={(e) => {
+                                                                        const newFields = [...fields];
+                                                                        newFields[idx] = { ...newFields[idx], type: e.target.value };
+                                                                        updateBlockData(block.id, 'fields', newFields);
+                                                                    }}
+                                                                    className="text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                                                >
+                                                                    <option value="text">Text</option>
+                                                                    <option value="email">Email</option>
+                                                                    <option value="number">Number</option>
+                                                                    <option value="textarea">Textarea</option>
+                                                                    <option value="captcha">Captcha</option>
+                                                                </select>
+                                                            </div>
                                                             <input
                                                                 type="text"
-                                                                value={field.label || ''}
+                                                                value={field.name || ''}
                                                                 onChange={(e) => {
                                                                     const newFields = [...fields];
-                                                                    newFields[idx] = { ...newFields[idx], label: e.target.value };
+                                                                    newFields[idx] = { ...newFields[idx], name: e.target.value };
                                                                     updateBlockData(block.id, 'fields', newFields);
                                                                 }}
-                                                                placeholder="Label"
-                                                                className="text-xs border-gray-200 rounded focus:ring-indigo-500"
+                                                                placeholder="Internal Name (slug)"
+                                                                className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 mb-2"
                                                             />
-                                                            <select
-                                                                value={field.type || 'text'}
-                                                                onChange={(e) => {
-                                                                    const newFields = [...fields];
-                                                                    newFields[idx] = { ...newFields[idx], type: e.target.value };
-                                                                    updateBlockData(block.id, 'fields', newFields);
-                                                                }}
-                                                                className="text-xs border-gray-200 rounded focus:ring-indigo-500"
-                                                            >
-                                                                <option value="text">Text</option>
-                                                                <option value="email">Email</option>
-                                                                <option value="number">Number</option>
-                                                                <option value="textarea">Textarea</option>
-                                                                <option value="captcha">Captcha</option>
-                                                            </select>
+                                                            <label className="flex items-center gap-2 cursor-pointer">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={field.required}
+                                                                    onChange={e => {
+                                                                        const newFields = [...fields];
+                                                                        newFields[idx] = { ...newFields[idx], required: e.target.checked };
+                                                                        updateBlockData(block.id, 'fields', newFields);
+                                                                    }}
+                                                                    className="rounded text-indigo-600 text-[10px]"
+                                                                />
+                                                                <span className="text-[10px] font-bold text-gray-500 uppercase">Required</span>
+                                                            </label>
                                                         </div>
-                                                        <input
-                                                            type="text"
-                                                            value={field.name || ''}
-                                                            onChange={(e) => {
-                                                                const newFields = [...fields];
-                                                                newFields[idx] = { ...newFields[idx], name: e.target.value };
-                                                                updateBlockData(block.id, 'fields', newFields);
-                                                            }}
-                                                            placeholder="Internal Name (slug)"
-                                                            className="w-full text-[10px] font-mono border-gray-200 rounded bg-gray-50 focus:ring-indigo-500 mb-2"
-                                                        />
-                                                        <label className="flex items-center gap-2 cursor-pointer">
-                                                            <input 
-                                                                type="checkbox" 
-                                                                checked={field.required} 
-                                                                onChange={e => {
-                                                                    const newFields = [...fields];
-                                                                    newFields[idx] = { ...newFields[idx], required: e.target.checked };
-                                                                    updateBlockData(block.id, 'fields', newFields);
-                                                                }} 
-                                                                className="rounded text-indigo-600 text-[10px]" 
-                                                            />
-                                                            <span className="text-[10px] font-bold text-gray-500 uppercase">Required</span>
-                                                        </label>
-                                                    </div>
-                                                </SortableNestedItem>
+                                                    </SortableNestedItem>
                                                 );
                                             })}
                                         </SortableContext>
@@ -3092,12 +3167,187 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             </div>
                         )}
 
+                        {/* Associated Workflows Info */}
+                        <div className="p-4 bg-indigo-50/40 border border-indigo-100 rounded-2xl space-y-3 mt-3">
+                            <h4 className="text-[10px] font-bold text-indigo-950 uppercase tracking-wider flex items-center gap-1.5 border-b border-indigo-100/50 pb-1.5">
+                                <LucideIcons.GitBranch className="w-3.5 h-3.5 text-indigo-600" />
+                                Connected Workflows
+                            </h4>
+                            <div className="space-y-2">
+                                <div>
+                                    <label className="block text-[8px] font-bold text-indigo-900 mb-0.5 ml-1">Workflow: Store (Create)</label>
+                                    <select 
+                                        value={(data.items_config || {}).store_workflow || ''} 
+                                        onChange={e => {
+                                            const cfg = { ...(data.items_config || {}), store_workflow: e.target.value };
+                                            updateBlockData(block.id, 'items_config', cfg);
+                                        }} 
+                                        className="w-full text-[10px] border-indigo-150 rounded h-7 focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">{data.content_type ? `Default (erp-store-${data.content_type})` : '-- Select Workflow --'}</option>
+                                        {workflows.map(w => (
+                                            <option key={'wf_st_' + w.id} value={w.name}>{w.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[8px] font-bold text-indigo-900 mb-0.5 ml-1">Workflow: Update (Edit / Post)</label>
+                                    <select 
+                                        value={(data.items_config || {}).update_workflow || ''} 
+                                        onChange={e => {
+                                            const cfg = { ...(data.items_config || {}), update_workflow: e.target.value };
+                                            updateBlockData(block.id, 'items_config', cfg);
+                                        }} 
+                                        className="w-full text-[10px] border-indigo-150 rounded h-7 focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">{data.content_type ? `Default (erp-update-${data.content_type})` : '-- Select Workflow --'}</option>
+                                        {workflows.map(w => (
+                                            <option key={'wf_up_' + w.id} value={w.name}>{w.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[8px] font-bold text-indigo-900 mb-0.5 ml-1">Workflow: Post (Publish / Approve)</label>
+                                    <select 
+                                        value={(data.items_config || {}).post_workflow || ''} 
+                                        onChange={e => {
+                                            const cfg = { ...(data.items_config || {}), post_workflow: e.target.value };
+                                            updateBlockData(block.id, 'items_config', cfg);
+                                        }} 
+                                        className="w-full text-[10px] border-indigo-150 rounded h-7 focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">-- Select Workflow --</option>
+                                        {workflows.map(w => (
+                                            <option key={'wf_pst_' + w.id} value={w.name}>{w.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Sub-Items Configuration */}
+                        <div className="p-4 bg-white border border-gray-200 rounded-2xl shadow-sm space-y-3 mt-3">
+                            <div className="flex justify-between items-center border-b border-gray-100 pb-1.5">
+                                <h4 className="text-[10px] font-bold text-gray-700 uppercase tracking-wider">Sub-items / Lines</h4>
+                                <label className="flex items-center gap-2 cursor-pointer group">
+                                    <div className={`w-8 h-4 rounded-full p-0.5 transition-colors ${(data.has_items) ? 'bg-indigo-600' : 'bg-gray-300'}`}>
+                                        <div className={`w-3 h-3 bg-white rounded-full transition-transform ${(data.has_items) ? 'translate-x-3.5' : ''}`} />
+                                    </div>
+                                    <input type="checkbox" className="hidden" checked={!!(data.has_items)} onChange={e => updateBlockData(block.id, 'has_items', e.target.checked)} />
+                                    <span className="text-[8px] font-black text-gray-400 uppercase group-hover:text-indigo-600 transition-colors">Enable</span>
+                                </label>
+                            </div>
+
+                            {data.has_items && (
+                                <div className="space-y-3 pt-1">
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Section Title</label>
+                                        <input type="text" value={(data.items_config || {}).title || ''} onChange={e => {
+                                            const cfg = { ...(data.items_config || {}), title: e.target.value };
+                                            updateBlockData(block.id, 'items_config', cfg);
+                                        }} placeholder="e.g. Baris Alokasi Jurnal" className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-7" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Lines DB Table</label>
+                                        <select 
+                                            value={(data.items_config || {}).items_table || ''} 
+                                            onChange={e => {
+                                                const cfg = { ...(data.items_config || {}), items_table: e.target.value };
+                                                updateBlockData(block.id, 'items_config', cfg);
+                                            }} 
+                                            className="w-full text-[11px] border-gray-100 rounded focus:ring-indigo-500 h-8 bg-white font-mono"
+                                        >
+                                            <option value="">-- Choose Lines Table --</option>
+                                            {contentTypes.map(ct => {
+                                                const dbTable = `cms_${ct.slug}`;
+                                                return (
+                                                    <option key={'lines_ct_' + ct.id} value={dbTable}>{ct.name} ({dbTable})</option>
+                                                );
+                                            })}
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Parent Foreign Key</label>
+                                        <input type="text" value={(data.items_config || {}).parent_foreign_key || ''} onChange={e => {
+                                            const cfg = { ...(data.items_config || {}), parent_foreign_key: e.target.value };
+                                            updateBlockData(block.id, 'items_config', cfg);
+                                        }} placeholder="e.g. journal_id" className="w-full text-[10px] font-mono border-gray-100 rounded focus:ring-indigo-500 h-7" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">API Endpoint Fetch</label>
+                                        <input type="text" value={(data.items_config || {}).api_endpoint_fetch || ''} onChange={e => {
+                                            const cfg = { ...(data.items_config || {}), api_endpoint_fetch: e.target.value };
+                                            updateBlockData(block.id, 'items_config', cfg);
+                                        }} placeholder="e.g. /admin/accounting/api/journal-items/{id}" className="w-full text-[10px] font-mono border-gray-100 rounded focus:ring-indigo-500 h-7" />
+                                    </div>
+
+                                    <div className="p-3 bg-gray-50 border border-gray-150 rounded-xl space-y-2">
+                                        <h5 className="text-[9px] font-bold text-gray-500 uppercase tracking-wider">Debit/Credit Match</h5>
+                                        <div className="space-y-2">
+                                            <div>
+                                                <label className="block text-[8px] font-bold text-gray-400">Balance Group Field</label>
+                                                <input type="text" value={(data.items_config || {}).balance_check?.balance_by_field || ''} onChange={e => {
+                                                    const check = (data.items_config || {}).balance_check || {};
+                                                    const cfg = { ...(data.items_config || {}), balance_check: { ...check, enabled: true, balance_by_field: e.target.value } };
+                                                    updateBlockData(block.id, 'items_config', cfg);
+                                                }} placeholder="e.g. type" className="w-full text-[10px] border-gray-100 rounded h-6" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[8px] font-bold text-gray-400">Debit/Credit Match Values</label>
+                                                <input type="text" value={((data.items_config || {}).balance_check?.balance_values || []).join(', ')} onChange={e => {
+                                                    const check = (data.items_config || {}).balance_check || {};
+                                                    const arr = e.target.value.split(',').map(s => s.trim());
+                                                    const cfg = { ...(data.items_config || {}), balance_check: { ...check, enabled: true, balance_values: arr } };
+                                                    updateBlockData(block.id, 'items_config', cfg);
+                                                }} placeholder="e.g. debit, credit" className="w-full text-[10px] border-gray-100 rounded h-6" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[8px] font-bold text-gray-400">Amount Value Field</label>
+                                                <input type="text" value={(data.items_config || {}).balance_check?.value_field || ''} onChange={e => {
+                                                    const check = (data.items_config || {}).balance_check || {};
+                                                    const cfg = { ...(data.items_config || {}), balance_check: { ...check, enabled: true, value_field: e.target.value } };
+                                                    updateBlockData(block.id, 'items_config', cfg);
+                                                }} placeholder="e.g. amount" className="w-full text-[10px] border-gray-100 rounded h-6" />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
                         <div className="pt-4 border-t border-gray-100 space-y-4">
                             <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Button & Messages</h4>
                             <div>
-                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Button Text</label>
+                                <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Submit / Save Button Text</label>
                                 <input type="text" value={data.submit_button_text || 'Submit'} onChange={e => updateBlockData(block.id, 'submit_button_text', e.target.value)} className="w-full text-xs border-gray-200 rounded-lg bg-gray-50" />
                             </div>
+                            <div className="pt-2 flex items-center justify-between bg-emerald-50/30 p-2 rounded-xl border border-emerald-100/50">
+                                <div className="flex items-center gap-2">
+                                    <LucideIcons.Zap size={14} className="text-emerald-500" />
+                                    <span className="text-[10px] font-bold text-gray-600 uppercase tracking-wider">Enable Post Button</span>
+                                </div>
+                                <label className="relative inline-flex items-center cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={data.has_post_button || false}
+                                        onChange={e => updateBlockData(block.id, 'has_post_button', e.target.checked)}
+                                        className="sr-only peer"
+                                    />
+                                    <div className="w-8 h-4 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-emerald-600"></div>
+                                </label>
+                            </div>
+                            {data.has_post_button && (
+                                <div className="pl-2 border-l-2 border-emerald-100 space-y-2 animate-in fade-in slide-in-from-top-1">
+                                    <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1 ml-1">Post Button Text</label>
+                                    <input
+                                        type="text"
+                                        value={data.post_button_text || 'Post'}
+                                        onChange={e => updateBlockData(block.id, 'post_button_text', e.target.value)}
+                                        placeholder="e.g. Post, Approve, or Publish"
+                                        className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 h-8"
+                                    />
+                                </div>
+                            )}
                             <div>
                                 <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Success Message</label>
                                 <textarea value={data.success_message || ''} onChange={e => updateBlockData(block.id, 'success_message', e.target.value)} rows="2" className="w-full text-xs border-gray-200 rounded-lg bg-gray-50" />
@@ -3318,7 +3568,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             <option value="created_at">Created</option>
                                             <option value="updated_at">Updated</option>
                                             <option value="id">ID</option>
-                                            {fields.map(f => { const fn = f.name.toLowerCase().replace(/ /g, '_'); return <option key={'sort_'+f.id} value={fn}>{f.name}</option>; })}
+                                            {fields.map(f => { const fn = f.name.toLowerCase().replace(/ /g, '_'); return <option key={'sort_' + f.id} value={fn}>{f.name}</option>; })}
                                         </select>
                                     </div>
                                     <div>
@@ -3342,7 +3592,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         className="flex-1 text-xs border-gray-200 rounded-lg bg-white focus:ring-indigo-500"
                                                     >
                                                         <option value="">-- None --</option>
-                                                        {(slot === 'image' ? fields : fields.filter(f => ['text','longtext','string'].includes(f.type))).map(f => {
+                                                        {(slot === 'image' ? fields : fields.filter(f => ['text', 'longtext', 'string'].includes(f.type))).map(f => {
                                                             const fn = f.name.toLowerCase().replace(/ /g, '_');
                                                             return <option key={`m_${slot}_${f.id}`} value={fn}>{f.name}</option>;
                                                         })}
@@ -3438,7 +3688,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 return (
                     <div className="space-y-6">
                         {renderHeaderConfig(block)}
-                        
+
                         <div className="flex items-center justify-between mb-2">
                             <label className="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Video Source</label>
                             <div className="flex bg-gray-100 p-0.5 rounded-lg">
@@ -3459,12 +3709,12 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                 {data.source === 'external' ? 'YouTube / Vimeo URL' : 'Internal / Streaming URL'}
                             </label>
                             <div className="flex gap-2">
-                                <input 
-                                    type="text" 
-                                    value={data.url || ''} 
-                                    onChange={e => updateBlockData(block.id, 'url', e.target.value)} 
+                                <input
+                                    type="text"
+                                    value={data.url || ''}
+                                    onChange={e => updateBlockData(block.id, 'url', e.target.value)}
                                     placeholder={data.source === 'external' ? 'https://www.youtube.com/watch?v=...' : 'https://.../stream.m3u8'}
-                                    className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 h-8 px-2" 
+                                    className="flex-1 text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 focus:border-indigo-500 h-8 px-2"
                                 />
                                 {data.source === 'internal' && (
                                     <button onClick={() => openMediaPicker(block.id, 'url')} className="px-3 py-2 bg-indigo-50 text-indigo-600 rounded-lg text-xs font-bold hover:bg-indigo-100 border border-indigo-200 uppercase tracking-tight">Browse</button>
@@ -3527,9 +3777,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                 <div className="space-y-4">
                                     <div>
                                         <label className="block text-[9px] font-bold text-amber-700 uppercase mb-1">Locked Title</label>
-                                        <input 
-                                            type="text" 
-                                            value={data.locked_title || ''} 
+                                        <input
+                                            type="text"
+                                            value={data.locked_title || ''}
                                             onChange={e => updateBlockData(block.id, 'locked_title', e.target.value)}
                                             className="w-full text-[10px] border-amber-200 rounded-lg bg-white focus:ring-amber-500 h-8 px-2"
                                             placeholder="Premium Content"
@@ -3537,8 +3787,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     </div>
                                     <div>
                                         <label className="block text-[9px] font-bold text-amber-700 uppercase mb-1">Locked Message</label>
-                                        <textarea 
-                                            value={data.paid_message || ''} 
+                                        <textarea
+                                            value={data.paid_message || ''}
                                             onChange={e => updateBlockData(block.id, 'paid_message', e.target.value)}
                                             className="w-full text-[10px] border-amber-200 rounded-lg bg-white focus:ring-amber-500 focus:border-amber-500 px-2 py-1"
                                             rows="2"
@@ -3546,9 +3796,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     </div>
                                     <div>
                                         <label className="block text-[9px] font-bold text-amber-700 uppercase mb-1">Button Text</label>
-                                        <input 
-                                            type="text" 
-                                            value={data.locked_button_text || ''} 
+                                        <input
+                                            type="text"
+                                            value={data.locked_button_text || ''}
                                             onChange={e => updateBlockData(block.id, 'locked_button_text', e.target.value)}
                                             className="w-full text-[10px] border-amber-200 rounded-lg bg-white focus:ring-amber-500 h-8 px-2"
                                             placeholder="Log In to Watch"
@@ -3569,7 +3819,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                 return (
                     <div className="space-y-6">
                         {renderHeaderConfig(block)}
-                        
+
                         <div>
                             <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-2">Content Source</label>
                             <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -3629,11 +3879,11 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                         >
                                                             <X className="w-3.5 h-3.5" />
                                                         </button>
-                                                        
+
                                                         <div className="space-y-3">
-                                                            <input 
-                                                                type="text" 
-                                                                value={item.title || ''} 
+                                                            <input
+                                                                type="text"
+                                                                value={item.title || ''}
                                                                 onChange={e => {
                                                                     const newItems = [...items];
                                                                     newItems[idx] = { ...newItems[idx], title: e.target.value };
@@ -3642,8 +3892,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                 placeholder="Video Title"
                                                                 className="w-full text-xs font-bold border-transparent bg-transparent p-0 focus:ring-0 focus:border-indigo-500"
                                                             />
-                                                            <textarea 
-                                                                value={item.description || ''} 
+                                                            <textarea
+                                                                value={item.description || ''}
                                                                 onChange={e => {
                                                                     const newItems = [...items];
                                                                     newItems[idx] = { ...newItems[idx], description: e.target.value };
@@ -3657,9 +3907,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                     {item.poster ? <img src={item.poster} className="w-full h-full object-cover" /> : <div className="w-full h-full flex items-center justify-center"><ImageIcon className="w-4 h-4 text-gray-300" /></div>}
                                                                     <button onClick={() => openMediaPicker(block.id, 'items', idx)} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-[8px] text-white font-bold uppercase">Poster</button>
                                                                 </div>
-                                                                <input 
-                                                                    type="text" 
-                                                                    value={item.url || ''} 
+                                                                <input
+                                                                    type="text"
+                                                                    value={item.url || ''}
                                                                     onChange={e => {
                                                                         const newItems = [...items];
                                                                         newItems[idx] = { ...newItems[idx], url: e.target.value };
@@ -3680,9 +3930,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                                             {item.is_paid && (
                                                                 <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100 space-y-2">
-                                                                    <input 
-                                                                        type="text" 
-                                                                        value={item.locked_title || ''} 
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.locked_title || ''}
                                                                         onChange={e => {
                                                                             const newItems = [...items];
                                                                             newItems[idx] = { ...newItems[idx], locked_title: e.target.value };
@@ -3691,8 +3941,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                         placeholder="Locked Title (e.g. Premium)"
                                                                         className="w-full text-[9px] border-amber-200 rounded h-6 px-1 focus:ring-amber-500"
                                                                     />
-                                                                    <textarea 
-                                                                        value={item.paid_message || ''} 
+                                                                    <textarea
+                                                                        value={item.paid_message || ''}
                                                                         onChange={e => {
                                                                             const newItems = [...items];
                                                                             newItems[idx] = { ...newItems[idx], paid_message: e.target.value };
@@ -3716,8 +3966,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
-                                    <select 
-                                        value={data.content_type || ''} 
+                                    <select
+                                        value={data.content_type || ''}
                                         onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                         className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                     >
@@ -3727,7 +3977,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                         ))}
                                     </select>
                                 </div>
-                                
+
                                 {data.content_type && (
                                     <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4">
                                         <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Field Mapping</label>
@@ -3735,8 +3985,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             {['title', 'url', 'poster', 'is_paid', 'locked_title', 'paid_message'].map(key => (
                                                 <div key={key}>
                                                     <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">{key.replace('_', ' ')}</label>
-                                                    <select 
-                                                        value={data.mapping?.[key] || ''} 
+                                                    <select
+                                                        value={data.mapping?.[key] || ''}
                                                         onChange={e => updateBlockData(block.id, 'mapping', { ...data.mapping, [key]: e.target.value })}
                                                         className="w-full text-[10px] border-gray-200 rounded bg-white h-7 px-1 focus:ring-indigo-500"
                                                     >
@@ -3753,9 +4003,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Items Limit</label>
-                                    <input 
-                                        type="number" 
-                                        value={data.limit || 6} 
+                                    <input
+                                        type="number"
+                                        value={data.limit || 6}
                                         onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value))}
                                         className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 h-8 px-2"
                                     />
@@ -3809,9 +4059,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                         <div className="flex items-center justify-between p-3 bg-gray-50 rounded-xl border border-gray-100">
                             <span className="text-xs font-bold text-gray-700 uppercase tracking-tight">Enable Lightbox</span>
                             <label className="relative inline-flex items-center cursor-pointer">
-                                <input 
-                                    type="checkbox" 
-                                    checked={data.lightbox !== false} 
+                                <input
+                                    type="checkbox"
+                                    checked={data.lightbox !== false}
                                     onChange={e => updateBlockData(block.id, 'lightbox', e.target.checked)}
                                     className="sr-only peer"
                                 />
@@ -3841,14 +4091,14 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                     <div className="p-3 border border-gray-200 rounded-xl bg-white relative group flex-1">
                                                         <button
                                                             onClick={() => {
-                                                                 const newItems = items.filter((_, i) => i !== idx);
-                                                                 updateBlockData(block.id, 'items', newItems);
+                                                                const newItems = items.filter((_, i) => i !== idx);
+                                                                updateBlockData(block.id, 'items', newItems);
                                                             }}
                                                             className="absolute top-2 right-2 text-gray-400 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity z-10"
                                                         >
                                                             <X className="w-3.5 h-3.5" />
                                                         </button>
-                                                        
+
                                                         <div className="space-y-3">
                                                             <div className="flex gap-3">
                                                                 <div className="w-16 h-16 bg-gray-50 rounded-lg border border-gray-100 overflow-hidden shrink-0 relative">
@@ -3856,9 +4106,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                     <button onClick={() => openMediaPicker(block.id, 'items', idx)} className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center text-[8px] text-white font-bold uppercase transition-all">Select</button>
                                                                 </div>
                                                                 <div className="flex-1 space-y-2">
-                                                                    <input 
-                                                                        type="text" 
-                                                                        value={item.title || ''} 
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.title || ''}
                                                                         onChange={e => {
                                                                             const newItems = [...items];
                                                                             newItems[idx] = { ...newItems[idx], title: e.target.value };
@@ -3867,8 +4117,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                         placeholder="Photo Title"
                                                                         className="w-full text-xs font-bold border-transparent bg-transparent p-0 focus:ring-0 focus:border-indigo-500"
                                                                     />
-                                                                    <textarea 
-                                                                        value={item.description || ''} 
+                                                                    <textarea
+                                                                        value={item.description || ''}
                                                                         onChange={e => {
                                                                             const newItems = [...items];
                                                                             newItems[idx] = { ...newItems[idx], description: e.target.value };
@@ -3879,7 +4129,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                     />
                                                                 </div>
                                                             </div>
-                                                            
+
                                                             <label className="flex items-center gap-1.5 cursor-pointer">
                                                                 <input type="checkbox" checked={item.is_paid} onChange={e => {
                                                                     const newItems = [...items];
@@ -3891,9 +4141,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                                             {item.is_paid && (
                                                                 <div className="mt-2 p-2 bg-amber-50 rounded-lg border border-amber-100 space-y-2">
-                                                                    <input 
-                                                                        type="text" 
-                                                                        value={item.locked_title || ''} 
+                                                                    <input
+                                                                        type="text"
+                                                                        value={item.locked_title || ''}
                                                                         onChange={e => {
                                                                             const newItems = [...items];
                                                                             newItems[idx] = { ...newItems[idx], locked_title: e.target.value };
@@ -3902,8 +4152,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                                         placeholder="Locked Title"
                                                                         className="w-full text-[9px] border-amber-200 rounded h-6 px-1 focus:ring-amber-500 bg-white"
                                                                     />
-                                                                    <textarea 
-                                                                        value={item.paid_message || ''} 
+                                                                    <textarea
+                                                                        value={item.paid_message || ''}
                                                                         onChange={e => {
                                                                             const newItems = [...items];
                                                                             newItems[idx] = { ...newItems[idx], paid_message: e.target.value };
@@ -3927,8 +4177,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Content Type</label>
-                                    <select 
-                                        value={data.content_type || ''} 
+                                    <select
+                                        value={data.content_type || ''}
                                         onChange={e => updateBlockData(block.id, 'content_type', e.target.value)}
                                         className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500"
                                     >
@@ -3938,7 +4188,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                         ))}
                                     </select>
                                 </div>
-                                
+
                                 {data.content_type && (
                                     <div className="p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100 space-y-4">
                                         <label className="block text-[10px] font-bold text-indigo-400 uppercase tracking-widest mb-1">Field Mapping</label>
@@ -3946,8 +4196,8 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                             {['title', 'description', 'image', 'is_paid', 'locked_title', 'paid_message'].map(key => (
                                                 <div key={key}>
                                                     <label className="block text-[9px] font-bold text-gray-500 uppercase mb-1">{key.replace('_', ' ')}</label>
-                                                    <select 
-                                                        value={data.mapping?.[key] || ''} 
+                                                    <select
+                                                        value={data.mapping?.[key] || ''}
                                                         onChange={e => updateBlockData(block.id, 'mapping', { ...data.mapping, [key]: e.target.value })}
                                                         className="w-full text-[10px] border-gray-200 rounded bg-white h-7 px-1 focus:ring-indigo-500"
                                                     >
@@ -3964,15 +4214,515 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
 
                                 <div>
                                     <label className="block text-[10px] font-bold text-gray-500 uppercase mb-1">Items Limit</label>
-                                    <input 
-                                        type="number" 
-                                        value={data.limit || 6} 
+                                    <input
+                                        type="number"
+                                        value={data.limit || 6}
                                         onChange={e => updateBlockData(block.id, 'limit', parseInt(e.target.value))}
                                         className="w-full text-xs border-gray-200 rounded-lg bg-gray-50 focus:ring-indigo-500 h-8 px-2"
                                     />
                                 </div>
                             </div>
                         )}
+                    </div>
+                );
+            }
+            case 'metric_card': {
+                const selectedCt = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedCt?.fields || [];
+
+                return (
+                    <div className="space-y-4 pr-1">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Block Title</label>
+                            <input
+                                type="text"
+                                value={data.title || ''}
+                                onChange={e => updateBlockData(block.id, 'title', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
+                                placeholder="e.g. Total Revenue"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Source Content Type</label>
+                            <select
+                                value={data.content_type || ''}
+                                onChange={e => {
+                                    updateBlockData(block.id, 'content_type', e.target.value);
+                                    updateBlockData(block.id, 'aggregate_field', '');
+                                    updateBlockData(block.id, 'filter_field', '');
+                                }}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                            >
+                                <option value="">Select Content Type...</option>
+                                {contentTypes.map(ct => (
+                                    <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Aggregate Formula</label>
+                            <select
+                                value={data.aggregate_function || 'count'}
+                                onChange={e => updateBlockData(block.id, 'aggregate_function', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                            >
+                                <option value="count">COUNT (Number of entries)</option>
+                                <option value="sum">SUM (Total sum of field)</option>
+                                <option value="avg">AVERAGE (Average of field)</option>
+                                <option value="min">MIN (Minimum of field)</option>
+                                <option value="max">MAX (Maximum of field)</option>
+                            </select>
+                        </div>
+
+                        {data.aggregate_function !== 'count' && (
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Calculate Field</label>
+                                <select
+                                    value={data.aggregate_field || ''}
+                                    onChange={e => updateBlockData(block.id, 'aggregate_field', e.target.value)}
+                                    className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                >
+                                    <option value="">Select field...</option>
+                                    {fields.map(f => (
+                                        <option key={f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        )}
+
+                        <div className="border-t border-gray-100 pt-3">
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Optional Filter</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Filter Field</label>
+                                    <select
+                                        value={data.filter_field || ''}
+                                        onChange={e => updateBlockData(block.id, 'filter_field', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">-- No Filter --</option>
+                                        {fields.map(f => (
+                                            <option key={f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Filter Value</label>
+                                    <input
+                                        type="text"
+                                        value={data.filter_value || ''}
+                                        onChange={e => updateBlockData(block.id, 'filter_value', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50 h-8 px-2"
+                                        placeholder="e.g. active"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-3 space-y-3">
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Styling & Display</label>
+                            
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Format Type</label>
+                                <select
+                                    value={data.format_type || 'currency'}
+                                    onChange={e => updateBlockData(block.id, 'format_type', e.target.value)}
+                                    className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                >
+                                    <option value="currency">Currency (IDR)</option>
+                                    <option value="decimal">Decimal (2 decimal places)</option>
+                                    <option value="number">Integer (Standard number)</option>
+                                </select>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Bg Color</label>
+                                    <input
+                                        type="color"
+                                        value={data.bg_color || '#ffffff'}
+                                        onChange={e => updateBlockData(block.id, 'bg_color', e.target.value)}
+                                        className="w-full h-8 border border-gray-200 rounded-lg cursor-pointer bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Text Color</label>
+                                    <input
+                                        type="color"
+                                        value={data.text_color || '#1f2937'}
+                                        onChange={e => updateBlockData(block.id, 'text_color', e.target.value)}
+                                        className="w-full h-8 border border-gray-200 rounded-lg cursor-pointer bg-white"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Trend Arrow</label>
+                                    <select
+                                        value={data.trend || 'none'}
+                                        onChange={e => updateBlockData(block.id, 'trend', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="none">None</option>
+                                        <option value="up">Trend Up (↗)</option>
+                                        <option value="down">Trend Down (↘)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Trend Color</label>
+                                    <select
+                                        value={data.trend_color || 'emerald'}
+                                        onChange={e => updateBlockData(block.id, 'trend_color', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="none">Default Gray</option>
+                                        <option value="emerald">Green (Emerald)</option>
+                                        <option value="red">Red (Danger)</option>
+                                        <option value="indigo">Blue (Indigo)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Lucide Icon</label>
+                                <select
+                                    value={data.icon || 'Calculator'}
+                                    onChange={e => updateBlockData(block.id, 'icon', e.target.value)}
+                                    className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                >
+                                    <option value="Calculator">Calculator</option>
+                                    <option value="TrendingUp">Trending Up</option>
+                                    <option value="DollarSign">Dollar Sign</option>
+                                    <option value="Briefcase">Briefcase</option>
+                                    <option value="Users">Users</option>
+                                    <option value="FileText">File Text</option>
+                                    <option value="Layers">Layers</option>
+                                    <option value="Settings">Settings</option>
+                                    <option value="Activity">Activity</option>
+                                    <option value="ShoppingBag">Shopping Bag</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            case 'tabs': {
+                const tabsList = data.tabs || [];
+                return (
+                    <div className="space-y-6 pr-1">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Tab Style</label>
+                            <select
+                                value={data.tab_style || 'pills'}
+                                onChange={e => updateBlockData(block.id, 'tab_style', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                            >
+                                <option value="pills">Pills (Solid Background)</option>
+                                <option value="line">Line (Underline Active)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Alignment</label>
+                            <select
+                                value={data.align || 'left'}
+                                onChange={e => updateBlockData(block.id, 'align', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                            >
+                                <option value="left">Left</option>
+                                <option value="center">Center</option>
+                                <option value="right">Right</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Active Tab Accent Color</label>
+                            <input
+                                type="color"
+                                value={data.active_color || '#4f46e5'}
+                                onChange={e => updateBlockData(block.id, 'active_color', e.target.value)}
+                                className="w-full h-8 border border-gray-200 rounded-lg cursor-pointer bg-white"
+                            />
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-4 space-y-4">
+                            <div className="flex items-center justify-between">
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider">Manage Tabs</label>
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        const newTabs = [...tabsList, { id: generateId(), label: `Tab ${tabsList.length + 1}`, block_id: '' }];
+                                        updateBlockData(block.id, 'tabs', newTabs);
+                                    }}
+                                    className="px-2.5 py-1 bg-indigo-50 text-indigo-600 rounded-lg text-[10px] font-black uppercase tracking-wider hover:bg-indigo-100 transition-colors"
+                                >
+                                    + Add Tab
+                                </button>
+                            </div>
+
+                            <div className="space-y-3">
+                                {tabsList.map((tab, idx) => (
+                                    <div key={tab.id} className="p-3 bg-gray-50 rounded-2xl border border-gray-100 space-y-2 relative">
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newTabs = tabsList.filter(t => t.id !== tab.id);
+                                                updateBlockData(block.id, 'tabs', newTabs);
+                                            }}
+                                            className="absolute top-2 right-2 text-gray-400 hover:text-red-500 text-xs"
+                                        >
+                                            ✕
+                                        </button>
+                                        <div>
+                                            <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Tab Label</label>
+                                            <input
+                                                type="text"
+                                                value={tab.label || ''}
+                                                onChange={e => {
+                                                    const newTabs = [...tabsList];
+                                                    newTabs[idx].label = e.target.value;
+                                                    updateBlockData(block.id, 'tabs', newTabs);
+                                                }}
+                                                className="w-full text-xs border-gray-100 rounded focus:ring-indigo-500 h-8"
+                                                placeholder="e.g. Overview"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-[9px] font-bold text-gray-400 mb-0.5 ml-1">Assign Reusable Block</label>
+                                            <select
+                                                value={tab.block_id || ''}
+                                                onChange={e => {
+                                                    const newTabs = [...tabsList];
+                                                    newTabs[idx].block_id = e.target.value;
+                                                    updateBlockData(block.id, 'tabs', newTabs);
+                                                }}
+                                                className="w-full text-xs border-gray-100 rounded bg-white h-8"
+                                            >
+                                                <option value="">Select Reusable Block...</option>
+                                                {(reusableBlocks || []).map(b => (
+                                                    <option key={b.id} value={b.id}>{b.name || `Block #${b.id}`}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            case 'data_summary_list': {
+                const selectedCt = contentTypes.find(ct => ct.slug === data.content_type);
+                const fields = selectedCt?.fields || [];
+
+                return (
+                    <div className="space-y-4 pr-1">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Block Title</label>
+                            <input
+                                type="text"
+                                value={data.title || ''}
+                                onChange={e => updateBlockData(block.id, 'title', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
+                                placeholder="e.g. Assets"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Badge Text</label>
+                            <input
+                                type="text"
+                                value={data.badge_text || ''}
+                                onChange={e => updateBlockData(block.id, 'badge_text', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
+                                placeholder="e.g. Debit Balance"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Source Content Type</label>
+                            <select
+                                value={data.content_type || ''}
+                                onChange={e => {
+                                    updateBlockData(block.id, 'content_type', e.target.value);
+                                    updateBlockData(block.id, 'code_field', '');
+                                    updateBlockData(block.id, 'label_field', '');
+                                    updateBlockData(block.id, 'value_field', '');
+                                    updateBlockData(block.id, 'filter_field', '');
+                                }}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                            >
+                                <option value="">Select Content Type...</option>
+                                {contentTypes.map(ct => (
+                                    <option key={ct.id} value={ct.slug}>{ct.name}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {data.content_type && (
+                            <div className="border-t border-gray-100 pt-3 space-y-3">
+                                <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Column Mappings</label>
+                                
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Left Sub-text (Code)</label>
+                                    <select
+                                        value={data.code_field || ''}
+                                        onChange={e => updateBlockData(block.id, 'code_field', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">Select field...</option>
+                                        {fields.map(f => (
+                                            <option key={f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Center Text (Label)</label>
+                                    <select
+                                        value={data.label_field || ''}
+                                        onChange={e => updateBlockData(block.id, 'label_field', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">Select field...</option>
+                                        {fields.map(f => (
+                                            <option key={f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Right Value (Amount)</label>
+                                    <select
+                                        value={data.value_field || ''}
+                                        onChange={e => updateBlockData(block.id, 'value_field', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">Select field...</option>
+                                        {fields.map(f => (
+                                            <option key={f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="border-t border-gray-100 pt-3">
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-2">Optional Filter</label>
+                            <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Filter Field</label>
+                                    <select
+                                        value={data.filter_field || ''}
+                                        onChange={e => updateBlockData(block.id, 'filter_field', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                                    >
+                                        <option value="">-- No Filter --</option>
+                                        {fields.map(f => (
+                                            <option key={f.id} value={f.name.toLowerCase().replace(/ /g, '_')}>{f.name}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-[10px] font-bold text-gray-500 mb-0.5 ml-1">Filter Value</label>
+                                    <input
+                                        type="text"
+                                        value={data.filter_value || ''}
+                                        onChange={e => updateBlockData(block.id, 'filter_value', e.target.value)}
+                                        className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50 h-8 px-2"
+                                        placeholder="e.g. asset"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Footer Total Label</label>
+                            <input
+                                type="text"
+                                value={data.total_label || 'Total'}
+                                onChange={e => updateBlockData(block.id, 'total_label', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
+                                placeholder="e.g. Total Assets"
+                            />
+                        </div>
+
+                        <div className="border-t border-gray-100 pt-3 space-y-3">
+                            <label className="block text-xs font-black text-gray-400 uppercase tracking-wider mb-1">Styling</label>
+                            
+                            <div className="grid grid-cols-3 gap-2">
+                                <div>
+                                    <label className="block text-[9px] font-bold text-gray-500 mb-0.5 ml-1">Bg Color</label>
+                                    <input
+                                        type="color"
+                                        value={data.bg_color || '#ffffff'}
+                                        onChange={e => updateBlockData(block.id, 'bg_color', e.target.value)}
+                                        className="w-full h-8 border border-gray-200 rounded-lg cursor-pointer bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[9px] font-bold text-gray-500 mb-0.5 ml-1">Text Color</label>
+                                    <input
+                                        type="color"
+                                        value={data.text_color || '#1f2937'}
+                                        onChange={e => updateBlockData(block.id, 'text_color', e.target.value)}
+                                        className="w-full h-8 border border-gray-200 rounded-lg cursor-pointer bg-white"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-[9px] font-bold text-gray-500 mb-0.5 ml-1">Accent</label>
+                                    <input
+                                        type="color"
+                                        value={data.accent_color || '#10b981'}
+                                        onChange={e => updateBlockData(block.id, 'accent_color', e.target.value)}
+                                        className="w-full h-8 border border-gray-200 rounded-lg cursor-pointer bg-white"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+            case 'master_data': {
+                return (
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Block Title</label>
+                            <input
+                                type="text"
+                                value={data.title || ''}
+                                onChange={e => updateBlockData(block.id, 'title', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Master Entity Source</label>
+                            <select
+                                value={data.entity || 'currencies'}
+                                onChange={e => updateBlockData(block.id, 'entity', e.target.value)}
+                                className="w-full text-sm border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
+                            >
+                                <option value="currencies">Currencies</option>
+                                <option value="companies">Companies</option>
+                                <option value="branches">Branches</option>
+                                <option value="countries">Countries</option>
+                                <option value="provinces">Provinces</option>
+                                <option value="cities">Cities</option>
+                                <option value="doc-numberings">Document Numberings</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Theme Color</label>
+                            <input
+                                type="color"
+                                value={data.theme_color || '#4f46e5'}
+                                onChange={e => updateBlockData(block.id, 'theme_color', e.target.value)}
+                                className="w-full h-8 border border-gray-200 rounded-lg cursor-pointer bg-white"
+                            />
+                        </div>
                     </div>
                 );
             }
@@ -3999,13 +4749,13 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                     </div>
 
                     <div className="flex items-center gap-1 p-2 border-b border-gray-100 bg-white">
-                        <button 
+                        <button
                             onClick={() => setSidebarTab('structure')}
                             className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${sidebarTab === 'structure' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                         >
                             Blocks
                         </button>
-                        <button 
+                        <button
                             onClick={() => setSidebarTab('settings')}
                             className={`flex-1 py-1.5 text-[10px] font-bold uppercase tracking-wider rounded-md transition-all ${sidebarTab === 'settings' ? 'bg-indigo-50 text-indigo-600 shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
                         >
@@ -4063,32 +4813,32 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     </h4>
                                     <div>
                                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Meta Title</label>
-                                        <input 
-                                            type="text" 
-                                            value={metaTitle} 
-                                            onChange={e => setMetaTitle(e.target.value)} 
+                                        <input
+                                            type="text"
+                                            value={metaTitle}
+                                            onChange={e => setMetaTitle(e.target.value)}
                                             placeholder="Defaults to Page Title"
-                                            className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" 
+                                            className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Meta Description</label>
-                                        <textarea 
-                                            value={metaDescription} 
-                                            onChange={e => setMetaDescription(e.target.value)} 
+                                        <textarea
+                                            value={metaDescription}
+                                            onChange={e => setMetaDescription(e.target.value)}
                                             rows="3"
                                             placeholder="Brief description for search engines..."
-                                            className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" 
+                                            className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
                                         />
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Keywords</label>
-                                        <input 
-                                            type="text" 
-                                            value={metaKeywords} 
-                                            onChange={e => setMetaKeywords(e.target.value)} 
+                                        <input
+                                            type="text"
+                                            value={metaKeywords}
+                                            onChange={e => setMetaKeywords(e.target.value)}
                                             placeholder="keyword1, keyword2..."
-                                            className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50" 
+                                            className="w-full text-xs border-gray-200 rounded-lg focus:ring-indigo-500 bg-gray-50"
                                         />
                                     </div>
                                     <div>
@@ -4099,7 +4849,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                         </div>
                                     </div>
                                 </div>
-                                
+
                                 <div className="space-y-4 pt-4 border-t border-gray-100">
                                     <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">General Settings</h4>
                                     <div>
@@ -4119,9 +4869,9 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     </div>
                                     <div>
                                         <label className="block text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-1">Page Layout</label>
-                                        <select 
-                                            value={layoutId} 
-                                            onChange={e => setLayoutId(e.target.value)} 
+                                        <select
+                                            value={layoutId}
+                                            onChange={e => setLayoutId(e.target.value)}
                                             className="w-full text-xs font-semibold border-gray-200 rounded-lg focus:ring-indigo-500 bg-white"
                                         >
                                             <option value="">-- Use Default Layout --</option>
@@ -4154,12 +4904,12 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                 <Upload className="w-3.5 h-3.5" />
                                 Import
                             </button>
-                            <input 
-                                type="file" 
-                                ref={fileInputRef} 
-                                onChange={handleImport} 
-                                accept=".json" 
-                                className="hidden" 
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleImport}
+                                accept=".json"
+                                className="hidden"
                             />
                         </div>
                         <button
@@ -4197,7 +4947,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                     {/* Universal Custom CSS & Events for all block types */}
                                     <div className="mt-6 pt-4 border-t border-gray-100">
                                         <h4 className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center gap-1.5">
-                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                                            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>
                                             Advanced
                                         </h4>
                                         <div className="space-y-4">
@@ -4295,7 +5045,7 @@ export default function Builder({ page, layouts = [], layout = {}, reusableBlock
                                                 <DynamicPageRenderer blocks={layout.header} reusableBlocks={reusableBlocks} />
                                             </header>
                                         )}
-                                        <DynamicPageRenderer blocks={blocks} reusableBlocks={reusableBlocks} />
+                                        <DynamicPageRenderer key={JSON.stringify(blocks)} blocks={blocks} reusableBlocks={reusableBlocks} />
                                         {layout.footer && layout.footer.length > 0 && (
                                             <footer className="site-footer">
                                                 <div className="site-footer-container">
@@ -4393,9 +5143,9 @@ function SortableBlockItem({ block, isActive, onClick, onRemove, blockTypes = []
                 }`}
             onClick={onClick}
         >
-            <div 
-                {...attributes} 
-                {...listeners} 
+            <div
+                {...attributes}
+                {...listeners}
                 className="p-1 cursor-grab active:cursor-grabbing hover:bg-gray-200 rounded text-gray-400 hover:text-gray-700 handle transition-colors"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -4441,9 +5191,9 @@ function SortableNestedItem({ id, children }) {
 
     return (
         <div ref={setNodeRef} style={style} className={`flex items-center gap-3 group/nested ${isDragging ? 'ring-2 ring-indigo-500 ring-offset-2 rounded-xl' : ''}`}>
-            <div 
-                {...attributes} 
-                {...listeners} 
+            <div
+                {...attributes}
+                {...listeners}
                 className="p-2 -ml-2 cursor-grab active:cursor-grabbing text-gray-300 hover:text-indigo-500 hover:bg-indigo-50 rounded-lg transition-all"
                 title="Drag to reorder"
             >
