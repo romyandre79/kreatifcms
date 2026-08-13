@@ -124,9 +124,7 @@ class DatabaseFactory
 
             'pgsql' => static::createPostgresDatabase($pdo, $database),
 
-            'sqlsrv' => $pdo->exec(
-                "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = '{$database}') CREATE DATABASE [{$database}]"
-            ),
+            'sqlsrv' => static::createSqlServerDatabase($pdo, $database),
 
             'oracle', 'oci8' => static::createOracleSchema($pdo, $database),
 
@@ -148,6 +146,19 @@ class DatabaseFactory
             // PostgreSQL doesn't support parameterized DDL, but we sanitize the name
             $safeName = preg_replace('/[^a-zA-Z0-9_]/', '', $database);
             $pdo->exec("CREATE DATABASE \"{$safeName}\" ENCODING 'UTF8'");
+        }
+    }
+
+    /**
+     * SQL Server: Check existence and create database with a sanitized name.
+     */
+    protected static function createSqlServerDatabase(\PDO $pdo, string $database): void
+    {
+        $safeName = preg_replace('/[^a-zA-Z0-9_]/', '', $database);
+        $stmt = $pdo->prepare("SELECT name FROM sys.databases WHERE name = :dbname");
+        $stmt->execute(['dbname' => $safeName]);
+        if (!$stmt->fetch()) {
+            $pdo->exec("CREATE DATABASE [{$safeName}]");
         }
     }
 
