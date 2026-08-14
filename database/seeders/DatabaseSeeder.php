@@ -42,6 +42,8 @@ class DatabaseSeeder extends Seeder
             }
         }
 
+        $superAdminRole = \App\Models\Role::where('slug', 'super-admin')->first();
+
         if (!User::where('email', 'test@example.com')->exists()) {
             User::factory()->create([
                 'name' => 'Test User',
@@ -49,5 +51,6 @@ class DatabaseSeeder extends Seeder
                 'role_id' => $superAdminRole ? $superAdminRole->id : null,
             ]);
         }
+
     }
 }
